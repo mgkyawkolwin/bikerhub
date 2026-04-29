@@ -1,7 +1,6 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Alert,
-  Animated,
   Image,
   Modal,
   ScrollView,
@@ -17,10 +16,11 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/themedText';
+import SnackBar from '@/components/snackbar';
 import { container } from '@/services';
-import { MarketplaceServiceToken } from '@/services/marketplace-service';
-import type { MarketplaceService } from '@/services/marketplace-service';
+import { MarketplaceServiceToken } from '@/services/marketplaceService';
+import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, BikeType } from '@/models/marketplace';
 
 const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
@@ -88,10 +88,6 @@ export default function MarketplaceCreateScreen() {
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'title' | 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
-  const [snackbar, setSnackbar] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const snackbarOpacity = useRef(new Animated.Value(0)).current;
-  const snackbarTranslateY = useRef(new Animated.Value(-24)).current;
-  const snackbarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const dropdownItems = useMemo(
@@ -147,47 +143,6 @@ export default function MarketplaceCreateScreen() {
     return true;
   };
 
-  const showSnackbar = useCallback((message: string, type: 'success' | 'error') => {
-    if (snackbarTimer.current) {
-      clearTimeout(snackbarTimer.current);
-      snackbarTimer.current = null;
-    }
-
-    setSnackbar({ message, type });
-    Animated.parallel([
-      Animated.timing(snackbarOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(snackbarTranslateY, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    snackbarTimer.current = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(snackbarOpacity, {
-          toValue: 0,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(snackbarTranslateY, {
-          toValue: -24,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ]).start(({ finished }) => {
-        if (finished) {
-          setSnackbar(null);
-        }
-      });
-      snackbarTimer.current = null;
-    }, 2800);
-  }, [snackbarOpacity, snackbarTranslateY]);
-
   const validateForm = () => {
     const nextErrors: typeof errors = {};
 
@@ -201,8 +156,8 @@ export default function MarketplaceCreateScreen() {
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      showSnackbar(t.Text.requiredFields, 'error');
-      return false;
+        SnackBar.Error(t.Text.requiredFields);
+        return false;
     }
 
     return true;
@@ -254,10 +209,10 @@ export default function MarketplaceCreateScreen() {
       };
 
       await marketplaceService.createListing(listing);
-      showSnackbar(t.Text.postSuccess, 'success');
+      SnackBar.Success(t.Text.postSuccess);
       setTimeout(() => router.replace('/marketplace'), 1000);
     } catch (error) {
-      showSnackbar('Unable to post listing. Please try again.', 'error');
+      SnackBar.Error('Unable to post listing. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -481,21 +436,6 @@ export default function MarketplaceCreateScreen() {
           </TouchableOpacity>
         </View>
 
-        {snackbar ? (
-        <Animated.View
-          style={[
-            styles.snackbar,
-            {
-              backgroundColor: snackbar.type === 'success' ? colors.success : colors.errorColor,
-              opacity: snackbarOpacity,
-              transform: [{ translateY: snackbarTranslateY }],
-              top: insets.top + 68,
-            },
-          ]}
-        >
-          <ThemedText style={styles.snackbarText}>{snackbar.message}</ThemedText>
-        </Animated.View>
-      ) : null}
       </View>
 
       <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
@@ -726,25 +666,5 @@ const styles = StyleSheet.create({
   },
   sheetItemText: {
     fontSize: 15,
-  },
-  snackbar: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 6,
-    zIndex: 50,
-  },
-  snackbarText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });

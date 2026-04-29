@@ -54,6 +54,8 @@ const en = {
     gallery: 'Gallery',
     post: 'Post',
     vinSearch: 'VIN Search',
+    typeMessage: 'Type your message...',
+    chats: 'Chats',
   },
   Text: {
     currentLocation: 'Current: {0}',

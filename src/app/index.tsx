@@ -2,7 +2,7 @@ import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, type Href } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 
@@ -17,7 +17,7 @@ function useSections() {
       items: [
         { label: t.Title.listing,     icon: 'two-wheeler',  link: '/marketplace' },
         { label: t.Title.sell,        icon: 'sell',         link: '/marketplace/create' },
-        { label: t.Title.favorite,    icon: 'favorite',     link: '/marketplace/saved' },
+        { label: t.Title.favorite,    icon: 'favorite',     link: '/marketplace/favorites' },
         { label: t.Title.buyHistory,  icon: 'receipt-long', link: '/marketplace/buy-history' },
         { label: t.Title.sellHistory, icon: 'history',      link: '/marketplace/sell-history' },
         { label: t.Title.myItems,     icon: 'garage',       link: '/marketplace/my-items' },
@@ -90,18 +90,22 @@ export default function HomeScreen() {
                 <MaterialIcons name="tune" size={22} color={c.headPri} />
               </TouchableOpacity>
             </Link>
-            <TouchableOpacity hitSlop={12}>
-              <View>
-                <MaterialIcons name="notifications-none" size={22} color={c.headPri} />
-                <View style={$.bellDot} />
-              </View>
-            </TouchableOpacity>
+            <Link href="/message/messages" asChild>
+              <TouchableOpacity hitSlop={12}>
+                <View>
+                  <MaterialIcons name="notifications-none" size={22} color={c.headPri} />
+                  <View style={$.bellDot} />
+                </View>
+              </TouchableOpacity>
+            </Link>
           </View>
           <ThemedText style={[$.logo, { color: c.headPri }]}>BIKERHUB</ThemedText>
           <View style={$.headerSide}>
-            <TouchableOpacity hitSlop={12}>
-              <MaterialIcons name="chat-bubble-outline" size={20} color={c.headPri} />
-            </TouchableOpacity>
+            <Link href="/chat/chats" asChild>
+              <TouchableOpacity hitSlop={12}>
+                <MaterialIcons name="chat-bubble-outline" size={20} color={c.headPri} />
+              </TouchableOpacity>
+            </Link>
             <TouchableOpacity hitSlop={12}>
               <MaterialIcons name="person-outline" size={22} color={c.headPri} />
             </TouchableOpacity>

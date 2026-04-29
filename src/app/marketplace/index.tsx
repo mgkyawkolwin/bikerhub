@@ -6,10 +6,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
-import { MarketplaceServiceToken } from '@/services/marketplace-service';
-import type { MarketplaceService } from '@/services/marketplace-service';
+import { FavoriteServiceToken } from '@/services/favoriteService';
+import { LikeServiceToken } from '@/services/likeService';
+import { MarketplaceServiceToken } from '@/services/marketplaceService';
+import type { FavoriteService } from '@/services/favoriteService';
+import type { LikeService } from '@/services/likeService';
+import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, MarketplaceFilter, BikeType } from '@/models/marketplace';
 
 export default function MarketplaceScreen() {
@@ -20,9 +24,19 @@ export default function MarketplaceScreen() {
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
   );
+  const favoriteService = useMemo(
+    () => container.resolve<FavoriteService>(FavoriteServiceToken),
+    [],
+  );
+  const likeService = useMemo(
+    () => container.resolve<LikeService>(LikeServiceToken),
+    [],
+  );
   const params = useLocalSearchParams();
 
   const [listings, setListings] = useState<BikeListing[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,10 +95,51 @@ export default function MarketplaceScreen() {
     [filter, marketplaceService],
   );
 
+  const loadFavorites = useCallback(async () => {
+    const favorites = await favoriteService.getFavorites();
+    setFavoriteIds(new Set(favorites.map((item) => item.id).filter(Boolean) as string[]));
+  }, [favoriteService]);
+
+  const loadLikes = useCallback(async () => {
+    const likes = await likeService.getLikedIds();
+    setLikedIds(new Set(likes));
+  }, [likeService]);
+
+  const loadListingById = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      const updated = await marketplaceService.getListingById(listingId);
+      if (updated) {
+        setListings((prev) => prev.map((item) => (item.id === listingId ? updated : item)));
+      }
+    },
+    [marketplaceService],
+  );
+
+  const toggleFavorite = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      await favoriteService.toggleFavorite(listingId);
+      await Promise.all([loadFavorites(), loadListingById(listingId), loadListings(page, true)]);
+    },
+    [favoriteService, loadFavorites, loadListingById, loadListings, page],
+  );
+
+  const toggleLike = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      await likeService.toggleLike(listingId);
+      await Promise.all([loadLikes(), loadListingById(listingId), loadListings(page, true)]);
+    },
+    [likeService, loadLikes, loadListingById, loadListings, page],
+  );
+
   useFocusEffect(
     useCallback(() => {
       void loadListings(1, true);
-    }, [loadListings]),
+      void loadFavorites();
+      void loadLikes();
+    }, [loadListings, loadFavorites, loadLikes]),
   );
 
   function handleRefresh() {
@@ -115,6 +170,8 @@ export default function MarketplaceScreen() {
   }
 
   function renderBikeCard({ item }: { item: BikeListing }) {
+    const isFavorite = item.id ? favoriteIds.has(item.id) : false;
+
     return (
       <TouchableOpacity
         activeOpacity={0.85}
@@ -123,15 +180,41 @@ export default function MarketplaceScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <View style={styles.cardHeader}>
             <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
+            <View style={styles.favoriteWrapper}>
+              <View style={[styles.favoriteCountBadge, { borderColor: colors.border, backgroundColor: isFavorite ? '#E85D04' : colors.card }]}> 
+                <ThemedText style={[styles.favoriteCountText, { color: isFavorite ? '#FFFFFF' : colors.secondary }]}>{item.favoritesCount ?? 0}</ThemedText>
+              </View>
+              <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
+                <MaterialIcons
+                  name={isFavorite ? 'favorite' : 'favorite-border'}
+                  size={22}
+                  color={isFavorite ? '#E85D04' : colors.secondary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
           <View style={styles.cardFooter}>
             <ThemedText style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</ThemedText>
             <ThemedText style={[styles.cardSeller, { color: colors.secondary }]}>{item.sellerName}</ThemedText>
           </View>
-          <View style={styles.cardLocationRow}>
-            <MaterialIcons name="location-on" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.cardLocationText, { color: colors.secondary }]}>{item.location}</ThemedText>
+          <View style={[styles.cardLocationRow, { justifyContent: 'space-between' }]}>
+            <View style={styles.locationRowLeft}>
+              <MaterialIcons name="location-on" size={14} color={colors.secondary} />
+              <ThemedText style={[styles.cardLocationText, { color: colors.secondary }]}>{item.location}</ThemedText>
+            </View>
+            <View style={styles.likeWrapper}> 
+              <View style={[styles.likeCountBadge, { borderColor: colors.border, backgroundColor: likedIds.has(item.id ?? '') ? '#E85D04' : colors.card }]}> 
+                <ThemedText style={[styles.likeCountText, { color: likedIds.has(item.id ?? '') ? '#FFFFFF' : colors.secondary }]}>{item.likeCount ?? 0}</ThemedText>
+              </View>
+              <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
+                <MaterialIcons
+                  name={likedIds.has(item.id ?? '') ? 'thumb-up' : 'thumb-up-off-alt'}
+                  size={22}
+                  color={likedIds.has(item.id ?? '') ? '#E85D04' : colors.secondary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -207,9 +290,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   cardTitle: {
+    flex: 1,
     fontSize: 16,
+    fontWeight: '700',
+    marginRight: 12,
+  },
+  favoriteWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  favoriteCountBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  favoriteCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  locationRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  likeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  likeCountBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  likeCountText: {
+    fontSize: 12,
     fontWeight: '700',
   },
   cardImage: {

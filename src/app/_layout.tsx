@@ -5,13 +5,15 @@ import 'react-native-reanimated';
 
 import { ThemeContextProvider, useThemeContext } from '@/hooks/use-theme-context';
 import { I18nProvider } from '@/i18n';
-import '@/services/di-container';
+import '@/services/diContainer';
+import SnackBar from '@/components/snackbar';
 
 function InnerLayout() {
   const { colorScheme, isDark } = useThemeContext();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <SnackBar />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />

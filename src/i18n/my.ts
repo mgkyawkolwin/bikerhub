@@ -54,6 +54,8 @@ const my = {
     gallery: 'ဂॅလရီ',
     post: 'တင်မည်',
     vinSearch: 'VIN ရှာဖွေ',
+    typeMessage: 'သင်၏ စာကို ရိုက်ထည့်ပါ...',
+    chats: 'စကားပြောများ',
   },
   Text: {
     currentLocation: 'လက်ရှိ: {0}',

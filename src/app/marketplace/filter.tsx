@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/themedText';
 import type { BikeType, MarketplaceFilter } from '@/models/marketplace';
 
 const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
@@ -87,6 +87,7 @@ export default function MarketplaceFilterScreen() {
   }
 
   function applyFilter() {
+    router.back();
     router.replace({
       pathname: '/marketplace',
       params: {

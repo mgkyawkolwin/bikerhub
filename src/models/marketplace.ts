@@ -1,4 +1,4 @@
-export { BikeListing } from './bike-listing';
-export { MarketplaceFilter } from './marketplace-filter';
-export { PaginatedResult } from './paginated-result';
-export type { BikeType } from './bike-type';
+export { BikeListing } from './bikeListing';
+export { MarketplaceFilter } from './marketplaceFilter';
+export { PaginatedResult } from './paginatedResult';
+export type { BikeType } from './bikeType';

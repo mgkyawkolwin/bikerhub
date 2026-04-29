@@ -8,7 +8,7 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useI18n } from '@/i18n';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/themedText';
 
 const INITIAL_REGION = {
   latitude: 16.8661,
