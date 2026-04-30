@@ -8,21 +8,22 @@ import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
-import { FavoriteServiceToken } from '@/services/favoriteService';
-import type { FavoriteService } from '@/services/favoriteService';
 import type { BikeListing } from '@/models/bikeListing';
+import { UserServiceToken } from '@/services/userService';
+import type { UserService } from '@/services/userService';
+import { MarketplaceServiceToken } from '@/services/marketplaceService';
+import type { MarketplaceService } from '@/services/marketplaceService';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { isDark } = useThemeContext();
-  const favoriteService = useMemo(
-    () => container.resolve<FavoriteService>(FavoriteServiceToken),
-    [],
-  );
 
   const [favorites, setFavorites] = useState<BikeListing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const colors = useMemo(
     () => ({
@@ -36,36 +37,67 @@ export default function FavoritesScreen() {
     [isDark],
   );
 
-  const loadFavorites = useCallback(async () => {
-    const items = await favoriteService.getFavorites();
-    setFavorites(items);
-    setRefreshing(false);
-  }, [favoriteService]);
+  const userService = container.resolve<UserService>(UserServiceToken);
+  const marketplaceService = container.resolve<MarketplaceService>(MarketplaceServiceToken);
 
-  useFocusEffect(
-    useCallback(() => {
+  const loadListings = useCallback(
+      async (pageNumber: number, reset = false) => {
+        setIsLoading(true);
+  
+        try {
+          const result = await userService.getFavoriteListings(pageNumber, 10);
+          setFavorites((prev) => (reset ? result.items : [...prev, ...result.items]));
+          setPage(result.page);
+          setTotal(result.total);
+        } finally {
+          setIsLoading(false);
+          setRefreshing(false);
+        }
+      },
+      [userService],
+    );
+  
+    const toggleFavorite = useCallback(
+      async (listingId: string) => {
+        if (!listingId) return;
+        await marketplaceService.toggleFavorite(listingId);
+        await Promise.all([ loadListings(page, true)]);
+      },
+      [marketplaceService, loadListings, page],
+    );
+  
+    const toggleLike = useCallback(
+      async (listingId: string) => {
+        if (!listingId) return;
+        await marketplaceService.toggleLike(listingId);
+        await Promise.all([loadListings(page, true)]);
+      },
+      [loadListings, page],
+    );
+  
+    useFocusEffect(
+      useCallback(() => {
+        void loadListings(1, true);
+      }, [loadListings]),
+    );
+  
+    function handleRefresh() {
       setRefreshing(true);
-      void loadFavorites();
-    }, [loadFavorites]),
-  );
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    void loadFavorites();
-  };
-
-  const toggleFavorite = async (listingId: string) => {
-    if (!listingId) return;
-    await favoriteService.toggleFavorite(listingId);
-    await loadFavorites();
-  };
+      void loadListings(1, true);
+    }
+  
+    function handleEndReached() {
+      if (!isLoading && favorites.length < total) {
+        void loadListings(page + 1);
+      }
+    }
 
   const renderBikeCard = ({ item }: { item: BikeListing }) => (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={() => router.push(`/marketplace/${item.id}`)}
     >
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHeader}>
           <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
           <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
@@ -86,8 +118,8 @@ export default function FavoritesScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>

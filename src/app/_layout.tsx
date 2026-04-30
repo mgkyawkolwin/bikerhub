@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { ThemeContextProvider, useThemeContext } from '@/hooks/use-theme-context';
+import { AuthContextProvider } from '@/hooks/use-auth-context';
 import { I18nProvider } from '@/i18n';
 import '@/services/diContainer';
 import SnackBar from '@/components/snackbar';
@@ -27,9 +28,11 @@ function InnerLayout() {
 export default function RootLayout() {
   return (
     <ThemeContextProvider>
-      <I18nProvider>
-        <InnerLayout />
-      </I18nProvider>
+      <AuthContextProvider>
+        <I18nProvider>
+          <InnerLayout />
+        </I18nProvider>
+      </AuthContextProvider>
     </ThemeContextProvider>
   );
 }

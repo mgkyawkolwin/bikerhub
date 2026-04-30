@@ -1,4 +1,4 @@
-import type { BikeType } from './bikeType';
+import type { BikeType } from '../constants/bikeType';
 
 export class BikeListing {
   id?: string;
@@ -9,11 +9,11 @@ export class BikeListing {
   price?: number;
   cc?: number;
   type?: BikeType;
+  sellerId?: string;
   sellerName?: string;
   location?: string;
-  likeCount?: number;
   rating?: number;
-  ratingCount?: number;
+  ratingCount: number = 0;
   phone?: string;
   imageUrl?: string;
   images?: string[];
@@ -21,5 +21,8 @@ export class BikeListing {
   km?: string;
   vin?: string;
   description?: string;
-  favoritesCount?: number;
+  favoritesCount: number = 0;
+  isFavorite?: boolean;
+  isLiked?: boolean;
+  likeCount: number = 0;
 }

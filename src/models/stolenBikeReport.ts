@@ -1,4 +1,4 @@
-import type { BikeType } from './bikeType';
+import type { BikeType } from '../constants/bikeType';
 
 export type StolenBikeReport = {
   id?: string;

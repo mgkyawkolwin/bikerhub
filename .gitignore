@@ -144,6 +144,9 @@ vite.config.ts.timestamp-*
 
 # Expo files
 .expo/
+android/
+ios/
+web/
 
 # VSCode settings
 .vscode/

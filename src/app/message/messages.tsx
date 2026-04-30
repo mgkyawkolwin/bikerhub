@@ -98,22 +98,30 @@ export default function MessagesScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}
-            activeOpacity={0.8}
-            onPress={() => router.push({ pathname: '/message/[messageId]', params: { messageId: item.id } })}
-          >
-            <View style={styles.itemHeader}>
-              <ThemedText style={[styles.itemTitle, { color: colors.primary }]}>{item.title}</ThemedText>
-              <ThemedText style={[styles.itemTime, { color: colors.secondary }]}>{item.time}</ThemedText>
-            </View>
-            <View style={styles.itemFooter}>
-              <ThemedText style={[styles.itemPreview, { color: colors.secondary }]} numberOfLines={2}>{item.preview}</ThemedText>
-              {item.unread ? <View style={[styles.unread, { backgroundColor: colors.accent }]}><ThemedText style={styles.unreadText}>{item.unread}</ThemedText></View> : null}
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const displayDate = item.dateTimeUTC ? new Date(item.dateTimeUTC).toLocaleDateString() : '';
+          const previewText = item.body ? item.body : '';
+          return (
+            <TouchableOpacity
+              style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.8}
+              onPress={() => router.push({ pathname: '/message/[messageId]', params: { messageId: item.id } })}
+            >
+              <View style={styles.itemHeader}>
+                <ThemedText style={[styles.itemTitle, { color: colors.primary }]}>{item.title}</ThemedText>
+                <ThemedText style={[styles.itemTime, { color: colors.secondary }]}>{displayDate}</ThemedText>
+              </View>
+              <View style={styles.itemFooter}>
+                <ThemedText style={[styles.itemPreview, { color: colors.secondary }]} numberOfLines={2}>{previewText}</ThemedText>
+                {!item.read ? (
+                  <View style={[styles.unread, { backgroundColor: colors.accent }]}>
+                    <ThemedText style={styles.unreadText}>NEW</ThemedText>
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

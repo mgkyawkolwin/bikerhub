@@ -14,7 +14,9 @@ import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
-import type { ChatService, ChatThread } from '@/services';
+import type { ChatService } from '@/services';
+import ChatHead from '@/models/chatHead';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
 
 export default function ChatsScreen() {
@@ -23,13 +25,15 @@ export default function ChatsScreen() {
   const { isDark } = useThemeContext();
   const { t } = useI18n();
   const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
-  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [threads, setThreads] = useState<ChatHead[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
 
   const loadThreads = useCallback(
     async (nextPage: number, replace = false) => {
@@ -42,7 +46,7 @@ export default function ChatsScreen() {
       }
 
       try {
-        const pageData = await chatService.getThreads(nextPage, pageSize);
+        const pageData = await chatService.getChatHeads(nextPage, pageSize);
         setThreads((prev) => (replace || nextPage === 1 ? pageData.items : [...prev, ...pageData.items]));
         setPage(pageData.page);
         setTotalPages(pageData.totalPages);
@@ -117,21 +121,21 @@ export default function ChatsScreen() {
           <TouchableOpacity
             style={[styles.chatItem, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.75}
-            onPress={() => router.push(`/chat/chat?chatId=${chat.id}&name=${encodeURIComponent(chat.name)}`)}
+            onPress={() => router.push(`/chat/chat?friendId=${chat.friendId}`)}
           >
             <View style={[styles.avatar, { backgroundColor: colors.accent }]}> 
-              <ThemedText style={styles.avatarText}>{chat.name.charAt(0)}</ThemedText>
+              <ThemedText style={styles.avatarText}>{chat.friendName?.charAt(0)}</ThemedText>
             </View>
             <View style={styles.chatInfo}>
               <View style={styles.chatHeader}>
-                <ThemedText style={[styles.chatName, { color: colors.primary }]}>{chat.name}</ThemedText>
-                <ThemedText style={[styles.chatTime, { color: colors.secondary }]}>{chat.time}</ThemedText>
+                <ThemedText style={[styles.chatName, { color: colors.primary }]}>{chat.friendName}</ThemedText>
+                <ThemedText style={[styles.chatTime, { color: colors.secondary }]}>{new Date(chat.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
               </View>
               <View style={styles.chatRow}>
-                <ThemedText style={[styles.chatPreview, { color: colors.secondary }]} numberOfLines={1}>{chat.lastMessage}</ThemedText>
-                {chat.unread ? (
+                <ThemedText style={[styles.chatPreview, { color: colors.secondary }]} numberOfLines={1}>{chat.textMessage}</ThemedText>
+                {chat.unreadCount ? (
                   <View style={[styles.unreadBadge, { backgroundColor: colors.accent }]}> 
-                    <ThemedText style={styles.unreadText}>{chat.unread}</ThemedText>
+                    <ThemedText style={styles.unreadText}>{chat.unreadCount}</ThemedText>
                   </View>
                 ) : null}
               </View>

@@ -1,0 +1,348 @@
+{
+  "collections": {
+    "users": [
+      {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "name": "Mr.Biker",
+        "email": "mr.biker@example.com",
+        "location": "Yangon",
+        "profilePictureUrl": "https://example.com/profiles/mr-biker.jpg",
+        "rating": 4.5,
+        "ratingCount": 20
+      },
+      {
+        "id": "5b8b2557-f016-4d44-a5bf-2b3f8a26d9f1",
+        "name": "Aung Moe",
+        "email": "aung.moe@example.com",
+        "location": "Yangon",
+        "profilePictureUrl": "https://example.com/profiles/aung-moe.jpg",
+        "rating": 4.0,
+        "ratingCount": 10
+      },
+      {
+        "id": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
+        "name": "Khin Hla",
+        "email": "khin.hla@example.com",
+        "location": "Mandalay",
+        "profilePictureUrl": "https://example.com/profiles/khin-hla.jpg",
+        "rating": 4.2,
+        "ratingCount": 12
+      },
+      {
+        "id": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735",
+        "name": "Thiri",
+        "email": "thiri@example.com",
+        "location": "Naypyitaw",
+        "profilePictureUrl": "https://example.com/profiles/thiri.jpg",
+        "rating": 4.1,
+        "ratingCount": 9
+      },
+      {
+        "id": "1a8d7f30-c741-44f0-9316-f4b1a2e55d01",
+        "name": "Min Thu",
+        "email": "min.thu@example.com",
+        "location": "Bago",
+        "profilePictureUrl": "https://example.com/profiles/min-thu.jpg",
+        "rating": 4.0,
+        "ratingCount": 7
+      },
+      {
+        "id": "2e13f019-8dee-4b82-86e7-5581f36ad5b1",
+        "name": "Saw Htun",
+        "email": "saw.htun@example.com",
+        "location": "Taunggyi",
+        "profilePictureUrl": "https://example.com/profiles/saw-htun.jpg",
+        "rating": 3.8,
+        "ratingCount": 5
+      }
+    ],
+    "listings": [
+      {
+        "id": "b61a58fe-918d-4e42-b5f8-2c7d5a8d9999",
+        "title": "Yamaha MT-15",
+        "make": "Yamaha",
+        "model": "MT-15",
+        "year": 2022,
+        "price": 4500000,
+        "cc": 155,
+        "type": "Sport",
+        "sellerId": "5b8b2557-f016-4d44-a5bf-2b3f8a26d9f1",
+        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+        "mileage": "8,400 Km",
+        "description": "A sharp sport bike with excellent handling and style.",
+        "images": [
+          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "isFavorite": true,
+        "favoritesCount": 14,
+        "isLiked": true,
+        "likesCount": 5,
+        "rating": 4.3,
+        "ratingCount": 14
+      },
+      {
+        "id": "4b1d24d9-20c4-4bb5-9489-3e7f26ecd4d2",
+        "title": "Honda CB500X",
+        "make": "Honda",
+        "model": "CB500X",
+        "year": 2021,
+        "price": 9500000,
+        "cc": 471,
+        "type": "Adventure",
+        "sellerId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
+        "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+        "mileage": "12,200 Km",
+        "description": "Comfortable touring-ready adventure bike with dependable Honda quality.",
+        "images": [
+          "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 8,
+        "isLiked": true,
+        "likesCount": 3,
+        "rating": 4.0,
+        "ratingCount": 8
+      },
+      {
+        "id": "c1d91f44-1b3d-4f85-8a60-692aed5941b3",
+        "title": "Royal Enfield Classic 350",
+        "make": "Royal Enfield",
+        "model": "Classic 350",
+        "year": 2023,
+        "price": 6400000,
+        "cc": 349,
+        "type": "Cruiser",
+        "sellerId": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735",
+        "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
+        "mileage": "4,500 Km",
+        "description": "Iconic cruiser with timeless styling and smooth ride quality.",
+        "images": [
+          "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 20,
+        "isLiked": false,
+        "likesCount": 2,
+        "rating": 4.5,
+        "ratingCount": 20
+      },
+      {
+        "id": "a37d1b7d-3d63-4fb6-b8c9-9a5d5bbd430c",
+        "title": "Kawasaki Z650",
+        "make": "Kawasaki",
+        "model": "Z650",
+        "year": 2020,
+        "price": 7800000,
+        "cc": 649,
+        "type": "Standard",
+        "sellerId": "1a8d7f30-c741-44f0-9316-f4b1a2e55d01",
+        "imageUrl": "https://images.unsplash.com/photo-1519937947077-74f88bc7ee82?auto=format&fit=crop&w=800&q=80",
+        "mileage": "9,100 Km",
+        "description": "Nimble street bike with strong torque and confident mid-range power.",
+        "images": [
+          "https://images.unsplash.com/photo-1519937947077-74f88bc7ee82?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 0,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 0,
+        "ratingCount": 0
+      },
+      {
+        "id": "9da89fb2-e981-4cba-8ba1-1e2b1017c5a7",
+        "title": "BMW R NineT",
+        "make": "BMW",
+        "model": "R NineT",
+        "year": 2022,
+        "price": 24000000,
+        "cc": 1170,
+        "type": "Custom",
+        "sellerId": "2e13f019-8dee-4b82-86e7-5581f36ad5b1",
+        "imageUrl": "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=800&q=80",
+        "mileage": "2,000 Km",
+        "description": "Premium naked roadster with classic design and modern performance.",
+        "images": [
+          "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 0,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 0,
+        "ratingCount": 0
+      }
+    ],
+    "reports": [
+      {
+        "id": "f50b06d8-7f4b-4f66-ae9d-7a6f1f88d14a",
+        "title": "Stolen Honda CB300R",
+        "make": "Honda",
+        "model": "CB300R",
+        "year": 2023,
+        "price": 5600000,
+        "cc": 286,
+        "km": "3,100 Km",
+        "vin": "JH2RC5908NK000001",
+        "type": "Standard",
+        "description": "Reported stolen while parked near downtown.",
+        "images": [
+          "https://images.unsplash.com/photo-1523430410477-8639ebcb9b7f?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "reportedAt": "2026-04-28T10:00:00Z",
+        "location": "Pyay",
+        "reportedById": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6"
+      }
+    ],
+    "chatMessages": [
+      {
+        "id": "m1-1",
+        "senderId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
+        "receiverId": "00000000-0000-0000-0000-000000000000",
+        "textMessage": "Hi! I saw your listing and want to ask about the condition.",
+        "dateTimeUTC": "2026-04-28T10:14:00Z",
+        "sent": true,
+        "delivered": true,
+        "read": true
+      },
+      {
+        "id": "m1-2",
+        "senderId": "00000000-0000-0000-0000-000000000000",
+        "receiverId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
+        "textMessage": "Hi! It is in great shape and just serviced last month.",
+        "dateTimeUTC": "2026-04-28T10:16:00Z",
+        "sent": true,
+        "delivered": true,
+        "read": false
+      },
+      {
+        "id": "m2-1",
+        "senderId": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735",
+        "receiverId": "00000000-0000-0000-0000-000000000000",
+        "textMessage": "Can you share the maintenance history?",
+        "dateTimeUTC": "2026-04-25T09:05:00Z",
+        "sent": true,
+        "delivered": true,
+        "read": false
+      }
+    ],
+    "chatHeads": [
+      {
+        "id": "m1-1",
+        "friendId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
+        "friendName": "Mr.Biker",
+        "friendProfilePictureUrl": "https://example.com/profiles/mr-biker.jpg",
+        "textMessage": "Hi! I saw your listing and want to ask about the condition.",
+        "messageDateTimeUTC": "2026-04-28T10:14:00Z",
+        "unreadCount": 3
+      },
+      {
+        "id": "m1-2",
+        "friendId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea7",
+        "friendName": "Mock User",
+        "friendProfilePictureUrl": "https://example.com/profiles/mock-user.jpg",
+        "textMessage": "Hi! It is in great shape and just serviced last month.",
+        "messageDateTimeUTC": "2026-04-28T10:16:00Z",
+        "unreadCount": 0
+      },
+      {
+        "id": "m2-1",
+        "friendId": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735",
+        "friendName": "Another User",
+        "friendProfilePictureUrl": "https://example.com/profiles/another-user.jpg",
+        "textMessage": "Can you share the maintenance history?",
+        "messageDateTimeUTC": "2026-04-25T09:05:00Z",
+        "unreadCount": 2
+      }
+    ],
+    "messages": [
+      {
+        "id": "message-1",
+        "title": "Payment issue",
+        "body": "We could not process your last payment due to an expired card. Please update your payment details in account settings to continue using our services without interruption.",
+        "dateTimeUTC": "2026-04-28T10:30:00Z",
+        "read": false
+      },
+      {
+        "id": "message-2",
+        "title": "New bike offer",
+        "body": "A seller near you has listed a new Yamaha MT-15 at a great price. Tap to view the listing and contact the seller.",
+        "dateTimeUTC": "2026-04-27T16:15:00Z",
+        "read": false
+      }
+    ],
+    "news": [
+      {
+        "id": "news-1",
+        "headline": "New safety regulations for motorcyclists take effect",
+        "summary": "The government has announced updated helmet and lane safety standards for all riders starting this month.",
+        "content": "The Ministry of Transport has introduced stricter helmet requirements and new lane-splitting guidelines designed to reduce accidents across the city. Riders are encouraged to review the new rules and update their gear accordingly.",
+        "imageUrl": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80",
+        "source": "BikerHub News",
+        "dateTimeUTC": "2026-04-30T08:00:00Z"
+      },
+      {
+        "id": "news-2",
+        "headline": "Top 5 used bikes to watch in 2026",
+        "summary": "A comprehensive guide to the best secondhand motorcycles for city and weekend riders.",
+        "content": "From commuter-friendly scooters to powerful cruisers, our experts selected the most reliable and affordable used bikes for every type of rider. Each model includes maintenance tips and resale notes.",
+        "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80",
+        "source": "BikerHub Magazine",
+        "dateTimeUTC": "2026-04-28T14:30:00Z"
+      },
+      {
+        "id": "news-3",
+        "headline": "How to shop safely for your next motorcycle online",
+        "summary": "Important steps to verify sellers, inspect listings, and avoid scams when buying bikes from marketplaces.",
+        "content": "Shopping online can save you time and money, but it's essential to confirm seller credentials, check bike history, and arrange secure payment. Follow our checklist before you commit.",
+        "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+        "source": "BikerHub Advice",
+        "dateTimeUTC": "2026-04-27T10:15:00Z"
+      }
+    ],
+    "blogs": [
+      {
+        "id": "blog-1",
+        "title": "Essential maintenance routines for every motorcyclist",
+        "summary": "A monthly bike-care checklist to keep your ride reliable and safe on the road.",
+        "content": "From oil changes and chain adjustment to tire inspections and brake checks, these simple maintenance tasks help you avoid breakdowns and extend the life of your motorcycle. Keep a log and ride with confidence.",
+        "imageUrl": "https://images.unsplash.com/photo-1494256997604-768d1f608cac?auto=format&fit=crop&w=1200&q=80",
+        "author": "BikerHub Team",
+        "dateTimeUTC": "2026-04-29T12:00:00Z"
+      },
+      {
+        "id": "blog-2",
+        "title": "Best gear upgrades for city and highway riders",
+        "summary": "What motorcycle accessories deliver the biggest comfort and safety gains this season.",
+        "content": "Choosing the right helmet, jacket, gloves, and boots can make your commute safer and your weekend rides more enjoyable. We break down the top upgrades for urban riders and longer trips.",
+        "imageUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+        "author": "BikerHub Reviews",
+        "dateTimeUTC": "2026-04-27T09:00:00Z"
+      },
+      {
+        "id": "blog-3",
+        "title": "How to choose the right helmet for your riding style",
+        "summary": "A quick guide to fit, certification, and features for safer helmet shopping.",
+        "content": "Helmet selection is about fit, protection and visibility. Learn how to compare safety ratings, shell shapes and ventilation so you can choose the best helmet for commuting, touring or sport riding.",
+        "imageUrl": "https://images.unsplash.com/photo-1514464142261-8f31de6dea63?auto=format&fit=crop&w=1200&q=80",
+        "author": "BikerHub Insights",
+        "dateTimeUTC": "2026-04-26T16:30:00Z"
+      }
+    ],
+    "likes": [
+      {
+        "id": "like-1",
+        "listingId": "4b1d24d9-20c4-4bb5-9489-3e7f26ecd4d2",
+        "userId": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735"
+      }
+    ],
+    "ratingTotals": [
+      {
+        "id": "rating-1",
+        "listingId": "b61a58fe-918d-4e42-b5f8-2c7d5a8d9999",
+        "ratingCount": 14,
+        "ratingTotal": 60
+      }
+    ]
+  }
+}

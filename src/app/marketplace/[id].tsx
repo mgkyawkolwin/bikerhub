@@ -7,14 +7,9 @@ import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
 import { Rating } from '@/components/rating';
-import { container, RatingServiceToken } from '@/services';
-import { FavoriteServiceToken } from '@/services/favoriteService';
-import { LikeServiceToken } from '@/services/likeService';
+import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
-import type { FavoriteService } from '@/services/favoriteService';
-import type { LikeService } from '@/services/likeService';
 import type { MarketplaceService } from '@/services/marketplaceService';
-import type { RatingService } from '@/services';
 import type { BikeListing } from '@/models/bikeListing';
 
 export default function BikeDetailScreen() {
@@ -27,25 +22,9 @@ export default function BikeDetailScreen() {
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
   );
-  const favoriteService = useMemo(
-    () => container.resolve<FavoriteService>(FavoriteServiceToken),
-    [],
-  );
-  const likeService = useMemo(
-    () => container.resolve<LikeService>(LikeServiceToken),
-    [],
-  );
-  const ratingService = useMemo(
-    () => container.resolve<RatingService>(RatingServiceToken),
-    [],
-  );
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [listing, setListing] = useState<BikeListing | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [ratingCount, setRatingCount] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -56,25 +35,12 @@ export default function BikeDetailScreen() {
       if (active) {
         setListing(item ?? null);
       }
-      if (active && item?.id) {
-        const [favoriteState, likedState, ratingState] = await Promise.all([
-          favoriteService.isFavorite(item.id),
-          likeService.isLiked(item.id),
-          ratingService.getRating(item.id),
-        ]);
-        if (active) {
-          setIsFavorite(favoriteState);
-          setIsLiked(likedState);
-          setRating(ratingState.value);
-          setRatingCount(ratingState.count);
-        }
-      }
     })();
 
     return () => {
       active = false;
     };
-  }, [id, marketplaceService, favoriteService, likeService, ratingService]);
+  }, [id, marketplaceService]);
 
   const colors = useMemo(
     () => ({
@@ -98,27 +64,22 @@ export default function BikeDetailScreen() {
 
   const toggleFavorite = async () => {
     if (!listing?.id) return;
-    await favoriteService.toggleFavorite(listing.id);
-    const favoriteState = await favoriteService.isFavorite(listing.id);
-    setIsFavorite(favoriteState);
+    await marketplaceService.toggleFavorite(listing.id);
     const updated = await marketplaceService.getListingById(listing.id);
     if (updated) setListing(updated);
   };
 
   const toggleLike = async () => {
     if (!listing?.id) return;
-    await likeService.toggleLike(listing.id);
-    const likedState = await likeService.isLiked(listing.id);
-    setIsLiked(likedState);
+    await marketplaceService.toggleLike(listing.id);
     const updated = await marketplaceService.getListingById(listing.id);
     if (updated) setListing(updated);
   };
 
   const handleRate = async (value: number) => {
     if (!listing?.id) return;
-    const ratingState = await ratingService.submitRating(listing.id, value);
-    setRating(ratingState.value);
-    setRatingCount(ratingState.count);
+    const ratingState = await marketplaceService.submitRating(listing.id, value);
+    
   };
 
   function handleChat() {
@@ -135,24 +96,24 @@ export default function BikeDetailScreen() {
           <ThemedText style={[styles.headerTitle, { color: '#FFFFFF' }]}>{t.Title.bikeDetail}</ThemedText>
         </View>
         <View style={styles.headerActions}>
-          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: isFavorite ? '#E85D04' : colors.card }]}> 
-            <ThemedText style={[styles.actionBadgeText, { color: isFavorite ? '#FFFFFF' : colors.secondary }]}>{listing?.favoritesCount ?? 0}</ThemedText>
+          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: listing?.isFavorite ? '#E85D04' : colors.card }]}> 
+            <ThemedText style={[styles.actionBadgeText, { color: listing?.isFavorite ? '#FFFFFF' : colors.secondary }]}>{listing?.favoritesCount ?? 0}</ThemedText>
           </View>
           <TouchableOpacity onPress={toggleFavorite} hitSlop={10}>
             <MaterialIcons
-              name={isFavorite ? 'favorite' : 'favorite-border'}
+              name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
               size={20}
-              color={isFavorite ? '#E85D04' : '#FFFFFF'}
+              color={listing?.isFavorite ? '#E85D04' : '#FFFFFF'}
             />
           </TouchableOpacity>
-          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: isLiked ? '#E85D04' : colors.card }]}> 
-            <ThemedText style={[styles.actionBadgeText, { color: isLiked ? '#FFFFFF' : colors.secondary }]}>{listing?.likeCount ?? 0}</ThemedText>
+          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: listing?.isLiked ? '#E85D04' : colors.card }]}> 
+            <ThemedText style={[styles.actionBadgeText, { color: listing?.isLiked ? '#FFFFFF' : colors.secondary }]}>{listing?.likeCount ?? 0}</ThemedText>
           </View>
           <TouchableOpacity onPress={toggleLike} hitSlop={10}>
             <MaterialIcons
-              name={isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
+              name={listing?.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
               size={20}
-              color={isLiked ? '#E85D04' : '#FFFFFF'}
+              color={listing?.isLiked ? '#E85D04' : '#FFFFFF'}
             />
           </TouchableOpacity>
         </View>
@@ -210,7 +171,7 @@ export default function BikeDetailScreen() {
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
               <View style={styles.sectionHeader}>
                 <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>{t.Title.sellerInfo}</ThemedText>
-                <Rating value={rating} onRate={handleRate} />
+                <Rating value={listing.rating ?? 0} onRate={handleRate} />
               </View>
               <View style={styles.row}>
                 <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.sellerInfo}</ThemedText>
@@ -227,8 +188,8 @@ export default function BikeDetailScreen() {
               <View style={styles.ratingRow}>
                 <ThemedText style={[styles.label, { color: colors.secondary }]}>Rating</ThemedText>
                 <View style={styles.ratingValue}>
-                  <Rating value={rating} />
-                  <ThemedText style={[styles.ratingCount, { color: colors.secondary }]}>({ratingCount})</ThemedText>
+                  <Rating value={listing.rating ?? 0} />
+                  <ThemedText style={[styles.ratingCount, { color: colors.secondary }]}>({listing.ratingCount ?? 0})</ThemedText>
                 </View>
               </View>
 

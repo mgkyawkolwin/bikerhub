@@ -1,20 +1,27 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { MockServices } from './mockServices';
+import { MockMarketPlaceService } from './marketPlaceServiceMock';
+import { MockAuthService } from './authServiceMock';
+import { MockMessageService } from './messageServiceMock';
+import { MockChatService } from './chatServiceMock';
+import { MockNewsService } from './newsServiceMock';
+import { MockBlogService } from './blogServiceMock';
 import { MarketplaceServiceToken } from './marketplaceService';
 import { StolenBikeServiceToken } from './stolenBikeService';
-import { FavoriteServiceToken } from './favoriteService';
-import { LikeServiceToken } from './likeService';
-import { RatingServiceToken } from './ratingService';
 import { MessageServiceToken } from './messageService';
+import { NewsServiceToken } from './newsService';
+import { BlogServiceToken } from './blogService';
 import { ChatServiceToken } from './chatService';
+import { AuthServiceToken } from './authService';
+import { UserServiceToken } from './userService';
 
-container.registerSingleton(MarketplaceServiceToken, MockServices);
-container.registerSingleton(StolenBikeServiceToken, MockServices);
-container.registerSingleton(FavoriteServiceToken, MockServices);
-container.registerSingleton(LikeServiceToken, MockServices);
-container.registerSingleton(RatingServiceToken, MockServices);
-container.registerSingleton(MessageServiceToken, MockServices);
-container.registerSingleton(ChatServiceToken, MockServices);
+container.registerSingleton(MarketplaceServiceToken, MockMarketPlaceService);
+container.registerSingleton(StolenBikeServiceToken, MockMarketPlaceService);
+container.registerSingleton(MessageServiceToken, MockMessageService);
+container.registerSingleton(NewsServiceToken, MockNewsService);
+container.registerSingleton(BlogServiceToken, MockBlogService);
+container.registerSingleton(ChatServiceToken, MockChatService);
+container.registerSingleton(AuthServiceToken, MockAuthService);
+container.registerSingleton(UserServiceToken, MockMarketPlaceService);
 
 export { container };

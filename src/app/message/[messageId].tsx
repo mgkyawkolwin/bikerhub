@@ -7,7 +7,8 @@ import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, MessageServiceToken } from '@/services';
-import type { MessageService, MessageDetail } from '@/services';
+import type { MessageService } from '@/services';
+import Message from '@/models/message';
 
 export default function MessageDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -16,7 +17,7 @@ export default function MessageDetailScreen() {
   const { t } = useI18n();
   const { isDark } = useThemeContext();
   const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
-  const [message, setMessage] = useState<MessageDetail | null>(null);
+  const [message, setMessage] = useState<Message | null>(null);
 
   const messageId = typeof params.messageId === 'string' ? params.messageId : '';
 
@@ -36,7 +37,7 @@ export default function MessageDetailScreen() {
       const detail = await messageService.getMessageById(messageId);
       if (active && detail) {
         setMessage(detail);
-        void messageService.markAsRead(messageId);
+        void messageService.markMessageAsRead(messageId);
       }
     };
     void loadMessage();
@@ -62,17 +63,18 @@ export default function MessageDetailScreen() {
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.cardHeader}>
               <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{message.title}</ThemedText>
-              <ThemedText style={[styles.cardTime, { color: colors.secondary }]}>{message.time}</ThemedText>
+              <ThemedText style={[styles.cardTime, { color: colors.secondary }]}>
+                {message.dateTimeUTC ? new Date(message.dateTimeUTC).toLocaleString() : ''}
+              </ThemedText>
             </View>
-            <ThemedText style={[styles.cardSender, { color: colors.secondary }]}>From {message.sender}</ThemedText>
             <ThemedText style={[styles.cardBody, { color: colors.primary }]}>{message.body}</ThemedText>
             <View style={styles.messageStatus}>
               <MaterialIcons
-                name={message.status === 'seen' ? 'visibility' : 'arrow-forward'}
+                name={message.read ? 'visibility' : 'arrow-forward'}
                 size={18}
                 color={colors.accent}
               />
-              <ThemedText style={[styles.statusText, { color: colors.secondary }]}>{message.status}</ThemedText>
+              <ThemedText style={[styles.statusText, { color: colors.secondary }]}> {message.read ? 'Read' : 'Unread'}</ThemedText>
             </View>
           </View>
         ) : (

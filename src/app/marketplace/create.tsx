@@ -206,6 +206,9 @@ export default function MarketplaceCreateScreen() {
         sellerName: 'You',
         location: 'Yangon',
         images: photos,
+        ratingCount: 0,
+        favoritesCount: 0,
+        likeCount: 0,
       };
 
       await marketplaceService.createListing(listing);

@@ -7,7 +7,8 @@ import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
-import type { ChatService, ChatMessage } from '@/services';
+import type { ChatService } from '@/services';
+import ChatMessage from '@/models/chatMesage';
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -21,11 +22,10 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const chatId = typeof params.chatId === 'string' ? params.chatId : '';
-  const chatName = typeof params.name === 'string' ? params.name : 'Chat';
+  const friendId = typeof params.friendId === 'string' ? params.friendId : '';
 
   useEffect(() => {
-    if (!chatId) {
+    if (!friendId) {
       setMessages([]);
       return;
     }
@@ -33,9 +33,12 @@ export default function ChatScreen() {
     let active = true;
     const loadMessages = async () => {
       setLoading(true);
-      const items = await chatService.getMessages(chatId);
+      const paginatedData = await chatService.getChatMessages(friendId);
       if (active) {
-        setMessages(items);
+        setMessages(paginatedData.items);
+      }
+      if (friendId) {
+        await chatService.markChatMessageAsRead(friendId);
       }
       setLoading(false);
     };
@@ -45,7 +48,7 @@ export default function ChatScreen() {
     return () => {
       active = false;
     };
-  }, [chatId, chatService]);
+  }, [friendId, chatService]);
 
   const colors = useMemo(
     () => ({
@@ -60,11 +63,11 @@ export default function ChatScreen() {
   );
 
   const handleSend = async () => {
-    if (!chatId) return;
+    if (!friendId) return;
     const text = draft.trim();
     if (!text) return;
 
-    const message = await chatService.sendMessage(chatId, text);
+    const message = await chatService.sendChatMessage(friendId, text);
     setMessages((prev) => [...prev, message]);
     setDraft('');
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -81,7 +84,7 @@ export default function ChatScreen() {
           <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
-          <ThemedText style={[styles.chatTitle, { color: colors.primary }]} numberOfLines={1}>{chatName}</ThemedText>
+          <ThemedText style={[styles.chatTitle, { color: colors.primary }]} numberOfLines={1}>{friendId}</ThemedText>
           <ThemedText style={[styles.chatSubtitle, { color: colors.secondary }]}>Online</ThemedText>
         </View>
         <TouchableOpacity hitSlop={14} style={styles.callButton}>
@@ -98,17 +101,26 @@ export default function ChatScreen() {
           <ActivityIndicator style={styles.loading} size="small" color={colors.primary} />
         ) : (
           messages.map((message) => {
-            const isMine = message.sender === 'me';
+            const currentUserId = '00000000-0000-0000-0000-000000000000';
+            const isMine = message.senderId === currentUserId;
+            const displayTime = message.messageDateTimeUTC
+              ? new Date(message.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '';
+            const statusIcon = isMine
+              ? message.read
+                ? 'visibility'
+                : 'done-all'
+              : undefined;
             return (
               <View key={message.id} style={[styles.messageRow, isMine ? styles.messageRowRight : styles.messageRowLeft]}>
                 <View style={[styles.messageBubble, { backgroundColor: isMine ? colors.accent : colors.card, alignSelf: isMine ? 'flex-end' : 'flex-start' }]}> 
-                  <ThemedText style={[styles.messageText, { color: isMine ? '#FFFFFF' : colors.primary }]}>{message.text}</ThemedText>
+                  <ThemedText style={[styles.messageText, { color: '#FFFFFF' }]}>{message.textMessage}</ThemedText>
                   <View style={styles.messageFooter}>
-                    <ThemedText style={[styles.messageTime, { color: isMine ? 'rgba(255,255,255,0.8)' : colors.secondary }]}>{message.timestamp}</ThemedText>
+                    <ThemedText style={[styles.messageTime, { color: isMine ? 'rgba(255,255,255,0.8)' : colors.secondary }]}>{displayTime}</ThemedText>
                     <View style={styles.messageIcons}>
-                      {isMine && message.status ? (
+                      {statusIcon ? (
                         <MaterialIcons
-                          name={message.status === 'seen' ? 'visibility' : 'arrow-forward'}
+                          name={statusIcon}
                           size={14}
                           color={isMine ? '#FFFFFF' : colors.secondary}
                         />

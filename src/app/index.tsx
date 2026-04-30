@@ -1,279 +1,46 @@
-import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Link, type Href } from 'expo-router';
-import { ThemedText } from '@/components/themedText';
-import { useThemeContext } from '@/hooks/use-theme-context';
-import { useI18n } from '@/i18n';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
-const A = '#E85D04'; // accent — used sparingly
+const AUTH_USER_STORAGE_KEY = 'auth_user';
 
-function useSections() {
-  const { t } = useI18n();
-  return [
-    {
-      title: t.Title.marketplace,
-      icon: 'two-wheeler',
-      items: [
-        { label: t.Title.listing,     icon: 'two-wheeler',  link: '/marketplace' },
-        { label: t.Title.sell,        icon: 'sell',         link: '/marketplace/create' },
-        { label: t.Title.favorite,    icon: 'favorite',     link: '/marketplace/favorites' },
-        { label: t.Title.buyHistory,  icon: 'receipt-long', link: '/marketplace/buy-history' },
-        { label: t.Title.sellHistory, icon: 'history',      link: '/marketplace/sell-history' },
-        { label: t.Title.myItems,     icon: 'garage',       link: '/marketplace/my-items' },
-      ],
-    },
-    {
-      title: t.Title.tools,
-      icon: 'build',
-      items: [
-        { label: t.Title.reportStolen, icon: 'report-problem', link: '/tools/report-stolen' },
-        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/tools/vin-search' },
-        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/tools/stolen-list' },
-      ],
-    },
-    {
-      title: t.Title.travelMap,
-      icon: 'explore',
-      items: [
-        { label: t.Title.map, icon: 'explore', link: '/travel/map' },
-      ],
-    },
-    {
-      title: t.Title.newsUpdates,
-      icon: 'feed',
-      items: [
-        { label: t.Title.news,     icon: 'feed',         link: '/news' },
-        { label: t.Title.articles, icon: 'auto-stories', link: '/news/articles' },
-      ],
-    },
-    {
-      title: t.Title.community,
-      icon: 'groups',
-      items: [
-        { label: t.Title.blogs,  icon: 'forum', link: '/community/blogs' },
-        { label: t.Title.routes, icon: 'route', link: '/community/routes' },
-      ],
-    },
-  ];
-}
+export default function IndexScreen() {
+  const router = useRouter();
+  const { setAuthUser } = useAuthContext();
 
-export default function HomeScreen() {
-  const ins = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
-  const { t, fmt } = useI18n();
-  const sections = useSections();
-  const dk = isDark;
+  useEffect(() => {
+    async function checkAuth() {
+      const userJson = await SecureStore.getItemAsync(AUTH_USER_STORAGE_KEY);
+      if (userJson) {
+        try {
+          setAuthUser(JSON.parse(userJson));
+        } catch {
+          setAuthUser(null);
+        }
+        router.replace('/home' as any);
+      } else {
+        setAuthUser(null);
+        router.replace('/auth/signIn' as any);
+      }
+    }
 
-  const c = {
-    bg:      '#000000',
-    card:    dk ? '#333333' : '#FFFFFF',
-    border:  dk ? '#444444' : '#E0E0E0',
-    iconBg:  dk ? '#FFFFFF' : '#000000',
-    iconFg:  dk ? '#000000' : '#FFFFFF',
-    pri:     dk ? '#FFFFFF' : '#000000',
-    sec:     dk ? '#AAAAAA' : '#666666',
-    ter:     dk ? '#777777' : '#999999',
-    headPri: '#FFFFFF',
-  };
+    checkAuth();
+  }, [router]);
 
   return (
-    <View style={[$.root, { backgroundColor: c.bg }]}>
-
-      {/* ── header ── */}
-      <View style={[$.header, { paddingTop: ins.top + 8 }]}>
-        {/* top row — icons + logo */}
-        <View style={$.headerTop}>
-          <View style={$.headerSide}>
-            <Link href="/settings" asChild>
-              <TouchableOpacity hitSlop={12}>
-                <MaterialIcons name="tune" size={22} color={c.headPri} />
-              </TouchableOpacity>
-            </Link>
-            <Link href="/message/messages" asChild>
-              <TouchableOpacity hitSlop={12}>
-                <View>
-                  <MaterialIcons name="notifications-none" size={22} color={c.headPri} />
-                  <View style={$.bellDot} />
-                </View>
-              </TouchableOpacity>
-            </Link>
-          </View>
-          <ThemedText style={[$.logo, { color: c.headPri }]}>BIKERHUB</ThemedText>
-          <View style={$.headerSide}>
-            <Link href="/chat/chats" asChild>
-              <TouchableOpacity hitSlop={12}>
-                <MaterialIcons name="chat-bubble-outline" size={20} color={c.headPri} />
-              </TouchableOpacity>
-            </Link>
-            <TouchableOpacity hitSlop={12}>
-              <MaterialIcons name="person-outline" size={22} color={c.headPri} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* info row — welcome + weather */}
-        <View style={$.infoRow}>
-          <ThemedText style={[$.welcome, { color: c.headPri }]}>Welcome, MM Biker</ThemedText>
-          <View style={$.weatherRow}>
-            <MaterialIcons name="wb-sunny" size={14} color="#FFC107" />
-            <ThemedText style={$.weatherText}>34°C · Yangon</ThemedText>
-          </View>
-        </View>
-
-        {/* stats row */}
-        <View style={$.statsRow}>
-          <View style={$.statItem}>
-            <MaterialIcons name="two-wheeler" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>3</ThemedText>
-          </View>
-          <View style={[$.statDivider, { backgroundColor: '#333' }]} />
-          <View style={$.statItem}>
-            <MaterialIcons name="water-drop" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>3,000 Km</ThemedText>
-          </View>
-          <View style={[$.statDivider, { backgroundColor: '#333' }]} />
-          <View style={$.statItem}>
-            <MaterialIcons name="settings" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>5,000 Km</ThemedText>
-          </View>
-          <View style={[$.statDivider, { backgroundColor: '#333' }]} />
-          <View style={$.statItem}>
-            <MaterialIcons name="trip-origin" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>9,100 Km</ThemedText>
-          </View>
-        </View>
-      </View>
-
-      {/* ── body ── */}
-      <ScrollView
-        contentContainerStyle={[$.scroll, { paddingBottom: ins.bottom + 20 }]}
-        showsVerticalScrollIndicator={false}>
-        {sections.map((sec) => (
-          <View key={sec.title} style={[$.group, { backgroundColor: c.card, borderColor: c.border }]}>
-
-            {/* group header */}
-            <View style={$.groupHead}>
-              <MaterialIcons name={sec.icon as any} size={18} color={c.sec} />
-              <ThemedText style={[$.groupTitle, { color: c.pri }]}>{sec.title}</ThemedText>
-            </View>
-
-            <View style={[$.divider, { backgroundColor: c.border }]} />
-
-            {/* items grid — 3 columns */}
-            <View style={$.grid}>
-              {sec.items.map((item) => (
-                <Link key={item.label} href={item.link as Href} asChild>
-                  <TouchableOpacity style={$.tile} activeOpacity={0.5}>
-                    <View style={[$.tileIcon, { backgroundColor: c.iconBg }]}>
-                      <MaterialIcons name={item.icon as any} size={22} color={c.iconFg} />
-                    </View>
-                    <ThemedText style={[$.tileLabel, { color: c.pri }]} numberOfLines={2}>
-                      {item.label}
-                    </ThemedText>
-                  </TouchableOpacity>
-                </Link>
-              ))}
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+    <View style={styles.root}>
+      <ActivityIndicator size="large" />
     </View>
   );
 }
 
-const $ = StyleSheet.create({
-  root: { flex: 1 },
-
-  /* header */
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logo: { fontSize: 17, fontWeight: '700', letterSpacing: 3 },
-  headerSide: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  bellDot: {
-    position: 'absolute',
-    top: 1,
-    right: 1,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#FF3B30',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-  },
-  welcome: { fontSize: 15, fontWeight: '600' },
-  weatherRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  weatherText: { fontSize: 12, color: '#AAAAAA' },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    marginTop: 14,
-  },
-  statItem: { alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 14, fontWeight: '700' },
-  statDivider: { width: 1, height: 28 },
-
-  /* scroll */
-  scroll: { paddingHorizontal: 12, paddingTop: 8, gap: 8 },
-
-  /* group card */
-  group: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  groupHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  groupTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 12 },
-
-  /* grid */
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
-  tile: {
-    width: '33.33%',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  tileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
-  },
-  tileLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center',
-    lineHeight: 14,
+    backgroundColor: '#FFFFFF',
   },
 });
