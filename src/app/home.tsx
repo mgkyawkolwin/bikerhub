@@ -36,6 +36,7 @@ function useSections() {
       icon: 'explore',
       items: [
         { label: t.Title.map, icon: 'explore', link: '/travel/map' },
+        { label: t.Title.directory, icon: 'folder', link: '/directory/directory' },
       ],
     },
     {

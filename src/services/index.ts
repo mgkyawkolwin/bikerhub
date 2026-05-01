@@ -10,6 +10,8 @@ export type { NewsService } from './newsService';
 export { NewsServiceToken } from './newsService';
 export type { BlogService } from './blogService';
 export { BlogServiceToken } from './blogService';
+export type { DirectoryService } from './directoryService';
+export { DirectoryServiceToken } from './directoryService';
 export type { IChatService as ChatService } from './chatService';
 export { ChatServiceToken } from './chatService';
 export type { AuthService } from './authService';

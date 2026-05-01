@@ -28,6 +28,7 @@ const en = {
     myanmar: 'Myanmar',
     news: 'News',
     newsUpdates: 'News & Updates',
+    directory: 'Directory',
     phone: 'Phone',
     priceRange: 'Price Range',
     priceRangeMax: 'Price Max',

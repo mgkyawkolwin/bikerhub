@@ -8,6 +8,7 @@ import User from '@/models/user';
 import Message from '@/models/message';
 import type News from '../models/news';
 import type Blog from '../models/blog';
+import type Directory from '../models/directory';
 
 const DATABASE_FILE_NAME = 'mockdatax.json';
 const DATABASE_FILE = new File(Paths.document, DATABASE_FILE_NAME);
@@ -21,6 +22,7 @@ export type DatabaseCollections = {
   messages: Message[];
   news: News[];
   blogs: Blog[];
+  directories: Directory[];
   likes: { id: string; listingId: string; userId: string }[];
   ratingTotals: { id: string; listingId: string; ratingCount: number; ratingTotal: number }[];
 };

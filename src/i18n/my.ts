@@ -28,6 +28,7 @@ const my = {
     myanmar: 'မြန်မာ',
     news: 'သတင်း',
     newsUpdates: 'သတင်း & အပ်ဒိတ်',
+    directory: 'ဒိုင်ရက်ထရီ',
     phone: 'ဖုန်း',
     priceRange: 'စျေးနှုန်းအကွာအဝေး',
     priceRangeMax: 'အမြင့်ဆုံးစျေး',

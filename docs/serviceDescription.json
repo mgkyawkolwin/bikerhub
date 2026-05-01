@@ -1,0 +1,254 @@
+[
+    {
+        "serviceName": "AuthService",
+        "endPoints": [
+            {
+                "description": "Authenticate user with email and password.",
+                "method": "POST",
+                "path": "/api/auth/login",
+                "requestPayload": {
+                    "email": "string",
+                    "password": "string"
+                },
+                "response": {
+                    "success": "boolean",
+                    "message": "string",
+                    "data": {
+                        "userId": "string",
+                        "name": "string",
+                        "email": "string",
+                        "token": "string"
+                    }
+                }
+            },
+            {
+                "description": "Register a new user.",
+                "method": "POST",
+                "path": "/api/auth/register",
+                "requestPayload": {
+                    "name": "string",
+                    "email": "string",
+                    "password": "string"
+                },
+                "response": {
+                    "success": "boolean",
+                    "message": "string"
+                }
+            }
+        ]
+    },
+    {
+        "serviceName": "MessageService",
+        "endPoints": [
+            {
+                "description": "Get unread message count for a user.",
+                "method": "GET",
+                "path": "/api/messages/unreadcount/?userId={userId}",
+                "response": {
+                    "unreadCount": 5
+                }
+            },
+            {
+                "description": "Mark messages as read for a user.",
+                "method": "POST",
+                "path": "/api/messages/markread",
+                "requestPayload": {
+                    "userId": "string"
+                }
+            }
+        ]
+    },
+    {
+        "serviceName": "ListingService",
+        "endPoints": [
+            {
+                "description": "Get all listings.",
+                "method": "GET",
+                "path": "/api/listings",
+                "sampleData": [
+                    {
+                        "id": "b61a58fe-918d-4e42-b5f8-2c7d5a8d9999",
+                        "title": "Yamaha MT-15",
+                        "make": "Yamaha",
+                        "model": "MT-15",
+                        "year": 2022,
+                        "price": 4500000,
+                        "cc": 155,
+                        "type": "Sport",
+                        "sellerId": "5b8b2557-f016-4d44-a5bf-2b3f8a26d9f1",
+                        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+                        "mileage": "8,400 Km",
+                        "description": "A sharp sport bike with excellent handling and style.",
+                        "images": [
+                            "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+                        ],
+                        "isFavorite": true,
+                        "favoritesCount": 14,
+                        "isLiked": true,
+                        "likesCount": 5,
+                        "rating": 4.3,
+                        "ratingCount": 14
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "serviceName": "DirectoryService",
+        "endPoints": [
+            {
+                "description": "Get all directory listings.",
+                "method": "GET",
+                "path": "/api/directory",
+                "response": [
+                    {
+                        "id": "string",
+                        "name": "string",
+                        "address": "string",
+                        "city": "string",
+                        "state": "string",
+                        "phone": "string",
+                        "logoUrl": "string",
+                        "coverImageUrl": "string",
+                        "businessType": "string",
+                        "createdById": "string",
+                        "isLiked": "boolean",
+                        "likesCount": "number",
+                        "myRating": "number",
+                        "rating": "number",
+                        "ratingCount": "number"
+                    }
+                ]
+            },
+            {
+                "description": "Get directory listing details.",
+                "method": "GET",
+                "path": "/api/directory/{id}",
+                "response": {
+                    "id": "string",
+                    "name": "string",
+                    "address": "string",
+                    "city": "string",
+                    "state": "string",
+                    "phone": "string",
+                    "logoUrl": "string",
+                    "coverImageUrl": "string",
+                    "businessType": "string",
+                    "createdById": "string",
+                    "isLiked": "boolean",
+                    "likesCount": "number",
+                    "myRating": "number",
+                    "rating": "number",
+                    "ratingCount": "number"
+                }
+            },
+            {
+                "description": "Like a directory listing.",
+                "method": "POST",
+                "path": "/api/directory/{id}/like",
+                "requestPayload": {
+                    "userId": "string"
+                }
+            },
+            {
+                "description": "Rate a directory listing.",
+                "method": "POST",
+                "path": "/api/directory/{id}/rate",
+                "requestPayload": {
+                    "userId": "string",
+                    "rating": "number"
+                }
+            },
+            {
+                "description": "Submit a new directory listing.",
+                "method": "POST",
+                "path": "/api/directory",
+                "requestPayload": {
+                    "name": "string",
+                    "address": "string",
+                    "city": "string",
+                    "state": "string",
+                    "phone": "string",
+                    "logoUrl": "string",
+                    "coverImageUrl": "string",
+                    "businessType": "string",
+                    "createdById": "string"
+                },
+                "response": [
+                    {
+                        "id": "string",
+                        "name": "string",
+                        "address": "string",
+                        "city": "string",
+                        "state": "string",
+                        "phone": "string",
+                        "logoUrl": "string",
+                        "coverImageUrl": "string",
+                        "businessType": "string",
+                        "createdById": "string",
+                        "isLiked": "boolean",
+                        "likesCount": "number",
+                        "myRating": "number",
+                        "rating": "number",
+                        "ratingCount": "number"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "serviceName": "ChatService",
+        "endPoints": [
+            {
+                "description": "Get chat thread heads for a user.",
+                "method": "GET",
+                "path": "/api/chats/heads/?userId={userId}&page={page}&pageSize={pageSize}",
+                "response": [
+                    {
+                        "id": "string",
+                        "textMessage": "string",
+                        "messageDateTimeUTC": "string",
+                        "unreadCount": "number",
+                        "senderId": "string",
+                        "receiverId": "string",
+                        "name": "string",
+                        "profilePictureUrl": "string"
+                    }
+                ]
+            },
+            {
+                "description": "Get chat threads between a user and a friend.",
+                "method": "GET",
+                "path": "/api/chats/?userId={userId}&friendId={friendId}&page={page}&pageSize={pageSize}",
+                "response": [
+                    {
+                        "id": "string",
+                        "textMessage": "string",
+                        "messageDateTimeUTC": "string",
+                        "read": "boolean",
+                        "senderId": "string",
+                        "receiverId": "string",
+                        "name": "string",
+                        "profilePictureUrl": "string"
+                    }
+                ]
+            },
+            {
+                "description": "Send a message to another user.",
+                "method": "POST",
+                "path": "/api/chats",
+                "body": {
+                    "senderId": "string",
+                    "receiverId": "string",
+                    "textMessage": "string"
+                }
+            },
+            {
+                "description": "Mark messages as read.",
+                "method": "PATCH",
+                "path": "/api/chats/{chatId}/markread",
+                "body": {}
+            }
+        ]
+    }
+]
