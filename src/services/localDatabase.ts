@@ -23,6 +23,11 @@ export type DatabaseCollections = {
   news: News[];
   blogs: Blog[];
   directories: Directory[];
+  config?: {
+    businessTypes: string[];
+    cities: string[];
+    stateDivisions: string[];
+  };
   likes: { id: string; listingId: string; userId: string }[];
   ratingTotals: { id: string; listingId: string; ratingCount: number; ratingTotal: number }[];
 };

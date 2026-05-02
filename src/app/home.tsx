@@ -23,20 +23,13 @@ function useSections() {
       ],
     },
     {
-      title: t.Title.tools,
-      icon: 'build',
-      items: [
-        { label: t.Title.reportStolen, icon: 'report-problem', link: '/tools/report-stolen' },
-        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/tools/vin-search' },
-        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/tools/stolen-list' },
-      ],
-    },
-    {
       title: t.Title.travelMap,
       icon: 'explore',
       items: [
         { label: t.Title.map, icon: 'explore', link: '/travel/map' },
         { label: t.Title.directory, icon: 'folder', link: '/directory/directory' },
+        { label: t.Title.routes, icon: 'route', link: '/community/routes' },
+        { label: t.Title.submitBusiness, icon: 'business', link: '/directory/new' },
       ],
     },
     {
@@ -51,10 +44,20 @@ function useSections() {
       title: t.Title.community,
       icon: 'groups',
       items: [
-        { label: t.Title.blogs,  icon: 'forum', link: '/blog' },
-        { label: t.Title.routes, icon: 'route', link: '/community/routes' },
+        { label: t.Title.blogs,   icon: 'forum',              link: '/blog' },
+        { label: t.Title.forums,  icon: 'forum',              link: '/community/forums' },
+        { label: t.Title.chats,   icon: 'chat-bubble-outline', link: '/chat/chats' },
       ],
     },
+    {
+      title: t.Title.tools,
+      icon: 'build',
+      items: [
+        { label: t.Title.reportStolen, icon: 'report-problem', link: '/tools/report-stolen' },
+        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/tools/vin-search' },
+        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/tools/stolen-list' },
+      ],
+    }
   ];
 }
 

@@ -1,15 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
+import SearchInput from '@/components/searchInput';
 import { container } from '@/services';
-import { DirectoryServiceToken } from '@/services/directoryService';
-import type { DirectoryService } from '@/services/directoryService';
+import { DirectoryServiceToken, type DirectoryFilter, type DirectoryService } from '@/services/directoryService';
 import Directory from '@/models/directory';
+
+const getParamValue = (value?: string | string[]) => {
+  if (Array.isArray(value)) {
+    return value[0] ?? '';
+  }
+  return value ?? '';
+};
 
 export default function DirectoryScreen() {
   const insets = useSafeAreaInsets();
@@ -17,12 +24,17 @@ export default function DirectoryScreen() {
   const { t } = useI18n();
   const { isDark } = useThemeContext();
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
+  const params = useLocalSearchParams();
+  const paramBusinessType = getParamValue(params.businessType);
+  const paramCity = getParamValue(params.city);
+  const paramStateDivision = getParamValue(params.stateDivision);
 
   const [items, setItems] = useState<Directory[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const colors = useMemo(
     () => ({
@@ -36,11 +48,17 @@ export default function DirectoryScreen() {
     [isDark],
   );
 
+  const routeFilters = useMemo<DirectoryFilter>(() => ({
+    businessType: paramBusinessType || undefined,
+    city: paramCity || undefined,
+    stateDivision: paramStateDivision || undefined,
+  }), [paramBusinessType, paramCity, paramStateDivision]);
+
   const loadItems = useCallback(
-    async (pageNumber: number, reset = false) => {
+    async (pageNumber: number, reset = false, query = '', filters?: DirectoryFilter) => {
       setLoading(true);
       try {
-        const result = await directoryService.getDirectories(pageNumber, 10);
+        const result = await directoryService.getDirectories(pageNumber, 10, query, filters);
         setItems((prev) => (reset ? result.items : [...prev, ...result.items]));
         setPage(result.page);
         setTotal(result.total);
@@ -53,17 +71,30 @@ export default function DirectoryScreen() {
   );
 
   useEffect(() => {
-    void loadItems(1, true);
-  }, [loadItems]);
+    void loadItems(1, true, '', routeFilters);
+  }, [loadItems, routeFilters]);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      void loadItems(1, true, '', routeFilters);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void loadItems(1, true, searchQuery, routeFilters);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, loadItems, routeFilters]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    void loadItems(1, true);
+    void loadItems(1, true, searchQuery || '', routeFilters);
   };
 
   const handleEndReached = () => {
     if (!loading && items.length < total) {
-      void loadItems(page + 1);
+      void loadItems(page + 1, false, searchQuery || '', routeFilters);
     }
   };
 
@@ -101,6 +132,18 @@ export default function DirectoryScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
+        <View style={styles.searchPane}>
+          <SearchInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onClear={() => setSearchQuery('')}
+            placeholder="Search directory"
+          />
+          <TouchableOpacity onPress={() => router.push('/directory/directorySearch')} style={styles.filterButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <MaterialIcons name="filter-list" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
       <FlatList
         data={items}
@@ -124,10 +167,13 @@ export default function DirectoryScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'space-between' },
   title: { fontSize: 22, fontWeight: '700' },
+  searchPane: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   list: { paddingHorizontal: 16, gap: 12 },
   card: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  searchInput: { width: 160 },
+  filterButton: { padding: 6 },
   cardImage: { width: '100%', height: 180 },
   cardBody: { padding: 16, gap: 8 },
   cardTitle: { fontSize: 18, fontWeight: '700' },

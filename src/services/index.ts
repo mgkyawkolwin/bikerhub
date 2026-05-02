@@ -12,6 +12,8 @@ export type { BlogService } from './blogService';
 export { BlogServiceToken } from './blogService';
 export type { DirectoryService } from './directoryService';
 export { DirectoryServiceToken } from './directoryService';
+export type { ConfigService } from './configService';
+export { ConfigServiceToken } from './configService';
 export type { IChatService as ChatService } from './chatService';
 export { ChatServiceToken } from './chatService';
 export type { AuthService } from './authService';

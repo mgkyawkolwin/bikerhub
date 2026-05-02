@@ -121,6 +121,31 @@
         "ratingCount": 0
       }
     ],
+    "config": {
+      "businessTypes": [
+        "Repair Shop",
+        "Dealership",
+        "Accessories Store",
+        "Restaurant",
+        "Rental Service",
+        "Camp Site",
+        "Vacation Home"
+      ],
+      "cities": [
+        "Yangon",
+        "Mandalay",
+        "Naypyitaw",
+        "Bago",
+        "Taunggyi"
+      ],
+      "stateDivisions": [
+        "Yangon Region",
+        "Mandalay Region",
+        "Naypyitaw Union Territory",
+        "Bago Region",
+        "Shan State"
+      ]
+    },
     "users": [
       {
         "id": "00000000-0000-0000-0000-000000000000",
