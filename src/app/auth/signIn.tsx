@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     paddingTop: 48,
   },
   header: {
+    marginTop: 54,
     paddingBottom: 24,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },

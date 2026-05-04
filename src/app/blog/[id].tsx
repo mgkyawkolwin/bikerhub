@@ -51,18 +51,17 @@ export default function BlogDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+      <View style={styles.header}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.blogs}</ThemedText>
-        <View style={styles.headerSpacer} />
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {blog ? (
           <View style={[styles.page, { backgroundColor: colors.background }]}> 
             {blog.imageUrl ? <Image source={{ uri: blog.imageUrl }} style={styles.image} /> : null}
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <View style={styles.card}> 
               <ThemedText style={[styles.headline, { color: colors.primary }]}>{blog.title}</ThemedText>
               <View style={styles.metaRow}>
                 <MaterialIcons name="schedule" size={14} color={colors.secondary} />
@@ -87,13 +86,12 @@ export default function BlogDetailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
-  headerSpacer: { width: 22 },
+  header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'left' },
   content: { paddingHorizontal: 16, gap: 16 },
   page: { flex: 1, gap: 16 },
-  image: { width: '100%', height: 220, borderRadius: 18 },
-  card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12 },
+  image: { width: '100%', height: 220, borderRadius: 0 },
+  card: { borderRadius: 0, borderWidth: 0, padding: 16, gap: 12 },
   headline: { fontSize: 22, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaText: { fontSize: 12 },

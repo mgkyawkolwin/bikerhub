@@ -46,6 +46,7 @@ export default function BikeDetailScreen() {
     () => ({
       root: '#000000',
       header: '#000000',
+      headerText: '#FFFFFF',
       card: isDark ? '#121212' : '#FFFFFF',
       border: isDark ? '#232323' : '#E0E0E0',
       primary: isDark ? '#FFFFFF' : '#000000',
@@ -78,8 +79,10 @@ export default function BikeDetailScreen() {
 
   const handleRate = async (value: number) => {
     if (!listing?.id) return;
-    const ratingState = await marketplaceService.submitRating(listing.id, value);
-    
+    const updated = await marketplaceService.submitRating(listing.id, value);
+    if (updated) {
+      setListing(updated);
+    }
   };
 
   function handleChat() {
@@ -96,25 +99,25 @@ export default function BikeDetailScreen() {
           <ThemedText style={[styles.headerTitle, { color: '#FFFFFF' }]}>{t.Title.bikeDetail}</ThemedText>
         </View>
         <View style={styles.headerActions}>
-          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: listing?.isFavorite ? '#E85D04' : colors.card }]}> 
-            <ThemedText style={[styles.actionBadgeText, { color: listing?.isFavorite ? '#FFFFFF' : colors.secondary }]}>{listing?.favoritesCount ?? 0}</ThemedText>
+          <View style={styles.statAction}>
+            <MaterialIcons name="visibility" size={20} color={colors.headerText} />
+            <ThemedText style={[styles.countText, { color: colors.headerText }]}>{listing?.viewCount ?? 0}</ThemedText>
           </View>
-          <TouchableOpacity onPress={toggleFavorite} hitSlop={10}>
+          <TouchableOpacity style={styles.statAction} onPress={toggleFavorite} hitSlop={10}>
             <MaterialIcons
               name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
               size={20}
-              color={listing?.isFavorite ? '#E85D04' : '#FFFFFF'}
+              color={listing?.isFavorite ? '#E85D04' : colors.headerText}
             />
+            <ThemedText style={[styles.countText, { color: listing?.isFavorite ? '#E85D04' : colors.headerText }]}>{listing?.favoritesCount ?? 0}</ThemedText>
           </TouchableOpacity>
-          <View style={[styles.actionBadge, { borderColor: colors.border, backgroundColor: listing?.isLiked ? '#E85D04' : colors.card }]}> 
-            <ThemedText style={[styles.actionBadgeText, { color: listing?.isLiked ? '#FFFFFF' : colors.secondary }]}>{listing?.likeCount ?? 0}</ThemedText>
-          </View>
-          <TouchableOpacity onPress={toggleLike} hitSlop={10}>
+          <TouchableOpacity style={styles.statAction} onPress={toggleLike} hitSlop={10}>
             <MaterialIcons
               name={listing?.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
               size={20}
-              color={listing?.isLiked ? '#E85D04' : '#FFFFFF'}
+              color={listing?.isLiked ? '#E85D04' : colors.headerText}
             />
+            <ThemedText style={[styles.countText, { color: listing?.isLiked ? '#E85D04' : colors.headerText }]}>{listing?.likeCount ?? 0}</ThemedText>
           </TouchableOpacity>
         </View>
       </View>
@@ -235,7 +238,16 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+  },
+  statAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  countText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 18,
@@ -257,24 +269,22 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    gap: 16,
+    gap: 8,
   },
   imageWrapper: {
     width: '100%',
     height: 260,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 16,
+    overflow: 'hidden'
   },
   group: {
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
-    padding: 16,
-    marginBottom: 16,
+    padding: 16
   },
   carousel: {
     width: '100%',
@@ -292,19 +302,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    marginBottom: 6,
   },
   price: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 16,
   },
   section: {
     gap: 10,
-    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     marginBottom: 10,
   },
@@ -334,14 +341,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    marginBottom: 8,
   },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#999999',
   },
   value: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
   buttonRow: {

@@ -28,7 +28,7 @@ function useSections() {
       items: [
         { label: t.Title.map, icon: 'explore', link: '/travel/map' },
         { label: t.Title.directory, icon: 'folder', link: '/directory/directory' },
-        { label: t.Title.routes, icon: 'route', link: '/community/routes' },
+        { label: t.Title.routes, icon: 'route', link: '/route' },
         { label: t.Title.submitBusiness, icon: 'business', link: '/directory/new' },
       ],
     },
@@ -45,7 +45,7 @@ function useSections() {
       icon: 'groups',
       items: [
         { label: t.Title.blogs,   icon: 'forum',              link: '/blog' },
-        { label: t.Title.forums,  icon: 'forum',              link: '/community/forums' },
+        { label: t.Title.forums,  icon: 'forum',              link: '/forum' },
         { label: t.Title.chats,   icon: 'chat-bubble-outline', link: '/chat/chats' },
       ],
     },
@@ -53,9 +53,9 @@ function useSections() {
       title: t.Title.tools,
       icon: 'build',
       items: [
-        { label: t.Title.reportStolen, icon: 'report-problem', link: '/tools/report-stolen' },
-        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/tools/vin-search' },
-        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/tools/stolen-list' },
+        { label: t.Title.reportStolen, icon: 'report-problem', link: '/blank' },
+        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/blank' },
+        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/blank' },
       ],
     }
   ];
@@ -110,9 +110,11 @@ export default function HomeScreen() {
                 <MaterialIcons name="chat-bubble-outline" size={20} color={c.headPri} />
               </TouchableOpacity>
             </Link>
-            <TouchableOpacity hitSlop={12}>
-              <MaterialIcons name="person-outline" size={22} color={c.headPri} />
-            </TouchableOpacity>
+            <Link href="/profile" asChild>
+              <TouchableOpacity hitSlop={12}>
+                <MaterialIcons name="person-outline" size={22} color={c.headPri} />
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
 

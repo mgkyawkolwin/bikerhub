@@ -154,9 +154,6 @@ export default function MarketplaceScreen() {
           <View style={styles.cardHeader}>
             <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
             <View style={styles.favoriteWrapper}>
-              <View style={[styles.favoriteCountBadge, { borderColor: colors.border, backgroundColor: item.isFavorite ? '#E85D04' : colors.card }]}> 
-                <ThemedText style={[styles.favoriteCountText, { color: item.isFavorite ? '#FFFFFF' : colors.secondary }]}>{item.favoritesCount ?? 0}</ThemedText>
-              </View>
               <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
                 <MaterialIcons
                   name={item.isFavorite ? 'favorite' : 'favorite-border'}
@@ -164,6 +161,7 @@ export default function MarketplaceScreen() {
                   color={item.isFavorite ? '#E85D04' : colors.secondary}
                 />
               </TouchableOpacity>
+              <ThemedText style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondary }]}>{item.favoritesCount ?? 0}</ThemedText>
             </View>
           </View>
           <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
@@ -176,17 +174,21 @@ export default function MarketplaceScreen() {
               <MaterialIcons name="location-on" size={14} color={colors.secondary} />
               <ThemedText style={[styles.cardLocationText, { color: colors.secondary }]}>{item.location}</ThemedText>
             </View>
-            <View style={styles.likeWrapper}> 
-              <View style={[styles.likeCountBadge, { borderColor: colors.border, backgroundColor: item.isLiked ? '#E85D04' : colors.card }]}> 
-                <ThemedText style={[styles.likeCountText, { color: item.isLiked ? '#FFFFFF' : colors.secondary }]}>{item.likeCount ?? 0}</ThemedText>
+            <View style={styles.statsRow}>
+              <View style={styles.viewsWrapper}>
+                <MaterialIcons name="visibility" size={16} color={colors.secondary} />
+                <ThemedText style={[styles.countText, { color: colors.secondary }]}>{item.viewCount ?? 0}</ThemedText>
               </View>
-              <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
-                <MaterialIcons
-                  name={item.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
-                  size={22}
-                  color={item.isLiked ? '#E85D04' : colors.secondary}
-                />
-              </TouchableOpacity>
+              <View style={styles.likeWrapper}> 
+                <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
+                  <MaterialIcons
+                    name={item.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
+                    size={22}
+                    color={item.isLiked ? '#E85D04' : colors.secondary}
+                  />
+                </TouchableOpacity>
+                <ThemedText style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondary }]}>{item.likeCount ?? 0}</ThemedText>
+              </View>
             </View>
           </View>
         </View>
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 4,
@@ -272,6 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginRight: 12,
+    paddingVertical: 8,
   },
   favoriteWrapper: {
     flexDirection: 'row',
@@ -296,10 +299,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  viewsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewCountText: {
+    fontSize: 13,
+  },
   likeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  countText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   likeCountBadge: {
     minWidth: 24,

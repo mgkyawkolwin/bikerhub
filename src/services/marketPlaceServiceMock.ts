@@ -101,6 +101,8 @@ export class MockMarketPlaceService implements MarketplaceService, StolenBikeSer
       ratingCount: row.ratingCount ?? 0,
       favoritesCount: row.favoritesCount ?? 0,
       likeCount: row.likeCount ?? 0,
+      viewCount: row.viewCount ?? 0,
+      isFavorite: row.isFavorite ?? false,
       images: Array.isArray(row.images)
         ? row.images
         : typeof row.images === 'string'
@@ -155,7 +157,7 @@ export class MockMarketPlaceService implements MarketplaceService, StolenBikeSer
 
     return {
       ...item,
-      favoritesCount: item.isFavorite ? 1 : 0,
+      favoritesCount: item.favoritesCount ?? 0,
       likeCount,
       rating: rating.value,
       ratingCount: rating.count,
@@ -316,20 +318,22 @@ export class MockMarketPlaceService implements MarketplaceService, StolenBikeSer
 
     const db = await this.getDb();
     const existing = db.collections.listings.find((entry) => entry.id === listingId);
-    const currentCount = existing?.ratingCount ?? 0;
-    const currentTotal = existing?.rating ?? 0;
-    const nextCount = currentCount + 1;
-    const nextTotal = currentTotal + rating;
+    const ratingRow = db.collections.ratingTotals.find((entry) => entry.listingId === listingId);
+
+    if (ratingRow) {
+      ratingRow.ratingCount += 1;
+      ratingRow.ratingTotal += rating;
+    } else {
+      db.collections.ratingTotals.push({ id: generateId(), listingId, ratingCount: 1, ratingTotal: rating });
+    }
 
     if (existing) {
-      existing.ratingCount = nextCount;
-      existing.rating = nextTotal;
-    } else {
-      db.collections.ratingTotals.push({ id: generateId(), listingId, ratingCount: nextCount, ratingTotal: nextTotal });
+      existing.ratingCount = (existing.ratingCount ?? 0) + 1;
+      existing.rating = (existing.rating ?? 0) + rating;
     }
 
     await saveDatabase(db);
-    return existing;
+    return this.getListingById(listingId);
   }
 
   async getReports() {

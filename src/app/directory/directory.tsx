@@ -35,6 +35,7 @@ export default function DirectoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchBar, setShowSearchBar] = useState(false);
 
   const colors = useMemo(
     () => ({
@@ -131,20 +132,40 @@ export default function DirectoryScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
-        <View style={styles.searchPane}>
-          <SearchInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClear={() => setSearchQuery('')}
-            placeholder="Search directory"
-          />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
+        </View>
+        <View style={styles.headerRightIcons}>
+          <TouchableOpacity onPress={() => setShowSearchBar(true)} style={styles.iconButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <MaterialIcons name="search" size={24} color={colors.primary} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/directory/directorySearch')} style={styles.filterButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <MaterialIcons name="filter-list" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
+      {showSearchBar ? (
+        <View style={[styles.searchBarRow, { borderBottomColor: colors.border, backgroundColor: colors.card }]}> 
+          <SearchInput
+            style={styles.searchInputExpanded}
+            value={searchQuery}
+            onChangeText={(value) => {
+              setSearchQuery(value);
+              if (!value.trim()) {
+                setShowSearchBar(false);
+              }
+            }}
+            onClear={() => {
+              setSearchQuery('');
+              setShowSearchBar(false);
+            }}
+            placeholder="Search directory"
+          />
+        </View>
+      ) : null}
       <FlatList
         data={items}
         keyExtractor={(item) => item.id ?? ''}
@@ -168,18 +189,24 @@ export default function DirectoryScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'space-between' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backButton: { padding: 8 },
   title: { fontSize: 22, fontWeight: '700' },
   searchPane: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerRightIcons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconButton: { padding: 8 },
+  searchBarRow: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  searchInputExpanded: { width: '100%' },
   list: { paddingHorizontal: 16, gap: 12 },
-  card: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden' },
   searchInput: { width: 160 },
   filterButton: { padding: 6 },
   cardImage: { width: '100%', height: 180 },
   cardBody: { padding: 16, gap: 8 },
   cardTitle: { fontSize: 18, fontWeight: '700' },
-  cardSummary: { fontSize: 14, lineHeight: 20 },
-  cardAddress: { fontSize: 13, lineHeight: 18 },
-  cardFooter: { paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  cardSummary: { fontSize: 14, lineHeight: 10 },
+  cardAddress: { fontSize: 13, lineHeight: 10 },
+  cardFooter: { paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12 },
   emptyState: { paddingTop: 60, alignItems: 'center' },

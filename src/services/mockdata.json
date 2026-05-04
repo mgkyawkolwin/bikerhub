@@ -1,5 +1,40 @@
 {
   "collections": {
+    "routes": [
+      {
+        "id": "route-1",
+        "name": "Yangon to Mandalay",
+        "description": "A scenic route through the heart of Myanmar, passing by ancient temples, bustling markets, and picturesque countryside.",
+        "distance": "600 Km",
+        "duration": "12 hours",
+        "type": "Off-road",
+        "gpxUrl": "https://example.com/routes/yangon-mandalay.gpx",
+        "createdById": "00000000-0000-0000-0000-000000000000",
+        "createdByName": "Mr.Biker"
+      },
+      {
+        "id": "route-2",
+        "name": "Mandalay to Naypyitaw",
+        "description": "A smooth highway route connecting the cultural capital to the administrative center, with stops at historical sites and local eateries.",
+        "distance": "350 Km",
+        "duration": "6 hours",
+        "type": "Highway",
+        "gpxUrl": "https://example.com/routes/mandalay-naypyitaw.gpx",
+        "createdById": "00000000-0000-0000-0000-000000000000",
+        "createdByName": "Shadow Biker"
+      },
+      {
+        "id": "route-3",
+        "name": "Naypyitaw to Bago",
+        "description": "A mix of urban and rural roads leading to the historic city of Bago, known for its pagodas and vibrant culture.",
+        "distance": "200 Km",
+        "duration": "4 hours",
+        "type": "Mixed",
+        "gpxUrl": "https://example.com/routes/naypyitaw-bago.gpx",
+        "createdById": "00000000-0000-0000-0000-000000000000",
+        "createdByName": "Thiri"
+      }
+    ],
     "directories": [
       {
         "id": "dir-1",
@@ -8,8 +43,8 @@
         "city": "Yangon",
         "state": "Yangon Region",
         "phone": "+95 9 123456789",
-        "logoUrl": "https://example.com/logos/aung-chan-myae.jpg",
-        "coverImageUrl": "https://example.com/covers/aung-chan-myae.jpg",
+        "logoUrl": "https://images.unsplash.com/photo-1771402629441-95e637743f93?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "coverImageUrl": "https://images.unsplash.com/photo-1771402629441-95e637743f93?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "businessType": "Repair Shop",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": true,
@@ -26,7 +61,7 @@
         "state": "Mandalay Region",
         "phone": "+95 9 987654321",
         "logoUrl": "https://example.com/logos/mandalay-motorcycles.jpg",
-        "coverImageUrl": "https://example.com/covers/mandalay-motorcycles.jpg",
+        "coverImageUrl": "https://images.unsplash.com/photo-1685633224638-be30887953ca?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8bW90b3JiaWtlJTIwZGVhbGVyfGVufDB8fDB8fHww",
         "businessType": "Dealership",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": false,
@@ -43,7 +78,7 @@
         "state": "Naypyitaw Union Territory",
         "phone": "+95 9 555555555",
         "logoUrl": "https://example.com/logos/thiri-accessories.jpg",
-        "coverImageUrl": "https://example.com/covers/thiri-accessories.jpg",
+        "coverImageUrl": "https://images.unsplash.com/photo-1769539180804-017d1ed447a8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fG1vdG9yYmlrZSUyMGFjY2Vzc29yaWVzfGVufDB8fDB8fHww",
         "businessType": "Accessories Store",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": false,
@@ -60,7 +95,7 @@
         "state": "Bago Region",
         "phone": "+95 9 444444444",
         "logoUrl": "https://example.com/logos/heavenly-food-bago.jpg",
-        "coverImageUrl": "https://example.com/covers/heavenly-food-bago.jpg",
+        "coverImageUrl": "https://plus.unsplash.com/premium_photo-1661883237884-263e8de8869b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cmVzdGF1cmFudHxlbnwwfHwwfHx8MA%3D%3D",
         "businessType": "Restaurant",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": true,
@@ -77,7 +112,7 @@
         "state": "Shan State",
         "phone": "+95 9 333333333",
         "logoUrl": "https://example.com/logos/saw-htun-rentals.jpg",
-        "coverImageUrl": "https://example.com/covers/saw-htun-rentals.jpg",
+        "coverImageUrl": "https://plus.unsplash.com/premium_photo-1661884049104-9d79c968a64c?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bW90b3JjeWNsZSUyMHJlbnRhbHxlbnwwfHwwfHx8MA%3D%3D",
         "businessType": "Rental Service",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": false,
@@ -94,7 +129,7 @@
         "state": "Yangon Region",
         "phone": "+95 9 222222222",
         "logoUrl": "https://example.com/logos/the-stream-camping.jpg",
-        "coverImageUrl": "https://example.com/covers/the-stream-camping.jpg",
+        "coverImageUrl": "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2FtcGluZ3xlbnwwfHwwfHx8MA%3D%3D",
         "businessType": "Camp Site",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": true,
@@ -111,7 +146,7 @@
         "state": "Yangon Region",
         "phone": "+95 9 222222222",
         "logoUrl": "https://example.com/logos/jungle-house.jpg",
-        "coverImageUrl": "https://example.com/covers/jungle-house.jpg",
+        "coverImageUrl": "https://images.unsplash.com/photo-1544646280-e243b3ab7d1e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8anVuZ2xlJTIwaG91c2V8ZW58MHx8MHx8fDA%3D",
         "businessType": "Vacation Home",
         "createdById": "00000000-0000-0000-0000-000000000000",
         "isLiked": false,
@@ -213,18 +248,19 @@
         "cc": 155,
         "type": "Sport",
         "sellerId": "5b8b2557-f016-4d44-a5bf-2b3f8a26d9f1",
-        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mileage": "8,400 Km",
         "description": "A sharp sport bike with excellent handling and style.",
         "images": [
-          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+          "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         ],
         "isFavorite": true,
         "favoritesCount": 14,
         "isLiked": true,
         "likesCount": 5,
         "rating": 4.3,
-        "ratingCount": 14
+        "ratingCount": 14,
+        "viewCount": 120
       },
       {
         "id": "4b1d24d9-20c4-4bb5-9489-3e7f26ecd4d2",
@@ -236,18 +272,19 @@
         "cc": 471,
         "type": "Adventure",
         "sellerId": "c4b3ab22-32a4-4f31-bb1f-2bf44e95fea6",
-        "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1508357941501-0924cf312bbd?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mileage": "12,200 Km",
         "description": "Comfortable touring-ready adventure bike with dependable Honda quality.",
         "images": [
-          "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80"
+          "https://images.unsplash.com/photo-1508357941501-0924cf312bbd?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         ],
         "isFavorite": false,
         "favoritesCount": 8,
         "isLiked": true,
         "likesCount": 3,
         "rating": 4.0,
-        "ratingCount": 8
+        "ratingCount": 8,
+        "viewCount": 95
       },
       {
         "id": "c1d91f44-1b3d-4f85-8a60-692aed5941b3",
@@ -259,18 +296,19 @@
         "cc": 349,
         "type": "Cruiser",
         "sellerId": "e7c529a1-5c3f-4e54-8d8f-7abbbcfec735",
-        "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1515777315835-281b94c9589f?q=80&w=2112&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mileage": "4,500 Km",
         "description": "Iconic cruiser with timeless styling and smooth ride quality.",
         "images": [
-          "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80"
+          "https://images.unsplash.com/photo-1515777315835-281b94c9589f?q=80&w=2112&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         ],
         "isFavorite": false,
         "favoritesCount": 20,
         "isLiked": false,
         "likesCount": 2,
         "rating": 4.5,
-        "ratingCount": 20
+        "ratingCount": 20,
+        "viewCount": 150
       },
       {
         "id": "a37d1b7d-3d63-4fb6-b8c9-9a5d5bbd430c",
@@ -282,18 +320,19 @@
         "cc": 649,
         "type": "Standard",
         "sellerId": "1a8d7f30-c741-44f0-9316-f4b1a2e55d01",
-        "imageUrl": "https://images.unsplash.com/photo-1519937947077-74f88bc7ee82?auto=format&fit=crop&w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mileage": "9,100 Km",
         "description": "Nimble street bike with strong torque and confident mid-range power.",
         "images": [
-          "https://images.unsplash.com/photo-1519937947077-74f88bc7ee82?auto=format&fit=crop&w=1200&q=80"
+          "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         ],
         "isFavorite": false,
         "favoritesCount": 0,
         "isLiked": false,
         "likesCount": 0,
         "rating": 0,
-        "ratingCount": 0
+        "ratingCount": 0,
+        "viewCount": 0
       },
       {
         "id": "9da89fb2-e981-4cba-8ba1-1e2b1017c5a7",
@@ -305,18 +344,19 @@
         "cc": 1170,
         "type": "Custom",
         "sellerId": "2e13f019-8dee-4b82-86e7-5581f36ad5b1",
-        "imageUrl": "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=800&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1580310614729-ccd69652491d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mileage": "2,000 Km",
         "description": "Premium naked roadster with classic design and modern performance.",
         "images": [
-          "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=1200&q=80"
+          "https://images.unsplash.com/photo-1580310614729-ccd69652491d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         ],
         "isFavorite": false,
         "favoritesCount": 0,
         "isLiked": false,
         "likesCount": 0,
         "rating": 0,
-        "ratingCount": 0
+        "ratingCount": 0,
+        "viewCount": 0
       }
     ],
     "reports": [
@@ -473,6 +513,74 @@
         "imageUrl": "https://images.unsplash.com/photo-1514464142261-8f31de6dea63?auto=format&fit=crop&w=1200&q=80",
         "author": "BikerHub Insights",
         "dateTimeUTC": "2026-04-26T16:30:00Z"
+      }
+    ],
+    "forums": [
+      {
+        "id": "forum-1",
+        "title": "Best route from Yangon to Bagan?",
+        "author": "Khin",
+        "postedAt": "2026-05-02T09:15:00Z",
+        "category": "Route Advice",
+        "views": 182,
+        "excerpt": "Looking for a scenic and safe route from Yangon to Bagan, preferably with good stops along the way.",
+        "tags": ["route", "bagan", "advice"],
+        "replies": [
+          {
+            "id": "reply-1",
+            "author": "Aung",
+            "postedAt": "2026-05-02T10:00:00Z",
+            "content": "Take the Pyay route in the dry season. The road is smoother and there are good food stops."
+          },
+          {
+            "id": "reply-2",
+            "author": "May",
+            "postedAt": "2026-05-02T11:25:00Z",
+            "content": "Avoid the inland road during monsoon; it gets muddy. Take the highway and stop at Myinmu for a break."
+          }
+        ]
+      },
+      {
+        "id": "forum-2",
+        "title": "Recommended bike maintenance shops in Mandalay",
+        "author": "Saw",
+        "postedAt": "2026-05-03T12:00:00Z",
+        "category": "Maintenance",
+        "views": 97,
+        "excerpt": "Need suggestions for a trusted mechanic in Mandalay who can service chain and brakes quickly.",
+        "tags": ["maintenance", "mandalay", "service"],
+        "replies": [
+          {
+            "id": "reply-3",
+            "author": "Thida",
+            "postedAt": "2026-05-03T12:45:00Z",
+            "content": "I use Kyi Kyi Garage on 34th St. They are fast and fair with prices."
+          }
+        ]
+      },
+      {
+        "id": "forum-3",
+        "title": "What tires work best for mixed roads?",
+        "author": "Hla",
+        "postedAt": "2026-05-04T14:20:00Z",
+        "category": "Equipment",
+        "views": 64,
+        "excerpt": "Looking for a tire recommendation for routes that mix pavement and gravel.",
+        "tags": ["tires", "equipment", "gravel"],
+        "replies": [
+          {
+            "id": "reply-4",
+            "author": "Nay",
+            "postedAt": "2026-05-04T15:10:00Z",
+            "content": "Try a touring dual-sport tire with a balanced tread — it handles both surfaces well."
+          },
+          {
+            "id": "reply-5",
+            "author": "Su",
+            "postedAt": "2026-05-04T15:55:00Z",
+            "content": "I like the Pirelli Scorpion Rally STR for mixed routes; it still feels stable on asphalt."
+          }
+        ]
       }
     ],
     "likes": [

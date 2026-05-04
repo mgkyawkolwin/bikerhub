@@ -10,5 +10,6 @@ export interface MarketplaceService {
   createListing(listing: BikeListing): Promise<BikeListing>;
   toggleFavorite(listingId: string): Promise<void>;
   toggleLike(listingId: string): Promise<void>;
+  getFavorites(): Promise<BikeListing[]>;
   submitRating(listingId: string, rating: number): Promise<BikeListing | undefined>;
 }

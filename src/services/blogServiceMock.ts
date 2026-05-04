@@ -1,7 +1,7 @@
 import Blog from '@/models/blog';
 import type { PaginatedResult } from '@/models/paginatedResult';
 import type { BlogService } from './blogService';
-import { getDatabase } from './localDatabase';
+import { getDatabase, saveDatabase } from './localDatabase';
 
 function paginate<T>(items: T[], page: number, pageSize: number): PaginatedResult<T> {
   const total = items.length;
@@ -35,5 +35,20 @@ export class MockBlogService implements BlogService {
   async getBlogById(id: string): Promise<Blog | undefined> {
     const db = await this.getDb();
     return (db.collections.blogs as Blog[] | undefined)?.find((item) => item.id === id);
+  }
+
+  async createBlog(blog: Blog): Promise<Blog> {
+    const db = await this.getDb();
+    const newBlog: Blog = {
+      ...blog,
+      id: String(Date.now()),
+      dateTimeUTC: blog.dateTimeUTC ?? new Date().toISOString(),
+    };
+    if (!db.collections.blogs) {
+      db.collections.blogs = [] as Blog[];
+    }
+    db.collections.blogs.push(newBlog);
+    await saveDatabase(db);
+    return newBlog;
   }
 }

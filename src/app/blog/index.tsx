@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
@@ -52,9 +53,11 @@ export default function BlogScreen() {
     [blogService],
   );
 
-  useEffect(() => {
-    void loadBlogs(1, true);
-  }, [loadBlogs]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadBlogs(1, true);
+    }, [loadBlogs]),
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -97,7 +100,14 @@ export default function BlogScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+        <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+        </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.blogs}</ThemedText>
+        <View style={styles.spacer} />
+        <TouchableOpacity onPress={() => router.push('/blog/create')} style={[styles.writeButton, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
+          <ThemedText style={styles.writeButtonText}>Write Blog</ThemedText>
+        </TouchableOpacity>
       </View>
       <FlatList
         data={blogs}
@@ -121,8 +131,12 @@ export default function BlogScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backButton: { padding: 8 },
   title: { fontSize: 22, fontWeight: '700' },
+  spacer: { flex: 1 },
+  writeButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 18 },
+  writeButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   list: { paddingHorizontal: 16, gap: 12 },
   card: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
   cardImage: { width: '100%', height: 180 },

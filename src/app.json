@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "ride-hub",
-    "slug": "ride-hub",
+    "name": "Biker Hub",
+    "slug": "bikerhub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ridehub",
+    "scheme": "bikerhub",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.cluspedia.ridehub",
+      "package": "com.cluspedia.bikerhub",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

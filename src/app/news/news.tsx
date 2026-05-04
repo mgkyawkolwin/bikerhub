@@ -104,6 +104,9 @@ export default function NewsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+        <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
+          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+        </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.news}</ThemedText>
       </View>
       <FlatList
@@ -134,6 +137,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   title: {
     fontSize: 22,

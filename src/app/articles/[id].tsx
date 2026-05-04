@@ -51,18 +51,17 @@ export default function NewsArticleDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+      <View style={styles.header}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.articles}</ThemedText>
-        <View style={styles.headerSpacer} />
+        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Article</ThemedText>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {article ? (
           <View style={[styles.page, { backgroundColor: colors.background }]}> 
             {article.imageUrl ? <Image source={{ uri: article.imageUrl }} style={styles.image} /> : null}
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <View style={styles.textBlock}> 
               <ThemedText style={[styles.headline, { color: colors.primary }]}>{article.headline}</ThemedText>
               <View style={styles.metaRow}>
                 <MaterialIcons name="schedule" size={14} color={colors.secondary} />
@@ -94,20 +93,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'flex-start',
+    gap: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 22,
+    textAlign: 'left',
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     gap: 16,
   },
   page: {
@@ -117,12 +112,10 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 220,
-    borderRadius: 18,
+    borderRadius: 0,
   },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
+  textBlock: {
+    paddingHorizontal: 16,
     gap: 12,
   },
   headline: {

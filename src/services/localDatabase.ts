@@ -8,7 +8,9 @@ import User from '@/models/user';
 import Message from '@/models/message';
 import type News from '../models/news';
 import type Blog from '../models/blog';
+import type ForumPost from '../models/forumPost';
 import type Directory from '../models/directory';
+import type Route from '../models/route';
 
 const DATABASE_FILE_NAME = 'mockdatax.json';
 const DATABASE_FILE = new File(Paths.document, DATABASE_FILE_NAME);
@@ -22,7 +24,9 @@ export type DatabaseCollections = {
   messages: Message[];
   news: News[];
   blogs: Blog[];
+  forums: ForumPost[];
   directories: Directory[];
+  routes: Route[];
   config?: {
     businessTypes: string[];
     cities: string[];
