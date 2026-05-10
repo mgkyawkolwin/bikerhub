@@ -105,7 +105,7 @@ export default function RouteListScreen() {
           style={[styles.downloadButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
           activeOpacity={0.8}
         >
-          <ThemedText style={styles.downloadText}>{t.Title.downloadGpx}</ThemedText>
+          <ThemedText style={styles.downloadText}>Open</ThemedText>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -119,7 +119,7 @@ export default function RouteListScreen() {
         </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.routes}</ThemedText>
         <TouchableOpacity style={styles.headerAction} onPress={() => router.push('/route/create')}>
-          <ThemedText style={[styles.headerButton, {backgroundColor: colors.accent}]}>{t.Title.uploadRoute}</ThemedText>
+          <ThemedText style={[styles.headerButton, {backgroundColor: colors.accent}]}>Record Ride</ThemedText>
         </TouchableOpacity>
       </View>
       <FlatList

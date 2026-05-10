@@ -9,8 +9,12 @@ import Message from '@/models/message';
 import type News from '../models/news';
 import type Blog from '../models/blog';
 import type ForumPost from '../models/forumPost';
+import type SocialPost from '../models/socialPost';
 import type Directory from '../models/directory';
 import type Route from '../models/route';
+import type Group from '../models/group';
+import type Challenge from '../models/challenge';
+import type SocialProfile from '../models/socialProfile';
 
 const DATABASE_FILE_NAME = 'mockdatax.json';
 const DATABASE_FILE = new File(Paths.document, DATABASE_FILE_NAME);
@@ -27,6 +31,10 @@ export type DatabaseCollections = {
   forums: ForumPost[];
   directories: Directory[];
   routes: Route[];
+  socialPosts: SocialPost[];
+  socialProfiles: SocialProfile[];
+  groups: Group[];
+  challenges: Challenge[];
   config?: {
     businessTypes: string[];
     cities: string[];

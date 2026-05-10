@@ -515,6 +515,277 @@
         "dateTimeUTC": "2026-04-26T16:30:00Z"
       }
     ],
+    "socialPosts": [
+      {
+        "id": "post-1",
+        "authorId": "user-1",
+        "authorName": "Khin Zaw",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-1",
+        "content": "Rode the new mountain trail today and the views were insane. Highly recommend this route for anyone with a dual-sport bike.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1519947486511-46149fa0a254?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 129,
+        "commentCount": 24,
+        "shareCount": 12,
+        "createdAt": "2026-05-09T10:24:00Z"
+      },
+      {
+        "id": "post-2",
+        "authorId": "user-2",
+        "authorName": "Mya Lin",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-1",
+        "content": "First group ride with the crew this season — perfect weather, perfect grip, and the cafe stop was worth every kilometer.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1498579809087-ef1e558fd1d1?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 210,
+        "commentCount": 42,
+        "shareCount": 18,
+        "createdAt": "2026-05-08T16:12:00Z"
+      },
+      {
+        "id": "post-3",
+        "authorId": "user-3",
+        "authorName": "Aung Ko",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-2",
+        "content": "Wish the roads were a bit less crowded today, but the ride was still refreshing. Who else is planning a long weekend journey?",
+        "imageUrls": [],
+        "loveCount": 88,
+        "commentCount": 15,
+        "shareCount": 5,
+        "createdAt": "2026-05-07T09:45:00Z"
+      },
+      {
+        "id": "post-4",
+        "authorId": "user-4",
+        "authorName": "Ei Mon",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-4",
+        "content": "Found this hidden coastal road — smooth asphalt, ocean breeze, and zero traffic. Perfect sunrise ride.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 176,
+        "commentCount": 29,
+        "shareCount": 9,
+        "createdAt": "2026-05-06T05:52:00Z"
+      },
+      {
+        "id": "post-5",
+        "authorId": "user-5",
+        "authorName": "Nyein Thiri",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-3",
+        "content": "The new exhaust upgrade sounds amazing. Anyone else here running a similar setup?",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1516574187841-4a8d4f90f520?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1516035055211-4a8d4f90f520?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 93,
+        "commentCount": 11,
+        "shareCount": 4,
+        "createdAt": "2026-05-05T14:28:00Z"
+      }
+    ],
+    "socialProfiles": [
+      {
+        "id": "user-1",
+        "name": "Khin Zaw",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+        "avatarUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
+        "bio": "Mountain trail explorer and sunrise ride lover.",
+        "followersCount": 1280,
+        "followingCount": 232,
+        "garageCount": 8,
+        "ridesCount": 92,
+        "garageDistance": "180 km",
+        "garageDuration": "12h",
+        "garageElevation": "3.5k m",
+        "rideDistance": "1.2k km",
+        "rideDuration": "78h",
+        "rideElevation": "14.3k m",
+        "socialLinks": [
+          { "platform": "facebook", "url": "https://facebook.com/khinzaw" },
+          { "platform": "instagram", "url": "https://instagram.com/khinzaw" },
+          { "platform": "youtube", "url": "https://youtube.com/khinzaw" },
+          { "platform": "telegram", "url": "https://t.me/khinzaw" },
+          { "platform": "x", "url": "https://x.com/khinzaw" },
+          { "platform": "tiktok", "url": "https://tiktok.com/@khinzaw" },
+          { "platform": "web", "url": "https://khinzaw.example.com" }
+        ]
+      },
+      {
+        "id": "user-2",
+        "name": "Mya Lin",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1519947486511-46149fa0a254?auto=format&fit=crop&w=1200&q=80",
+        "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
+        "bio": "Weekend ride photographer and cafe stop curator.",
+        "followersCount": 980,
+        "followingCount": 192,
+        "garageCount": 6,
+        "ridesCount": 75,
+        "garageDistance": "130 km",
+        "garageDuration": "9h",
+        "garageElevation": "2.8k m",
+        "rideDistance": "960 km",
+        "rideDuration": "62h",
+        "rideElevation": "11.8k m",
+        "socialLinks": [
+          { "platform": "instagram", "url": "https://instagram.com/myalin" },
+          { "platform": "youtube", "url": "https://youtube.com/myalin" },
+          { "platform": "x", "url": "https://x.com/myalin" },
+          { "platform": "web", "url": "https://myalin.example.com" }
+        ]
+      },
+      {
+        "id": "user-3",
+        "name": "Aung Ko",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1498579809087-ef1e558fd1d1?auto=format&fit=crop&w=1200&q=80",
+        "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        "bio": "Road trip planner and community rider.",
+        "followersCount": 740,
+        "followingCount": 158,
+        "garageCount": 5,
+        "ridesCount": 66,
+        "garageDistance": "95 km",
+        "garageDuration": "7h",
+        "garageElevation": "2.1k m",
+        "rideDistance": "860 km",
+        "rideDuration": "58h",
+        "rideElevation": "10.1k m",
+        "socialLinks": [
+          { "platform": "facebook", "url": "https://facebook.com/aungko" },
+          { "platform": "telegram", "url": "https://t.me/aungko" },
+          { "platform": "web", "url": "https://aungko.example.com" }
+        ]
+      },
+      {
+        "id": "user-4",
+        "name": "Ei Mon",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+        "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+        "bio": "City cruising and café hopping specialist.",
+        "followersCount": 1130,
+        "followingCount": 204,
+        "garageCount": 7,
+        "ridesCount": 84,
+        "garageDistance": "145 km",
+        "garageDuration": "10h",
+        "garageElevation": "2.9k m",
+        "rideDistance": "1.1k km",
+        "rideDuration": "69h",
+        "rideElevation": "13.2k m",
+        "socialLinks": [
+          { "platform": "instagram", "url": "https://instagram.com/eimon" },
+          { "platform": "x", "url": "https://x.com/eimon" },
+          { "platform": "web", "url": "https://eimon.example.com" }
+        ]
+      },
+      {
+        "id": "user-5",
+        "name": "Nyein Thiri",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1516574187841-4a8d4f90f520?auto=format&fit=crop&w=1200&q=80",
+        "avatarUrl": "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=100&q=80",
+        "bio": "Mechanic and gear enthusiast sharing the ride life.",
+        "followersCount": 860,
+        "followingCount": 143,
+        "garageCount": 4,
+        "ridesCount": 59,
+        "garageDistance": "80 km",
+        "garageDuration": "6h",
+        "garageElevation": "1.7k m",
+        "rideDistance": "740 km",
+        "rideDuration": "46h",
+        "rideElevation": "9.4k m",
+        "socialLinks": [
+          { "platform": "facebook", "url": "https://facebook.com/nyienthiri" },
+          { "platform": "youtube", "url": "https://youtube.com/nyienthiri" },
+          { "platform": "web", "url": "https://nyienthiri.example.com" }
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "group-1",
+        "title": "City Cruisers",
+        "icon": "directions-bike",
+        "description": "Casual rides around Yangon and nearby scenic spots.",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+        "isPrivate": false,
+        "membersCount": 128
+      },
+      {
+        "id": "group-2",
+        "title": "Adventure Squad",
+        "icon": "terrain",
+        "description": "Weekend adventure rides deep into the countryside.",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+        "isPrivate": true,
+        "membersCount": 54
+      },
+      {
+        "id": "group-3",
+        "title": "Vintage Riders",
+        "icon": "history-edu",
+        "description": "Classic bike fans sharing meetups and restoration tips.",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1498579809087-ef1e558fd1d1?auto=format&fit=crop&w=1200&q=80",
+        "isPrivate": false,
+        "membersCount": 89
+      },
+      {
+        "id": "group-4",
+        "title": "Night Shift",
+        "icon": "nightlife",
+        "description": "Late-night rides, cafe stops, and city cruising after sunset.",
+        "coverPhotoUrl": "https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&w=1200&q=80",
+        "isPrivate": true,
+        "membersCount": 42
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge-1",
+        "title": "Sunrise Sprint",
+        "description": "Share your best early-morning ride photo and compete for the top leaderboard spot.",
+        "coverImageUrl": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1498079022511-d15614cb1c02?auto=format&fit=crop&w=1200&q=80",
+        "leaderboard": [
+          { "rank": 1, "riderName": "Aung Ko", "score": 258 },
+          { "rank": 2, "riderName": "Mya Lin", "score": 197 },
+          { "rank": 3, "riderName": "Khin Zaw", "score": 168 }
+        ]
+      },
+      {
+        "id": "challenge-2",
+        "title": "Night Ride Showdown",
+        "description": "Capture the coolest night ride photo and see where you land on the leaderboard.",
+        "coverImageUrl": "https://images.unsplash.com/photo-1516117172878-fd2c41f4a759?auto=format&fit=crop&w=1200&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+        "leaderboard": [
+          { "rank": 1, "riderName": "Ei Mon", "score": 312 },
+          { "rank": 2, "riderName": "Nyein Thiri", "score": 281 },
+          { "rank": 3, "riderName": "Saw Htun", "score": 244 }
+        ]
+      },
+      {
+        "id": "challenge-3",
+        "title": "Trailmaster",
+        "description": "Ride the roughest trail you can find and upload the result for the weekly challenge.",
+        "coverImageUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+        "leaderboard": [
+          { "rank": 1, "riderName": "Thiri", "score": 290 },
+          { "rank": 2, "riderName": "Min Thu", "score": 267 },
+          { "rank": 3, "riderName": "Aung Moe", "score": 239 }
+        ]
+      }
+    ],
     "forums": [
       {
         "id": "forum-1",

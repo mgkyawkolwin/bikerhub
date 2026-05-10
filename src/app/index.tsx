@@ -19,7 +19,7 @@ export default function IndexScreen() {
         } catch {
           setAuthUser(null);
         }
-        router.replace('/home' as any);
+        router.replace('/social/posts' as any);
       } else {
         setAuthUser(null);
         router.replace('/auth/signIn' as any);
@@ -27,7 +27,7 @@ export default function IndexScreen() {
     }
 
     checkAuth();
-  }, [router]);
+  }, [router, setAuthUser]);
 
   return (
     <View style={styles.root}>

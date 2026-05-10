@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -107,7 +107,7 @@ export default function MarketplaceScreen() {
       await marketplaceService.toggleLike(listingId);
       await Promise.all([loadListingById(listingId), loadListings(page, true)]);
     },
-    [loadListingById, loadListings, page],
+    [marketplaceService, loadListingById, loadListings, page],
   );
 
   useFocusEffect(
@@ -141,6 +141,18 @@ export default function MarketplaceScreen() {
         location: filter.location,
       },
     });
+  }
+
+  function openSell() {
+    router.push('/marketplace/create');
+  }
+
+  function openFavorites() {
+    router.push('/marketplace/favorites');
+  }
+
+  function openStolenList() {
+    router.push('/marketplace/stolen');
   }
 
   function renderBikeCard({ item }: { item: BikeListing }) {
@@ -199,13 +211,32 @@ export default function MarketplaceScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
-        <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.headerText} />
-        </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.headerText }]}>{t.Title.marketplace}</ThemedText>
-        <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
-          <MaterialIcons name="tune" size={22} color={colors.headerText} />
-        </TouchableOpacity>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
+            <MaterialIcons name="arrow-back" size={22} color={colors.headerText} />
+          </TouchableOpacity>
+          <ThemedText style={[styles.title, { color: colors.headerText }]}>{t.Title.marketplace}</ThemedText>
+          <View style={styles.headerRightRow}>
+            <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
+              <MaterialIcons name="tune" size={22} color={colors.headerText} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.headerButtonRow}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={openSell} hitSlop={12}>
+            <MaterialIcons name="sell" size={22} color={colors.headerText} />
+            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Sell</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={openFavorites} hitSlop={12}>
+            <MaterialIcons name="favorite" size={22} color={colors.headerText} />
+            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Favorite</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={openStolenList} hitSlop={12}>
+            <MaterialIcons name="warning-amber" size={22} color={colors.headerText} />
+            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Stolen</ThemedText>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -236,9 +267,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reportTopButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  reportTopButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  headerButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
   },
   title: {
     fontSize: 22,
@@ -250,6 +304,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  secondaryButton: {
+    flex: 1,
+    marginRight: 10,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.3)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   list: {
     paddingHorizontal: 16,

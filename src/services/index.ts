@@ -10,6 +10,8 @@ export type { NewsService } from './newsService';
 export { NewsServiceToken } from './newsService';
 export type { BlogService } from './blogService';
 export { BlogServiceToken } from './blogService';
+export type { SocialPostService } from './socialPostService';
+export { SocialPostServiceToken } from './socialPostService';
 export type { DirectoryService } from './directoryService';
 export { DirectoryServiceToken } from './directoryService';
 export type { RouteService } from './routeService';
