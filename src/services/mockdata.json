@@ -357,6 +357,174 @@
         "rating": 0,
         "ratingCount": 0,
         "viewCount": 0
+      },
+      {
+        "id": "f6e11304-b258-4e0d-9f7e-72f8f5d49501",
+        "title": "Suzuki GSX-R150",
+        "make": "Suzuki",
+        "model": "GSX-R150",
+        "year": 2021,
+        "price": 3250000,
+        "cc": 150,
+        "type": "Sport",
+        "sellerId": "user-1",
+        "imageUrl": "https://images.unsplash.com/photo-1519985176271-adb1088fa94c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "5,600 Km",
+        "description": "Light and responsive sport bike in excellent condition, ready for city and track rides.",
+        "images": [
+          "https://images.unsplash.com/photo-1519985176271-adb1088fa94c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 4,
+        "isLiked": false,
+        "likesCount": 1,
+        "rating": 4.2,
+        "ratingCount": 11,
+        "viewCount": 54
+      },
+      {
+        "id": "a9b9e90f-6a11-4282-b9d1-0177155d703f",
+        "title": "Yamaha FZ-S V3",
+        "make": "Yamaha",
+        "model": "FZ-S V3",
+        "year": 2020,
+        "price": 3100000,
+        "cc": 149,
+        "type": "Standard",
+        "sellerId": "user-1",
+        "imageUrl": "https://images.unsplash.com/photo-1493238792000-8113da705763?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "7,900 Km",
+        "description": "Well-maintained daily rider with a comfortable upright stance and crisp handling.",
+        "images": [
+          "https://images.unsplash.com/photo-1493238792000-8113da705763?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 2,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 4.0,
+        "ratingCount": 7,
+        "viewCount": 32
+      },
+      {
+        "id": "d5c3c2f5-4b9b-4eec-a42e-3fdc8ce1d70b",
+        "title": "KTM Duke 200",
+        "make": "KTM",
+        "model": "Duke 200",
+        "year": 2022,
+        "price": 6900000,
+        "cc": 199,
+        "type": "Sport",
+        "sellerId": "user-1",
+        "imageUrl": "https://images.unsplash.com/photo-1549921296-3c11f3d34d3a?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "3,400 Km",
+        "description": "High-energy performance bike with sharp styling and agile chassis response.",
+        "images": [
+          "https://images.unsplash.com/photo-1549921296-3c11f3d34d3a?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 5,
+        "isLiked": false,
+        "likesCount": 2,
+        "rating": 4.4,
+        "ratingCount": 9,
+        "viewCount": 44
+      },
+      {
+        "id": "38c2b5aa-1f2d-4eb8-8b5c-2bd5ff8c3599",
+        "title": "Suzuki V-Strom 650",
+        "make": "Suzuki",
+        "model": "V-Strom 650",
+        "year": 2020,
+        "price": 9800000,
+        "cc": 645,
+        "type": "Adventure",
+        "sellerId": "user-2",
+        "imageUrl": "https://images.unsplash.com/photo-1518121091095-59259673c03c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "6,800 Km",
+        "description": "Reliable touring bike with smooth power delivery and comfortable seating.",
+        "images": [
+          "https://images.unsplash.com/photo-1518121091095-59259673c03c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 3,
+        "isLiked": false,
+        "likesCount": 1,
+        "rating": 4.1,
+        "ratingCount": 6,
+        "viewCount": 38
+      },
+      {
+        "id": "7ae8d5f3-3c29-4f91-9cc4-19f6a2d7b960",
+        "title": "Triumph Street Twin",
+        "make": "Triumph",
+        "model": "Street Twin",
+        "year": 2021,
+        "price": 17500000,
+        "cc": 900,
+        "type": "Classic",
+        "sellerId": "user-3",
+        "imageUrl": "https://images.unsplash.com/photo-1498064564380-7671f2b6e714?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "4,200 Km",
+        "description": "Classic roadster with a low seat height and elegant chrome accents.",
+        "images": [
+          "https://images.unsplash.com/photo-1498064564380-7671f2b6e714?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 2,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 4.3,
+        "ratingCount": 5,
+        "viewCount": 27
+      },
+      {
+        "id": "f0b2e9e1-6b5b-4a46-9068-4af2f13e4f20",
+        "title": "Harley-Davidson Street 750",
+        "make": "Harley-Davidson",
+        "model": "Street 750",
+        "year": 2019,
+        "price": 18500000,
+        "cc": 749,
+        "type": "Cruiser",
+        "sellerId": "user-4",
+        "imageUrl": "https://images.unsplash.com/photo-1517167684529-2c99ad4f2c9d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "10,500 Km",
+        "description": "A cruiser with strong midrange torque and signature Harley styling.",
+        "images": [
+          "https://images.unsplash.com/photo-1517167684529-2c99ad4f2c9d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 1,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 3.9,
+        "ratingCount": 4,
+        "viewCount": 22
+      },
+      {
+        "id": "4ceb8d97-01c5-44e7-8f85-5fb2a703ea0c",
+        "title": "Ducati Scrambler Icon",
+        "make": "Ducati",
+        "model": "Scrambler Icon",
+        "year": 2020,
+        "price": 21000000,
+        "cc": 803,
+        "type": "Standard",
+        "sellerId": "user-5",
+        "imageUrl": "https://images.unsplash.com/photo-1515165562835-5bd46c10d0a8?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "mileage": "3,100 Km",
+        "description": "Modern scrambler with a fun riding position and distinctive Ducati flair.",
+        "images": [
+          "https://images.unsplash.com/photo-1515165562835-5bd46c10d0a8?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ],
+        "isFavorite": false,
+        "favoritesCount": 2,
+        "isLiked": false,
+        "likesCount": 0,
+        "rating": 4.4,
+        "ratingCount": 6,
+        "viewCount": 29
       }
     ],
     "reports": [
@@ -591,6 +759,146 @@
         "commentCount": 11,
         "shareCount": 4,
         "createdAt": "2026-05-05T14:28:00Z"
+      },
+      {
+        "id": "post-6",
+        "authorId": "user-1",
+        "authorName": "Khin Zaw",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-1",
+        "content": "Sunset trail ride with the crew. The last hill was tough but the finish line coffee made it worth it.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1494256997604-768d1f608cac?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 144,
+        "commentCount": 21,
+        "shareCount": 10,
+        "createdAt": "2026-05-03T18:12:00Z"
+      },
+      {
+        "id": "post-7",
+        "authorId": "user-1",
+        "authorName": "Khin Zaw",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-2",
+        "content": "Explored a new gravel path today. The view over the valley was simply unforgettable.",
+        "imageUrls": [],
+        "loveCount": 103,
+        "commentCount": 18,
+        "shareCount": 7,
+        "createdAt": "2026-05-01T08:34:00Z"
+      },
+      {
+        "id": "post-8",
+        "authorId": "user-2",
+        "authorName": "Mya Lin",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-1",
+        "content": "Stopped by a hidden lakeside cafe after the Sunday ride. Great meet-up spot for riders.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 175,
+        "commentCount": 32,
+        "shareCount": 12,
+        "createdAt": "2026-04-30T11:20:00Z"
+      },
+      {
+        "id": "post-9",
+        "authorId": "user-2",
+        "authorName": "Mya Lin",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-4",
+        "content": "Love how the city lights look from the river road. Night rides are the best kind of therapy.",
+        "imageUrls": [],
+        "loveCount": 132,
+        "commentCount": 26,
+        "shareCount": 9,
+        "createdAt": "2026-04-28T21:43:00Z"
+      },
+      {
+        "id": "post-10",
+        "authorId": "user-3",
+        "authorName": "Aung Ko",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-2",
+        "content": "Tomorrow morning we’re doing a sunrise route into the hills. Anyone want to join?",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1473181488821-2d23949a045a?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 117,
+        "commentCount": 19,
+        "shareCount": 8,
+        "createdAt": "2026-04-27T05:07:00Z"
+      },
+      {
+        "id": "post-11",
+        "authorId": "user-3",
+        "authorName": "Aung Ko",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-3",
+        "content": "Checked out the classic bike meet-up yesterday. So much inspiration from the restored rides.",
+        "imageUrls": [],
+        "loveCount": 98,
+        "commentCount": 14,
+        "shareCount": 6,
+        "createdAt": "2026-04-26T14:58:00Z"
+      },
+      {
+        "id": "post-12",
+        "authorId": "user-4",
+        "authorName": "Ei Mon",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-4",
+        "content": "Late-night cafe ride and the city glow made it feel like a movie scene.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 154,
+        "commentCount": 23,
+        "shareCount": 11,
+        "createdAt": "2026-04-25T22:18:00Z"
+      },
+      {
+        "id": "post-13",
+        "authorId": "user-4",
+        "authorName": "Ei Mon",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-1",
+        "content": "City streets are more alive with friends on two wheels. Loved the chatter and the fresh breeze.",
+        "imageUrls": [],
+        "loveCount": 141,
+        "commentCount": 17,
+        "shareCount": 6,
+        "createdAt": "2026-04-23T17:30:00Z"
+      },
+      {
+        "id": "post-14",
+        "authorId": "user-5",
+        "authorName": "Nyein Thiri",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-3",
+        "content": "Spent the day tuning the suspension and the bike feels so much sharper now.",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=900&q=80"
+        ],
+        "loveCount": 102,
+        "commentCount": 12,
+        "shareCount": 7,
+        "createdAt": "2026-04-22T13:10:00Z"
+      },
+      {
+        "id": "post-15",
+        "authorId": "user-5",
+        "authorName": "Nyein Thiri",
+        "authorAvatarUrl": "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=100&q=80",
+        "groupId": "group-4",
+        "content": "Found a new spot for a quick photo shoot during the ride. The colors were unreal.",
+        "imageUrls": [],
+        "loveCount": 89,
+        "commentCount": 10,
+        "shareCount": 5,
+        "createdAt": "2026-04-20T15:50:00Z"
       }
     ],
     "socialProfiles": [

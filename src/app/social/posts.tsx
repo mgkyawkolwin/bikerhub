@@ -174,18 +174,18 @@ export default function SocialPostsScreen() {
               <TouchableOpacity
                 style={[styles.tabButton]}
                 activeOpacity={0.85}
-                onPress={() => router.push('/route')}
-              >
-                <MaterialIcons name="route" size={22} color={colors.secondary} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Routes</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.tabButton}
-                activeOpacity={0.85}
                 onPress={() => router.push('/marketplace')}
               >
                 <MaterialIcons name="storefront" size={22} color={colors.secondary} />
                 <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Marketplace</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tabButton}
+                activeOpacity={0.85}
+                onPress={() => router.push('/directory/directory')}
+              >
+                <MaterialIcons name="folder-open" size={22} color={colors.secondary} />
+                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Directory</ThemedText>
               </TouchableOpacity>
             </View>
 

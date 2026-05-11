@@ -139,7 +139,18 @@ export default function DirectoryScreen() {
           <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
         </View>
         <View style={styles.headerRightIcons}>
-          <TouchableOpacity onPress={() => setShowSearchBar(true)} style={styles.iconButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (showSearchBar) {
+                setSearchQuery('');
+                setShowSearchBar(false);
+              } else {
+                setShowSearchBar(true);
+              }
+            }}
+            style={styles.iconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <MaterialIcons name="search" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/directory/directorySearch')} style={styles.filterButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

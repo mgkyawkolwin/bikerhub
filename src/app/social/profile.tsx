@@ -66,7 +66,7 @@ export default function SocialProfileScreen() {
   }, [loadProfile]);
 
   const renderPost = ({ item }: { item: SocialPost }) => (
-    <TouchableOpacity activeOpacity={0.7} style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      
       <View style={styles.postHeader}>
         <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
         <View style={styles.postMeta}>
@@ -75,16 +75,41 @@ export default function SocialProfileScreen() {
           </ThemedText>
           <View style={styles.metaRow}>
             <MaterialIcons name="schedule" size={12} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>
+            <ThemedText style={[styles.metaText, { color: colors.secondary }]}> 
               {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recent'}
             </ThemedText>
           </View>
         </View>
       </View>
-      <ThemedText style={[styles.postContent, { color: colors.primary }]} numberOfLines={3}>
-        {item.content}
-      </ThemedText>
-    </TouchableOpacity>
+      <ThemedText style={[styles.postContent, { color: colors.primary }]}>{item.content}</ThemedText>
+
+      {item.imageUrls?.length ? (
+        <View style={styles.imageGrid}>
+          {item.imageUrls.map((uri, idx) => (
+            <Image
+              key={`${item.id}-${idx}`}
+              source={{ uri }}
+              style={[styles.postImage, item.imageUrls?.length === 1 ? styles.singleImage : styles.multiImage]}
+            />
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.postActions}>
+        <View style={styles.actionBlock}>
+          <MaterialIcons name="favorite-border" size={18} color={colors.secondary} />
+          <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.loveCount}</ThemedText>
+        </View>
+        <View style={styles.actionBlock}>
+          <MaterialIcons name="comment" size={18} color={colors.secondary} />
+          <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.commentCount}</ThemedText>
+        </View>
+        <TouchableOpacity style={styles.postShareButton} activeOpacity={0.75}>
+          <MaterialIcons name="share" size={18} color={colors.primary} />
+          <ThemedText style={[styles.shareText, { color: colors.primary }]}>Share</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   if (!userId) {
@@ -273,6 +298,28 @@ export default function SocialProfileScreen() {
                     </ThemedText>
                   </View>
                 </View>
+                <View style={styles.profileActionRow}>
+                  <TouchableOpacity
+                    style={styles.profileActionButton}
+                    activeOpacity={0.8}
+                    onPress={() => router.push({ pathname: '/social/garage', params: { userId } })}
+                  >
+                    <MaterialIcons name="garage" size={20} color={colors.primary} />
+                    <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Garages</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push('/route')}>
+                    <MaterialIcons name="pedal-bike" size={20} color={colors.primary} />
+                    <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Rides</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.profileActionButton}
+                    activeOpacity={0.8}
+                    onPress={() => router.push({ pathname: '/social/listing', params: { userId } })}
+                  >
+                    <MaterialIcons name="storefront" size={20} color={colors.primary} />
+                    <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Listing</ThemedText>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Posts Header */}
@@ -447,6 +494,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  marketplaceButton: {
+    marginTop: 14,
+    borderRadius: 18,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  marketplaceButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  profileActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+  profileActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  profileActionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   // Row 4: 5 Stats Grid
   fiveStatsGrid: {
     flexDirection: 'row',
@@ -520,6 +595,50 @@ const styles = StyleSheet.create({
   postContent: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
+  postImage: {
+    borderRadius: 14,
+    backgroundColor: '#E0E0E0',
+  },
+  singleImage: {
+    width: '100%',
+    height: 220,
+  },
+  multiImage: {
+    width: '48%',
+    height: 140,
+  },
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  actionBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionText: {
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  postShareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  shareText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,
