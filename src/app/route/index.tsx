@@ -2,10 +2,11 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Linking, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { RouteServiceToken } from '@/services/routeService';
@@ -14,9 +15,11 @@ import Route from '@/models/route';
 
 export default function RouteListScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const params = useLocalSearchParams();
   const { t } = useI18n();
   const { isDark } = useThemeContext();
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
   const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
 
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -111,6 +114,10 @@ export default function RouteListScreen() {
     </View>
   );
 
+  const currentUserId = authUser?.id;
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const isOwnRoutes = !viewedUserId || viewedUserId === currentUserId;
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.background }]}> 
@@ -118,9 +125,14 @@ export default function RouteListScreen() {
           <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.routes}</ThemedText>
-        <TouchableOpacity style={styles.headerAction} onPress={() => router.push('/route/create')}>
-          <ThemedText style={[styles.headerButton, {backgroundColor: colors.accent}]}>Record Ride</ThemedText>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          {isOwnRoutes ? (
+            <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/route/record')}>
+              <MaterialIcons name="fiber-manual-record" size={18} color="#FFFFFF" />
+              <ThemedText style={styles.recordActionText}>Record</ThemedText>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
       <FlatList
         data={routes}
@@ -147,6 +159,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backButton: { padding: 8 },
   title: { fontSize: 22, fontWeight: '700', flex: 1, textAlign: 'center', color: '#FFFFFF' },
+  actionsRow: { flexDirection: 'row', alignItems: 'center' },
+  iconAction: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, marginLeft: 10, borderRadius: 14 },
+  recordActionText: { marginLeft: 6, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   headerAction: { paddingHorizontal: 10, paddingVertical: 8 },
   headerButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   list: { paddingHorizontal: 16, gap: 12 },

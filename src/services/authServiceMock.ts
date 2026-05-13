@@ -3,11 +3,11 @@ import type { AuthService } from './authService';
 
 export class MockAuthService implements AuthService {
   private readonly authUser: User = {
-    id: '00000000-0000-0000-0000-000000000000',
-    name: 'Mock User',
-    email: 'user@example.com',
-    profilePictureUrl: 'https://example.com/profiles/mock-user.jpg',
-    token: 'mock-token',
+    id: 'user-1',
+    name: 'Khin Zaw',
+    email: 'demo@bikerhub.app',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80',
+    token: 'demo-token',
   };
 
   async signIn(email: string, password: string) {

@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
@@ -14,10 +14,14 @@ import type Group from '@/models/group';
 export default function GroupExploreScreen() {
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeContext();
+  const params = useLocalSearchParams();
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSection, setActiveSection] = useState<'explore' | 'myGroups'>('explore');
+  const [activeSection, setActiveSection] = useState<'explore' | 'myGroups'>(() => {
+    const section = Array.isArray(params.section) ? params.section[0] : params.section;
+    return section === 'myGroups' ? 'myGroups' : 'explore';
+  });
 
   const filteredGroups = useMemo(
     () =>

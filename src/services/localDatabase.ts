@@ -31,6 +31,7 @@ export type DatabaseCollections = {
   forums: ForumPost[];
   directories: Directory[];
   routes: Route[];
+  plans: any[];
   socialPosts: SocialPost[];
   socialProfiles: SocialProfile[];
   groups: Group[];
@@ -70,18 +71,18 @@ export async function saveDatabase(db: JsonDatabase) {
 async function initializeDatabase(): Promise<JsonDatabase> {
   const fileInfo = await DATABASE_FILE.info();
 
-  // if (fileInfo.exists) {
-  //   try {
-  //     const contents = await DATABASE_FILE.text();
-  //     return JSON.parse(contents) as JsonDatabase;
-  //   } catch {
-  //     // If the file is malformed, recreate it.
-  //   }
-  // }
+  if (fileInfo.exists) {
+    try {
+      const contents = await DATABASE_FILE.text();
+      return JSON.parse(contents) as JsonDatabase;
+    } catch {
+      // If the file is malformed, recreate it.
+    }
+  }
 
   const db = JSON.parse(JSON.stringify(initialData)) as JsonDatabase;
   if (!fileInfo.exists) {
-    await DATABASE_FILE.create({overwrite: true});
+    await DATABASE_FILE.create({ overwrite: true });
   }
 
   await DATABASE_FILE.write(JSON.stringify(db));
