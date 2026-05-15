@@ -76,7 +76,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.navItem}
             activeOpacity={0.8}
-            onPress={() => router.push('/route')}
+            onPress={() => router.push('/ride/list')}
           >
             <MaterialIcons name="pedal-bike" size={22} color={colors.accent} />
             <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Rides</ThemedText>
@@ -84,7 +84,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
             activeOpacity={0.8}
-            onPress={() => router.push('/route/plans')}
+            onPress={() => router.push('/ride/plans')}
           >
             <MaterialIcons name="event" size={22} color={colors.accent} />
             <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Plans</ThemedText>

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Linking, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Linking, RefreshControl, StyleSheet, TouchableOpacity, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,6 +10,8 @@ import { useAuthContext } from '@/hooks/use-auth-context';
 import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { RouteServiceToken } from '@/services/routeService';
+import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { setRouteDraft } from '@/services/routeTransfer';
 import type { RouteService } from '@/services/routeService';
 import Route from '@/models/route';
 
@@ -74,13 +76,23 @@ export default function RouteListScreen() {
   };
 
   const renderRoute = ({ item }: { item: Route }) => (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={() => loadRide(item)}
+      activeOpacity={0.8}
+    >
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
           <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.name}</ThemedText>
-          <View style={[styles.badge, { backgroundColor: colors.accent }]}> 
-            <ThemedText style={styles.badgeText}>{item.type}</ThemedText>
-          </View>
+          {isOwnRoutes ? (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => confirmDeleteRoute(item.id ?? '')}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="delete" size={20} color={colors.accent} />
+            </TouchableOpacity>
+          ) : null}
         </View>
         <View style={styles.metaRow}> 
           <MaterialIcons name="schedule" size={14} color={colors.secondary} />
@@ -111,12 +123,59 @@ export default function RouteListScreen() {
           <ThemedText style={styles.downloadText}>Open</ThemedText>
         </TouchableOpacity>
       ) : null}
-    </View>
+    </TouchableOpacity>
   );
 
   const currentUserId = authUser?.id;
   const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const isOwnRoutes = !viewedUserId || viewedUserId === currentUserId;
+
+  const parseDistance = (distanceText?: string): number => {
+    if (!distanceText) return 0;
+    const match = distanceText.match(/([0-9.]+)/);
+    return match ? Number(match[1]) : 0;
+  };
+
+  const loadRide = (item: Route) => {
+    const ride = item as any;
+    const draft = {
+      locations: ride.locations ?? ride.routePath ?? [],
+      routePath: ride.routePath ?? ride.locations ?? [],
+      totalDistance: parseDistance(ride.distance),
+      totalDuration: 0,
+      osrmResponse: ride.osrmResponse,
+    };
+    setRouteDraft(draft);
+    router.push('/ride/rides');
+  };
+
+  const confirmDeleteRoute = (routeId: string) => {
+    Alert.alert(
+      'Delete Ride',
+      'Are you sure you want to delete this ride?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => void deleteRoute(routeId),
+        },
+      ],
+    );
+  };
+
+  const deleteRoute = async (routeId: string) => {
+    try {
+      const db = await getDatabase();
+      const collections = db.collections as any;
+      collections.routes = (collections.routes ?? []).filter((route: any) => route.id !== routeId);
+      await saveDatabase(db);
+      setRoutes((prev) => prev.filter((route) => route.id !== routeId));
+    } catch (error) {
+      console.error('Error deleting route:', error);
+      Alert.alert('Error', 'Unable to delete ride.');
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -124,12 +183,12 @@ export default function RouteListScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.routes}</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.primary }]}>Rides</ThemedText>
         <View style={styles.actionsRow}>
           {isOwnRoutes ? (
-            <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/route/record')}>
-              <MaterialIcons name="fiber-manual-record" size={18} color="#FFFFFF" />
-              <ThemedText style={styles.recordActionText}>Record</ThemedText>
+            <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/ride/rides')}>
+              <MaterialIcons name="directions-bike" size={18} color="#FFFFFF" />
+              <ThemedText style={styles.recordActionText}>Ride</ThemedText>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -171,6 +230,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
   badge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
   badgeText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  deleteButton: { padding: 6 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { fontSize: 13 },
   cardSummary: { fontSize: 14, lineHeight: 20, marginTop: 8 },

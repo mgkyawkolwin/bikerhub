@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
-import { getDatabase } from '@/services/localDatabase';
+import { getDatabase, saveDatabase } from '@/services/localDatabase';
 
 export default function RoutePlansScreen() {
   const insets = useSafeAreaInsets();
@@ -34,13 +34,33 @@ export default function RoutePlansScreen() {
     }, [loadPlans]),
   );
 
+  const confirmDeletePlan = (id: string) => {
+    Alert.alert(
+      'Delete Plan',
+      'Are you sure you want to delete this plan?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void deletePlan(id) },
+      ],
+    );
+  };
+
+  const deletePlan = async (id: string) => {
+    const db = await getDatabase();
+    const collections = db.collections as any;
+    collections.plans = (collections.plans ?? []).filter((plan: any) => plan.id !== id);
+    await saveDatabase(db);
+    setPlans(collections.plans);
+  };
+
   const renderPlan = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       activeOpacity={0.8}
-      onPress={() => router.push(`/route/plan?id=${encodeURIComponent(item.id)}`)}
+      onPress={() => router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`)}
     >
-      <View style={styles.planTouchable}> 
+      <View style={styles.planTouchable}>
+        {/* Header with Plan Name and Date */}
         <View style={styles.planHeader}>
           <ThemedText style={[styles.planName, { color: colors.primary }]} numberOfLines={1}>
             {item.name ?? 'Unnamed Plan'}
@@ -49,21 +69,37 @@ export default function RoutePlansScreen() {
             {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown'}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.planSummary, { color: colors.secondary }]} numberOfLines={2}>
-          {item.waypoints?.length ? `${item.waypoints.length} points · ${item.totalDistance?.toFixed(1) ?? 0} km · ${item.totalDuration?.toFixed(0) ?? 0} min` : 'No waypoints'}
-        </ThemedText>
+        
+        {/* Meta row with points, km, min AND trash icon */}
+        <View style={styles.metaRow}>
+          <ThemedText style={[styles.planSummary, { color: colors.secondary }]} numberOfLines={1}>
+            {item.waypoints?.length 
+              ? `${item.waypoints.length} points · ${item.totalDistance?.toFixed(1) ?? 0} km · ${item.totalDuration?.toFixed(0) ?? 0} min` 
+              : 'No waypoints'}
+          </ThemedText>
+          <TouchableOpacity onPress={() => confirmDeletePlan(item.id)} style={styles.deleteButton}>
+            <MaterialIcons name="delete" size={20} color={colors.accent} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Description row below meta */}
+        {item.description ? (
+          <ThemedText style={[styles.planDescription, { color: colors.secondary }]} numberOfLines={2}>
+            {item.description}
+          </ThemedText>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>Plans</ThemedText>
-        <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/route/plan')} activeOpacity={0.8}>
+        <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/ride/plan')} activeOpacity={0.8}>
           <MaterialIcons name="add" size={18} color="#FFFFFF" />
           <ThemedText style={styles.newPlanText}>New Plan</ThemedText>
         </TouchableOpacity>
@@ -128,7 +164,6 @@ const styles = StyleSheet.create({
   planCard: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 0,
     overflow: 'hidden',
   },
   planTouchable: {
@@ -150,9 +185,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10, // Space before description
+  },
   planSummary: {
     fontSize: 14,
     lineHeight: 20,
+    flex: 1,
+  },
+  planDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.85,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   emptyState: {
     marginTop: 48,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,14 +7,17 @@ import {
   Alert,
   Modal,
   TextInput,
-  Platform,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import MapView, { Polyline, Marker, Callout, Region, LatLng } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { setRouteDraft } from '@/services/routeTransfer';
+import type { OSRMRoute } from '@/models/route';
+import { useThemeContext } from '@/hooks/use-theme-context';
 import { MaterialIcons } from '@expo/vector-icons';
 
 interface Waypoint {
@@ -32,6 +35,7 @@ interface RouteSegment {
   distance: number;
   duration: number;
   polyline: LatLng[];
+  osrmRoute?: OSRMRoute;
 }
 
 const RoutePlanner: React.FC = () => {
@@ -44,11 +48,29 @@ const RoutePlanner: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPoint, setEditingPoint] = useState<Waypoint | null>(null);
   const [tempTitle, setTempTitle] = useState('');
+  const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const [saveTitle, setSaveTitle] = useState('');
+  const [saveDescription, setSaveDescription] = useState('');
   const params = useLocalSearchParams();
   const planId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(planId ?? null);
   const [savedRoutes, setSavedRoutes] = useState<any[]>([]);
   const [showSavedModal, setShowSavedModal] = useState(false);
-  
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { isDark } = useThemeContext();
+  const colors = useMemo(
+    () => ({
+      background: isDark ? '#000000' : '#F7F7F7',
+      card: isDark ? '#121212' : '#FFFFFF',
+      border: isDark ? '#232323' : '#E0E0E0',
+      primary: isDark ? '#FFFFFF' : '#000000',
+      secondary: isDark ? '#B0B0B0' : '#666666',
+      accent: '#E85D04',
+    }),
+    [isDark],
+  );
+
   const mapRef = useRef<MapView>(null);
 
   // Load saved routes on mount
@@ -76,17 +98,18 @@ const RoutePlanner: React.FC = () => {
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-        
+
         const initialRegion: Region = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         };
-        
+
         setMapRegion(initialRegion);
         if (mapRef.current) {
-          mapRef.current.animateToRegion(initialRegion, 1000);
+          const map = mapRef.current as any;
+          map.animateToRegion(initialRegion, 300);
         }
       }
     } catch (error) {
@@ -100,24 +123,34 @@ const RoutePlanner: React.FC = () => {
     end: Waypoint
   ): Promise<RouteSegment | null> => {
     try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson`;
-      
+      const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson&steps=true`;
+
       const response = await fetch(url);
       const data = await response.json();
-      
+      console.log('OSRM response:', JSON.stringify(data));
+
       if (data.code === 'Ok' && data.routes[0]) {
+        console.log('OSRM route geometry:', JSON.stringify(data.routes[0].geometry));
+        console.log(`OSRM route legs: ${data.routes[0].legs}`);
+        data.routes[0].legs?.forEach((leg: any, index: number) => {
+          console.log(`Leg ${index}: distance=${leg.distance}m, duration=${leg.duration}s, steps=${leg.steps.length}`);
+        });
+        data.routes[0].waypoints?.forEach((wp: any, index: number) => {
+          console.log(`Waypoint ${index}: name=${wp.name}, location=${wp.location}`);
+        });
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map((coord: [number, number]) => ({
           latitude: coord[1],
           longitude: coord[0],
         }));
-        
+
         return {
           from: start,
           to: end,
           distance: route.distance / 1000,
           duration: route.duration / 60,
           polyline: coordinates,
+          osrmRoute: route,
         };
       }
       return null;
@@ -131,15 +164,16 @@ const RoutePlanner: React.FC = () => {
   const calculateAllRoutes = useCallback(async (waypointList: Waypoint[] = waypoints) => {
     if (waypointList.length < 2) {
       setSegments([]);
-      return;
+      return [];
     }
 
+    const normalizedList = normalizeWaypoints(waypointList);
     setIsLoading(true);
     const newSegments: RouteSegment[] = [];
-    
-    // Sort waypoints by order
-    const sortedWaypoints = [...waypointList].sort((a, b) => a.order - b.order);
-    
+
+    // Request route segments sequentially based on marker order
+    const sortedWaypoints = [...normalizedList].sort((a, b) => a.order - b.order);
+
     for (let i = 0; i < sortedWaypoints.length - 1; i++) {
       const route = await calculateRoute(sortedWaypoints[i], sortedWaypoints[i + 1]);
       if (route) {
@@ -149,85 +183,89 @@ const RoutePlanner: React.FC = () => {
         break;
       }
     }
-    
+
     setSegments(newSegments);
     setIsLoading(false);
-    
+
     // Fit map to show all waypoints
     if (mapRef.current && waypointList.length > 0) {
       const coordinates = waypointList.map(w => ({
         latitude: w.latitude,
         longitude: w.longitude,
       }));
-      
-      mapRef.current.fitToCoordinates(coordinates, {
+
+      const map = mapRef.current as any;
+      map.fitToCoordinates(coordinates, {
         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
         animated: true,
+        duration: 300,
       });
     }
+
+    return newSegments;
   }, [waypoints]);
+
+  const normalizeWaypoints = (waypointList: Waypoint[]) => {
+    const orderedList = [...waypointList].sort((a, b) => a.order - b.order);
+    if (orderedList.length === 0) return [];
+
+    return orderedList.map((wp, idx) => {
+      const type: Waypoint['type'] = idx === 0
+        ? 'start'
+        : idx === orderedList.length - 1
+          ? 'end'
+          : 'stop';
+
+      let title = wp.title;
+      if (wp.title === 'Start Point' && type !== 'start') {
+        title = type === 'end' ? 'End Point' : `Stop ${idx}`;
+      } else if (wp.title === 'End Point' && type !== 'end') {
+        title = `Stop ${idx}`;
+      } else if (wp.title?.startsWith('Stop ') && type === 'end') {
+        title = 'End Point';
+      } else if ((wp.title?.startsWith('Stop ') || wp.title === 'End Point') && type === 'start') {
+        title = 'Start Point';
+      }
+
+      return {
+        ...wp,
+        type,
+        order: idx,
+        title,
+      };
+    });
+  };
 
   // Handle long press on map
   const handleLongPress = (event: any) => {
     const { coordinate } = event.nativeEvent;
-    
+
     if (waypoints.length === 0) {
-      // First point: Start
       addWaypoint(coordinate, 'start');
-    } else if (waypoints.length === 1) {
-      // Second point: End
-      addWaypoint(coordinate, 'end');
     } else {
-      // Additional points: Stops (insert before end)
-      addWaypoint(coordinate, 'stop');
+      addWaypoint(coordinate, 'end');
     }
   };
 
   // Add new waypoint
-  const addWaypoint = async (coordinate: LatLng, type: 'start' | 'stop' | 'end') => {
-    // Check if start or end already exists
+  const addWaypoint = async (coordinate: LatLng, type: 'start' | 'end') => {
     if (type === 'start' && waypoints.some(w => w.type === 'start')) {
       Alert.alert('Error', 'Start point already exists');
       return;
     }
-    if (type === 'end' && waypoints.some(w => w.type === 'end')) {
-      // Convert existing end to stop and add new end
-      const updatedWaypoints = waypoints.map(w => 
-        w.type === 'end' ? { ...w, type: 'stop' as const } : w
-      );
-      setWaypoints(updatedWaypoints);
-    }
-    
+
     const newWaypoint: Waypoint = {
       id: Date.now().toString(),
       latitude: coordinate.latitude,
       longitude: coordinate.longitude,
-      title: type === 'start' ? 'Start Point' : type === 'end' ? 'End Point' : `Stop ${waypoints.filter(w => w.type === 'stop').length + 1}`,
-      type: type,
-      order: type === 'end' ? waypoints.length : type === 'start' ? 0 : waypoints.length,
+      title: type === 'start' ? 'Start Point' : 'End Point',
+      type,
+      order: waypoints.length,
     };
-    
-    let newWaypoints = [...waypoints];
-    
-    if (type === 'start') {
-      newWaypoints = [newWaypoint, ...waypoints];
-    } else if (type === 'end') {
-      newWaypoints = [...waypoints, newWaypoint];
-    } else {
-      // Insert stop before end point
-      const endIndex = newWaypoints.findIndex(w => w.type === 'end');
-      if (endIndex !== -1) {
-        newWaypoints.splice(endIndex, 0, newWaypoint);
-      } else {
-        newWaypoints.push(newWaypoint);
-      }
-    }
-    
-    // Update orders
-    newWaypoints = newWaypoints.map((wp, idx) => ({ ...wp, order: idx }));
+
+    const newWaypoints = normalizeWaypoints([...waypoints, newWaypoint]);
     setWaypoints(newWaypoints);
-    
-    // Automatically calculate route if we have at least 2 points
+
     if (newWaypoints.length >= 2) {
       await calculateAllRoutes(newWaypoints);
     }
@@ -239,19 +277,16 @@ const RoutePlanner: React.FC = () => {
       wp.id === id ? { ...wp, latitude: coordinate.latitude, longitude: coordinate.longitude } : wp
     );
     setWaypoints(updatedWaypoints);
-    
+
     // Recalculate routes
     if (updatedWaypoints.length >= 2) {
       await calculateAllRoutes();
     }
   };
 
-  // Delete waypoint
   const deleteWaypoint = async (id: string) => {
-    const waypointToDelete = waypoints.find(w => w.id === id);
-    if (!waypointToDelete) return;
-
-    if (waypointToDelete.type === 'start') {
+    const newWaypoints = waypoints.filter(w => w.id !== id);
+    if (newWaypoints.length === 0) {
       setWaypoints([]);
       setSegments([]);
       setTotalDistance(0);
@@ -259,21 +294,19 @@ const RoutePlanner: React.FC = () => {
       return;
     }
 
-    const newWaypoints = waypoints.filter(w => w.id !== id);
-    // Reorder
-    const reorderedWaypoints = newWaypoints.map((wp, idx) => ({ ...wp, order: idx }));
-    setWaypoints(reorderedWaypoints);
+    const normalizedWaypoints = normalizeWaypoints(newWaypoints);
+    setWaypoints(normalizedWaypoints);
 
-    // Recalculate routes
-    if (reorderedWaypoints.length >= 2) {
-      await calculateAllRoutes(reorderedWaypoints);
+    if (normalizedWaypoints.length >= 2) {
+      await calculateAllRoutes(normalizedWaypoints);
     } else {
       setSegments([]);
     }
   };
 
   const handleMarkerPress = async (waypoint: Waypoint) => {
-    if (waypoint.type === 'start') {
+    const newWaypoints = waypoints.filter(w => w.id !== waypoint.id);
+    if (newWaypoints.length === 0) {
       setWaypoints([]);
       setSegments([]);
       setTotalDistance(0);
@@ -281,12 +314,11 @@ const RoutePlanner: React.FC = () => {
       return;
     }
 
-    const newWaypoints = waypoints.filter(w => w.id !== waypoint.id);
-    const reorderedWaypoints = newWaypoints.map((wp, idx) => ({ ...wp, order: idx }));
-    setWaypoints(reorderedWaypoints);
+    const normalizedWaypoints = normalizeWaypoints(newWaypoints);
+    setWaypoints(normalizedWaypoints);
 
-    if (reorderedWaypoints.length >= 2) {
-      await calculateAllRoutes(reorderedWaypoints);
+    if (normalizedWaypoints.length >= 2) {
+      await calculateAllRoutes(normalizedWaypoints);
     } else {
       setSegments([]);
     }
@@ -299,25 +331,31 @@ const RoutePlanner: React.FC = () => {
       const db = await getDatabase();
       const plan = (db.collections.plans ?? []).find((item: any) => item.id === planId);
       if (plan) {
-        setWaypoints(plan.waypoints || []);
+        const normalizedWaypoints = normalizeWaypoints(plan.waypoints || []);
+        setCurrentPlanId(plan.id);
+        setSaveTitle(plan.name ?? '');
+        setSaveDescription(plan.description ?? '');
+        setWaypoints(normalizedWaypoints);
         setSegments(plan.segments ?? []);
         setTotalDistance(plan.totalDistance || 0);
         setTotalDuration(plan.totalDuration || 0);
         setShowSavedModal(false);
 
-        if (mapRef.current && plan.waypoints?.length > 0) {
-          const coordinates = plan.waypoints.map((w: Waypoint) => ({
+        if (mapRef.current && normalizedWaypoints.length > 0) {
+          const coordinates = normalizedWaypoints.map((w: Waypoint) => ({
             latitude: w.latitude,
             longitude: w.longitude,
           }));
-          mapRef.current.fitToCoordinates(coordinates, {
+          const map = mapRef.current as any;
+          map.fitToCoordinates(coordinates, {
             edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
             animated: true,
+            duration: 300,
           });
         }
 
-        if ((!plan.segments || plan.segments.length === 0) && plan.waypoints?.length >= 2) {
-          await calculateAllRoutes(plan.waypoints);
+        if ((!plan.segments || plan.segments.length === 0) && normalizedWaypoints.length >= 2) {
+          await calculateAllRoutes(normalizedWaypoints);
         }
       }
     };
@@ -332,8 +370,8 @@ const RoutePlanner: React.FC = () => {
       'Are you sure you want to clear all waypoints?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
+        {
+          text: 'Clear',
           style: 'destructive',
           onPress: () => {
             setWaypoints([]);
@@ -346,33 +384,99 @@ const RoutePlanner: React.FC = () => {
     );
   };
 
-  const saveCurrentRoute = async () => {
+  const startRide = async () => {
     if (waypoints.length < 2) {
-      Alert.alert('Error', 'Please add at least start and end points');
+      Alert.alert('Error', 'Please add at least start and end points to ride.');
       return;
     }
 
-    const routeData = {
-      id: Date.now().toString(),
-      name: `Route ${savedRoutes.length + 1}`,
-      waypoints,
-      segments,
+    let routeSegments = segments;
+    if (routeSegments.length < 1) {
+      routeSegments = await calculateAllRoutes(waypoints);
+    }
+
+    const routeCoordinates: LatLng[] = [];
+    routeSegments.forEach((segment) => {
+      segment.polyline.forEach((point) => {
+        const lastPoint = routeCoordinates[routeCoordinates.length - 1];
+        if (!lastPoint || lastPoint.latitude !== point.latitude || lastPoint.longitude !== point.longitude) {
+          routeCoordinates.push(point);
+        }
+      });
+    });
+
+    if (routeCoordinates.length < 2) {
+      Alert.alert('Error', 'Unable to load route for riding.');
+      return;
+    }
+
+    setRouteDraft({
+      locations: routeCoordinates,
       totalDistance,
       totalDuration,
-      createdAt: new Date().toISOString(),
-    };
+      waypoints,
+      segments: routeSegments,
+    });
+
+    router.push('/ride/rides');
+  };
+
+  const saveCurrentRoute = async (title: string, description: string) => {
+    const routeData = {
+      id: currentPlanId ?? Date.now().toString(),
+      name: title,
+      description,
+      waypoints,
+      segments,
+      osrmResponses: segments.map((segment) => segment.osrmRoute).filter(Boolean),
+      totalDistance,
+      totalDuration,
+      createdAt: currentPlanId ? undefined : new Date().toISOString(),
+    } as any;
 
     try {
       const db = await getDatabase();
       const collections = db.collections as any;
-      collections.plans = [...(collections.plans ?? []), routeData];
+      const existingIndex = (collections.plans ?? []).findIndex((plan: any) => plan.id === routeData.id);
+      if (existingIndex !== -1) {
+        const existing = collections.plans[existingIndex];
+        collections.plans[existingIndex] = {
+          ...existing,
+          ...routeData,
+          createdAt: existing.createdAt ?? new Date().toISOString(),
+        };
+      } else {
+        collections.plans = [...(collections.plans ?? []), { ...routeData, createdAt: new Date().toISOString() }];
+      }
       await saveDatabase(db);
       setSavedRoutes(collections.plans);
+      setCurrentPlanId(routeData.id);
+      setSaveModalVisible(false);
       Alert.alert('Success', 'Route saved successfully!');
     } catch (error) {
       console.error('Error saving route:', error);
       Alert.alert('Error', 'Failed to save route');
     }
+  };
+
+  const openSaveModal = () => {
+    if (waypoints.length < 2) {
+      Alert.alert('Error', 'Please add at least start and end points');
+      return;
+    }
+    if (!currentPlanId) {
+      setSaveTitle('');
+      setSaveDescription('');
+    }
+    setSaveModalVisible(true);
+  };
+
+  const handleSaveRoute = async () => {
+    if (!saveTitle.trim() || !saveDescription.trim()) {
+      Alert.alert('Error', 'Please enter a title and description');
+      return;
+    }
+    await saveCurrentRoute(saveTitle.trim(), saveDescription.trim());
   };
 
   const loadSavedRoutes = async () => {
@@ -386,25 +490,31 @@ const RoutePlanner: React.FC = () => {
   };
 
   const loadRoute = async (route: any) => {
-    setWaypoints(route.waypoints);
+    const normalizedWaypoints = normalizeWaypoints(route.waypoints || []);
+    setCurrentPlanId(route.id);
+    setSaveTitle(route.name ?? '');
+    setSaveDescription(route.description ?? '');
+    setWaypoints(normalizedWaypoints);
     setSegments(route.segments ?? []);
     setTotalDistance(route.totalDistance);
     setTotalDuration(route.totalDuration);
     setShowSavedModal(false);
 
-    if (mapRef.current && route.waypoints?.length > 0) {
-      const coordinates = route.waypoints.map((w: Waypoint) => ({
+    if (mapRef.current && normalizedWaypoints.length > 0) {
+      const coordinates = normalizedWaypoints.map((w: Waypoint) => ({
         latitude: w.latitude,
         longitude: w.longitude,
       }));
-      mapRef.current.fitToCoordinates(coordinates, {
+      const map = mapRef.current as any;
+      map.fitToCoordinates(coordinates, {
         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
         animated: true,
+        duration: 300,
       });
     }
 
     if (!route.segments || route.segments.length === 0) {
-      await calculateAllRoutes(route.waypoints);
+      await calculateAllRoutes(normalizedWaypoints);
     }
 
     Alert.alert('Success', `Loaded ${route.name}`);
@@ -431,7 +541,7 @@ const RoutePlanner: React.FC = () => {
 
   const saveWaypointTitle = () => {
     if (!editingPoint || !tempTitle.trim()) return;
-    
+
     const updatedWaypoints = waypoints.map(wp =>
       wp.id === editingPoint.id ? { ...wp, title: tempTitle } : wp
     );
@@ -441,14 +551,14 @@ const RoutePlanner: React.FC = () => {
     setTempTitle('');
   };
 
-  // Get marker color
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case 'start': return '#4CAF50';
-      case 'end': return '#f44336';
-      default: return '#2196F3';
-    }
+  const markerColors: Record<Waypoint['type'], string> = {
+    start: '#4CAF50',
+    stop: '#FFD700',
+    end: '#f44336',
   };
+
+  // Get marker color
+  const getMarkerColor = (type: Waypoint['type']) => markerColors[type] ?? '#FFD700';
 
   // Format duration
   const formatDuration = (minutes: number) => {
@@ -461,25 +571,27 @@ const RoutePlanner: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header with Save Button */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Route Planner</Text>
-        </View>
-        <View style={styles.headerRight}>
-          {waypoints.length > 0 && (
-            <TouchableOpacity onPress={clearAllWaypoints} style={styles.headerButton}>
-              <MaterialIcons name="clear-all" size={24} color="#fff" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => setShowSavedModal(true)} style={styles.headerButton}>
-            <MaterialIcons name="folder" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={saveCurrentRoute} style={styles.headerButton}>
-            <MaterialIcons name="save" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Route Planner</Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
+      <View style={[styles.actionButtonsRow, { backgroundColor: colors.card }]}>
+        <TouchableOpacity onPress={startRide} style={styles.headerButton}>
+          <MaterialIcons name="directions-bike" size={24} color={colors.primary} />
+          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Ride</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={clearAllWaypoints} style={styles.headerButton}>
+          <MaterialIcons name="close" size={24} color={colors.primary} />
+          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Clear</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={openSaveModal} style={styles.headerButton}>
+          <MaterialIcons name="save" size={24} color={colors.primary} />
+          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Save</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Stats Bar */}
@@ -521,7 +633,7 @@ const RoutePlanner: React.FC = () => {
               lineDashPattern={[0]}
             />
           ))}
-          
+
           {/* Waypoint Markers */}
           {waypoints.map((waypoint) => (
             <Marker
@@ -607,6 +719,48 @@ const RoutePlanner: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Save Route Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={saveModalVisible}
+        onRequestClose={() => setSaveModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Save Route</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Title"
+              value={saveTitle}
+              onChangeText={setSaveTitle}
+              autoFocus
+            />
+            <TextInput
+              style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
+              placeholder="Description"
+              value={saveDescription}
+              onChangeText={setSaveDescription}
+              multiline
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelModalButton]}
+                onPress={() => setSaveModalVisible(false)}
+              >
+                <Text style={styles.cancelModalText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveModalButton]}
+                onPress={handleSaveRoute}
+              >
+                <Text style={styles.saveModalText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Saved Routes Modal */}
       <Modal
         animationType="slide"
@@ -664,28 +818,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#2196F3',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerLeft: {
     flex: 1,
+  },
+  backButton: {
+    padding: 8,
   },
   headerRight: {
     flexDirection: 'row',
     gap: 16,
   },
+  headerPlaceholder: {
+    width: 32,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    flex: 1,
+    textAlign: 'center',
   },
   headerButton: {
     padding: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   statsBar: {
     flexDirection: 'row',
