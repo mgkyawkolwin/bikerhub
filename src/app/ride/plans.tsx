@@ -2,8 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
@@ -11,6 +12,12 @@ import { getDatabase, saveDatabase } from '@/services/localDatabase';
 export default function RoutePlansScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
+  const currentUserId = authUser?.id;
+  const isOwnPlans = !viewedUserId || viewedUserId === currentUserId;
   const { isDark } = useThemeContext();
   const [plans, setPlans] = useState<any[]>([]);
 
@@ -24,9 +31,16 @@ export default function RoutePlansScreen() {
   };
 
   const loadPlans = useCallback(async () => {
+    console.log('Loading plans for userId:', viewedUserId);
     const db = await getDatabase();
-    setPlans(db.collections.plans ?? []);
-  }, []);
+    const allPlans = db.collections.plans ?? [];
+    console.log('All plans loaded:', allPlans);
+    const filteredPlans = viewedUserId
+      ? allPlans.filter((plan: any) => plan.createdById === viewedUserId || plan.userId === viewedUserId)
+      : allPlans;
+    console.log('Filtered plans:', filteredPlans);
+    setPlans(filteredPlans);
+  }, [viewedUserId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -88,6 +102,13 @@ export default function RoutePlansScreen() {
             {item.description}
           </ThemedText>
         ) : null}
+        <TouchableOpacity
+          style={[styles.viewButton, { backgroundColor: colors.accent }]}
+          activeOpacity={0.8}
+          onPress={() => router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`)}
+        >
+          <ThemedText style={styles.viewButtonText}>View</ThemedText>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -99,10 +120,12 @@ export default function RoutePlansScreen() {
           <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <ThemedText style={[styles.title, { color: colors.primary }]}>Plans</ThemedText>
-        <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/ride/plan')} activeOpacity={0.8}>
-          <MaterialIcons name="add" size={18} color="#FFFFFF" />
-          <ThemedText style={styles.newPlanText}>New Plan</ThemedText>
-        </TouchableOpacity>
+        {isOwnPlans ? (
+          <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/ride/plan')} activeOpacity={0.8}>
+            <MaterialIcons name="add" size={18} color="#FFFFFF" />
+            <ThemedText style={styles.newPlanText}>New Plan</ThemedText>
+          </TouchableOpacity>
+        ) : null}
       </View>
       <FlatList
         data={plans}
@@ -200,6 +223,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     opacity: 0.85,
+    marginBottom: 12,
+  },
+  viewButton: {
+    marginTop: 12,
+    width: '100%',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  viewButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
   deleteButton: {
     padding: 8,

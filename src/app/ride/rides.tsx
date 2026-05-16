@@ -8,13 +8,16 @@ import {
     Modal,
     TextInput,
     Dimensions,
+    ActivityIndicator,
 } from 'react-native';
 import MapView, { Polyline, Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { useLocalSearchParams } from 'expo-router';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
 import { getRouteDraft, clearRouteDraft } from '@/services/routeTransfer';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMResponse } from '@/models/route';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -43,7 +46,32 @@ interface TurnArrowInfo {
     distanceMeters: number;
 }
 
+interface Waypoint {
+    id: string;
+    latitude: number;
+    longitude: number;
+    title: string;
+    type: 'start' | 'stop' | 'end';
+    order: number;
+}
+
+interface RouteSegment {
+    from: Waypoint;
+    to: Waypoint;
+    distance: number; // km
+    duration: number; // minutes
+    polyline: LatLng[];
+    osrmRoute?: any;
+}
+
 const RideRecorder: React.FC = () => {
+    const params = useLocalSearchParams();
+    const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+    const { getAuthUser } = useAuthContext();
+    const authUser = getAuthUser();
+    const currentUserId = authUser?.id;
+    const isOwnData = !viewedUserId || viewedUserId === currentUserId;
+
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [sessionActive, setSessionActive] = useState(false);
@@ -76,6 +104,14 @@ const RideRecorder: React.FC = () => {
     const [simulatedPosition, setSimulatedPosition] = useState<LatLng | null>(null);
     const [straightDistanceMeters, setStraightDistanceMeters] = useState<number>(0);
 
+    // Planning mode state (active when no draft route is passed in)
+    const [planningMode, setPlanningMode] = useState(false);
+    const [planWaypoints, setPlanWaypoints] = useState<Waypoint[]>([]);
+    const [planSegments, setPlanSegments] = useState<RouteSegment[]>([]);
+    const [planIsLoading, setPlanIsLoading] = useState(false);
+    const [planTotalDistance, setPlanTotalDistance] = useState(0);
+    const [planTotalDuration, setPlanTotalDuration] = useState(0); // minutes
+
     const mapRef = useRef<MapView>(null);
     const miniMapRef = useRef<MapView>(null);
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
@@ -100,6 +136,7 @@ const RideRecorder: React.FC = () => {
         const loadDraftRoute = async () => {
             const draft = getRouteDraft();
             if (!draft) {
+                setPlanningMode(true);
                 requestLocationPermission();
                 return;
             }
@@ -224,6 +261,23 @@ const RideRecorder: React.FC = () => {
 
     // Utility functions
     const toRad = (value: number): number => (value * Math.PI) / 180;
+
+    // Offset a coordinate by `distanceM` metres in the given compass bearing.
+    // Used to shift the camera center forward so the vehicle appears in the
+    // lower portion of the screen rather than dead-centre.
+    const offsetCoordinate = (lat: number, lng: number, bearing: number, distanceM: number) => {
+        const R = 6371000;
+        const d = distanceM / R;
+        const θ = (bearing * Math.PI) / 180;
+        const φ1 = (lat * Math.PI) / 180;
+        const φ2 = Math.asin(Math.sin(φ1) * Math.cos(d) + Math.cos(φ1) * Math.sin(d) * Math.cos(θ));
+        const λ1 = (lng * Math.PI) / 180;
+        const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(d) * Math.cos(φ1), Math.cos(d) - Math.sin(φ1) * Math.sin(φ2));
+        return {
+            latitude: (φ2 * 180) / Math.PI,
+            longitude: ((λ2 * 180) / Math.PI + 540) % 360 - 180,
+        };
+    };
 
     const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
         const R = 6371;
@@ -594,23 +648,37 @@ const RideRecorder: React.FC = () => {
                 }
             }
             
-            // Animate map camera to follow simulated position with rotation
+            // Animate map camera to follow simulated position with rotation.
+            // Offset the camera center forward (in bearing direction) so that
+            // the vehicle marker appears in the lower portion of the viewport.
             if (!isNaN(bearing)) {
                 currentBearingRef.current = bearing;
+                const cameraCenter = offsetCoordinate(
+                    currentLatLng.latitude,
+                    currentLatLng.longitude,
+                    bearing,
+                    250, // metres ahead — puts vehicle near the bottom of the viewport
+                );
                 if (mapRef.current) {
                     mapRef.current.animateCamera({
-                        center: currentLatLng,
+                        center: cameraCenter,
                         heading: bearing,
-                        pitch: 45,
+                        pitch: 75,
                         zoom: 18,
                     }, { duration: 500 });
                 }
                 if (miniMapRef.current) {
+                    const miniCameraCenter = offsetCoordinate(
+                        currentLatLng.latitude,
+                        currentLatLng.longitude,
+                        bearing,
+                        350, // zoom-14 mini-map: ~350m shifts marker to bottom 20% of the thumbnail
+                    );
                     miniMapRef.current.animateCamera({
-                        center: currentLatLng,
+                        center: miniCameraCenter,
                         heading: bearing,
                         pitch: 0,
-                        zoom: 13,
+                        zoom: 14,
                     }, { duration: 500 });
                 }
             }
@@ -749,6 +817,170 @@ const RideRecorder: React.FC = () => {
         }
     };
 
+    // ─── Planning mode functions ─────────────────────────────────────────────
+
+    const normalizePlanWaypoints = (list: Waypoint[]): Waypoint[] => {
+        const sorted = [...list].sort((a, b) => a.order - b.order);
+        return sorted.map((wp, idx) => ({
+            ...wp,
+            type: (idx === 0 ? 'start' : idx === sorted.length - 1 ? 'end' : 'stop') as Waypoint['type'],
+            order: idx,
+            title: idx === 0 ? 'Start' : idx === sorted.length - 1 ? 'End' : `Stop ${idx}`,
+        }));
+    };
+
+    const calculatePlanSegment = async (from: Waypoint, to: Waypoint): Promise<RouteSegment | null> => {
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${from.longitude},${from.latitude};${to.longitude},${to.latitude}?overview=full&geometries=geojson&steps=true`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.code === 'Ok' && data.routes[0]) {
+                const route = data.routes[0];
+                const polyline: LatLng[] = route.geometry.coordinates.map((coord: [number, number]) => ({
+                    latitude: coord[1],
+                    longitude: coord[0],
+                }));
+                return { from, to, distance: route.distance / 1000, duration: route.duration / 60, polyline, osrmRoute: route };
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    };
+
+    const calculateAllPlanRoutes = async (waypointList: Waypoint[]) => {
+        if (waypointList.length < 2) {
+            setPlanSegments([]);
+            setPlanTotalDistance(0);
+            setPlanTotalDuration(0);
+            return;
+        }
+        setPlanIsLoading(true);
+        const sorted = [...waypointList].sort((a, b) => a.order - b.order);
+        const newSegments: RouteSegment[] = [];
+        for (let i = 0; i < sorted.length - 1; i++) {
+            const seg = await calculatePlanSegment(sorted[i], sorted[i + 1]);
+            if (seg) newSegments.push(seg);
+        }
+        setPlanSegments(newSegments);
+        setPlanTotalDistance(newSegments.reduce((s, seg) => s + seg.distance, 0));
+        setPlanTotalDuration(newSegments.reduce((s, seg) => s + seg.duration, 0));
+        setPlanIsLoading(false);
+        if (mapRef.current && waypointList.length > 0) {
+            mapRef.current.fitToCoordinates(
+                waypointList.map(w => ({ latitude: w.latitude, longitude: w.longitude })),
+                { edgePadding: { top: 80, right: 40, bottom: 120, left: 40 }, animated: true },
+            );
+        }
+    };
+
+    const handlePlanLongPress = (event: any) => {
+        const { coordinate } = event.nativeEvent;
+        const newWaypoint: Waypoint = {
+            id: Date.now().toString(),
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            title: 'End',
+            type: 'end',
+            order: planWaypoints.length,
+        };
+        const updated = normalizePlanWaypoints([...planWaypoints, newWaypoint]);
+        setPlanWaypoints(updated);
+        if (updated.length >= 2) void calculateAllPlanRoutes(updated);
+    };
+
+    const handlePlanMarkerDragEnd = async (id: string, coordinate: LatLng) => {
+        const updated = planWaypoints.map(wp =>
+            wp.id === id ? { ...wp, latitude: coordinate.latitude, longitude: coordinate.longitude } : wp,
+        );
+        setPlanWaypoints(updated);
+        if (updated.length >= 2) await calculateAllPlanRoutes(updated);
+    };
+
+    const handlePlanMarkerPress = (id: string) => {
+        const filtered = planWaypoints.filter(wp => wp.id !== id);
+        const updated = normalizePlanWaypoints(filtered);
+        setPlanWaypoints(updated);
+        if (updated.length >= 2) {
+            void calculateAllPlanRoutes(updated);
+        } else {
+            setPlanSegments([]);
+            setPlanTotalDistance(0);
+            setPlanTotalDuration(0);
+        }
+    };
+
+    const clearPlanWaypoints = () => {
+        setPlanWaypoints([]);
+        setPlanSegments([]);
+        setPlanTotalDistance(0);
+        setPlanTotalDuration(0);
+    };
+
+    /** Convert the planned segments into a navigation-ready route, then exit planning mode. */
+    const startNavigating = () => {
+        if (planSegments.length === 0) {
+            Alert.alert('No Route', 'Long press the map to add start and destination points first.');
+            return;
+        }
+        // Build flat route geometry (deduplicate consecutive identical points)
+        const routeCoordinates: LatLng[] = [];
+        for (const seg of planSegments) {
+            for (const pt of seg.polyline) {
+                const last = routeCoordinates[routeCoordinates.length - 1];
+                if (!last || last.latitude !== pt.latitude || last.longitude !== pt.longitude) {
+                    routeCoordinates.push(pt);
+                }
+            }
+        }
+        // Parse turn instructions from OSRM step data stored in each segment
+        const allSteps: TurnInstruction[] = [];
+        let cumulativeDist = 0;
+        let totalDist = 0;
+        let totalDur = 0; // minutes
+        for (const seg of planSegments) {
+            totalDist += seg.distance;
+            totalDur += seg.duration;
+            const route = seg.osrmRoute;
+            if (!route) continue;
+            for (const leg of route.legs) {
+                for (const step of leg.steps) {
+                    cumulativeDist += step.distance / 1000;
+                    const m = step.maneuver;
+                    if (m.type === 'depart') continue;
+                    const action: TurnInstruction['action'] = m.type === 'arrive'
+                        ? 'destination'
+                        : mapModifierToAction(m.modifier);
+                    const instruction = m.type === 'arrive'
+                        ? 'Arrive at destination'
+                        : getInstructionFromManeuver(m.type, m.modifier);
+                    allSteps.push({
+                        id: `step_${allSteps.length}`,
+                        instruction,
+                        action,
+                        distanceToTurn: cumulativeDist,
+                        location: { latitude: m.location[1], longitude: m.location[0] },
+                        streetName: step.name || '',
+                        bearing: m.bearing_after,
+                    });
+                }
+            }
+        }
+        setRoutePath(routeCoordinates);
+        setTurnInstructions(allSteps);
+        setTotalRouteDistance(totalDist);
+        setTotalRouteDuration(totalDur);
+        setPlanningMode(false);
+        setTimeout(() => {
+            mapRef.current?.fitToCoordinates(routeCoordinates, {
+                edgePadding: { top: 80, right: 40, bottom: 120, left: 40 },
+                animated: true,
+            });
+        }, 300);
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     const requestLocationPermission = async () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -826,18 +1058,34 @@ const RideRecorder: React.FC = () => {
                 }
                 
                 if (mapRef.current && !isPaused) {
+                    const gpsBearing = newLocation.coords.heading ?? currentBearingRef.current;
+                    currentBearingRef.current = gpsBearing;
+                    const gpsCameraCenter = offsetCoordinate(
+                        newPoint.latitude,
+                        newPoint.longitude,
+                        gpsBearing,
+                        250,
+                    );
                     mapRef.current.animateCamera({
-                        center: newPoint,
+                        center: gpsCameraCenter,
+                        heading: gpsBearing,
+                        pitch: 75,
                         zoom: 18,
                     }, { duration: 500 });
-                }
-                if (miniMapRef.current && !isPaused) {
-                    miniMapRef.current.animateCamera({
-                        center: newPoint,
-                        heading: newLocation.coords.heading ?? currentBearingRef.current,
-                        pitch: 0,
-                        zoom: 13,
-                    }, { duration: 500 });
+                    if (miniMapRef.current) {
+                        const gpsMinCameraCenter = offsetCoordinate(
+                            newPoint.latitude,
+                            newPoint.longitude,
+                            gpsBearing,
+                            350,
+                        );
+                        miniMapRef.current.animateCamera({
+                            center: gpsMinCameraCenter,
+                            heading: gpsBearing,
+                            pitch: 0,
+                            zoom: 13,
+                        }, { duration: 500 });
+                    }
                 }
             }
         );
@@ -886,7 +1134,7 @@ const RideRecorder: React.FC = () => {
         // Hide turn arrow
         setTurnArrow(prev => ({ ...prev, visible: false }));
         
-        if (locations.length > 0) {
+        if (locations.length > 0 && isOwnData) {
             setSaveModalVisible(true);
         }
     };
@@ -1023,6 +1271,26 @@ const RideRecorder: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            {/* Planning stats bar — shown while planning a new route */}
+            {planningMode && !sessionActive && planSegments.length > 0 && (
+                <View style={styles.planningStatsBar}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Points</Text>
+                        <Text style={styles.statValue}>{planWaypoints.length}</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Distance</Text>
+                        <Text style={styles.statValue}>{planTotalDistance.toFixed(1)} km</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Est. Time</Text>
+                        <Text style={styles.statValue}>{formatEtaDuration(planTotalDuration * 60)}</Text>
+                    </View>
+                </View>
+            )}
+
             {routePath.length > 0 && !sessionActive && (
                 <View style={styles.routeStats}>
                     <View style={styles.routeStatItem}>
@@ -1070,7 +1338,9 @@ const RideRecorder: React.FC = () => {
                     showsMyLocationButton={!isSimulating}
                     followsUserLocation={false}
                     showsCompass={true}
+                    showsScale={true}
                     rotateEnabled={true}
+                    onLongPress={planningMode && !sessionActive ? handlePlanLongPress : undefined}
                 >
                     {routePath.length > 1 && (
                         <Polyline coordinates={routePath} strokeColor="#2196F3" strokeWidth={5} />
@@ -1092,11 +1362,54 @@ const RideRecorder: React.FC = () => {
                     {isSimulating && simulatedPosition && (
                         <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
                             <View style={styles.vehicleMarker}>
-                                <Text style={styles.vehicleMarkerText}>🏍️</Text>
+                                <View style={styles.vehicleArrow} />
                             </View>
                         </Marker>
                     )}
+
+                    {/* Planning: route segments */}
+                    {planningMode && planSegments.map((seg) => (
+                        <Polyline
+                            key={`${seg.from.id}-${seg.to.id}`}
+                            coordinates={seg.polyline}
+                            strokeColor="#FF9800"
+                            strokeWidth={4}
+                        />
+                    ))}
+
+                    {/* Planning: waypoint markers — tap to remove, drag to reposition */}
+                    {planningMode && planWaypoints.map((wp) => (
+                        <Marker
+                            key={wp.id}
+                            coordinate={{ latitude: wp.latitude, longitude: wp.longitude }}
+                            pinColor={wp.type === 'start' ? '#4CAF50' : wp.type === 'end' ? '#f44336' : '#FFD700'}
+                            draggable
+                            title={wp.title}
+                            description="Tap to remove · drag to move"
+                            onDragEnd={(e) => void handlePlanMarkerDragEnd(wp.id, e.nativeEvent.coordinate)}
+                            onPress={() => handlePlanMarkerPress(wp.id)}
+                        />
+                    ))}
                 </MapView>
+
+                {/* Planning: instruction prompts */}
+                {planningMode && !sessionActive && planWaypoints.length === 0 && (
+                    <View style={styles.planningInstructions}>
+                        <Text style={styles.planningInstructionsText}>Long press on map to set start point</Text>
+                    </View>
+                )}
+                {planningMode && !sessionActive && planWaypoints.length === 1 && (
+                    <View style={styles.planningInstructions}>
+                        <Text style={styles.planningInstructionsText}>Long press again to set destination</Text>
+                    </View>
+                )}
+                {/* Planning: route calculation loading overlay */}
+                {planIsLoading && (
+                    <View style={styles.planningLoading}>
+                        <ActivityIndicator size="large" color="#FF9800" />
+                        <Text style={styles.planningLoadingText}>Calculating route…</Text>
+                    </View>
+                )}
 
                 {sessionActive && turnArrow.visible && (
                     <View style={getArrowContainerStyle(turnArrow.position)}>
@@ -1129,7 +1442,7 @@ const RideRecorder: React.FC = () => {
                             ref={miniMapRef}
                             style={styles.miniMap}
                             scrollEnabled={false}
-                            zoomEnabled={false}
+                            zoomEnabled={true}
                             rotateEnabled={false}
                             pitchEnabled={false}
                             showsUserLocation={!isSimulating}
@@ -1139,8 +1452,8 @@ const RideRecorder: React.FC = () => {
                             initialRegion={{
                                 latitude: (simulatedPosition || currentUserLocation)!.latitude,
                                 longitude: (simulatedPosition || currentUserLocation)!.longitude,
-                                latitudeDelta: 0.045,
-                                longitudeDelta: 0.045,
+                                latitudeDelta: 0.888,
+                                longitudeDelta: 0.888,
                             }}
                             pointerEvents="none"
                         >
@@ -1150,7 +1463,7 @@ const RideRecorder: React.FC = () => {
                             {simulatedPosition && (
                                 <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
                                     <View style={styles.miniMapMarker}>
-                                        <Text style={styles.miniMapMarkerText}>🏍️</Text>
+                                        <View style={styles.miniMapArrow} />
                                     </View>
                                 </Marker>
                             )}
@@ -1161,7 +1474,26 @@ const RideRecorder: React.FC = () => {
 
 
                 <View style={styles.controlBar}>
-                    {!sessionActive ? (
+                    {planningMode && !sessionActive ? (
+                        <>
+                            {isOwnData ? (
+                                <TouchableOpacity
+                                    style={[styles.controlButton, styles.clearButton]}
+                                    onPress={clearPlanWaypoints}
+                                    disabled={planWaypoints.length === 0}
+                                >
+                                    <Text style={styles.controlButtonText}>Clear</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                            <TouchableOpacity
+                                style={[styles.controlButton, styles.startButton]}
+                                onPress={startNavigating}
+                                disabled={planSegments.length === 0 || planIsLoading}
+                            >
+                                <Text style={styles.controlButtonText}>Start Navigating</Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : !sessionActive ? (
                         <>
                             {/* Simulate Start Button */}
                             <TouchableOpacity 
@@ -1230,9 +1562,11 @@ const RideRecorder: React.FC = () => {
                                 <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={() => setSaveModalVisible(false)}>
                                     <Text style={styles.cancelModalText}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[styles.modalButton, styles.saveModalButton]} onPress={handleSaveRide}>
-                                    <Text style={styles.saveModalText}>Save</Text>
-                                </TouchableOpacity>
+                                {isOwnData ? (
+                                    <TouchableOpacity style={[styles.modalButton, styles.saveModalButton]} onPress={handleSaveRide}>
+                                        <Text style={styles.saveModalText}>Save</Text>
+                                    </TouchableOpacity>
+                                ) : null}
                             </View>
                         </View>
                     </View>
@@ -1315,14 +1649,14 @@ const styles = StyleSheet.create({
     },
     arrowLabel: {
         color: '#000',
-        fontSize: 36,
+        fontSize: 23,
         fontWeight: 'bold',
         marginBottom: 2,
         textAlign: 'center',
         textShadowColor: 'rgba(255,255,255,0.9)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
-        marginTop: -20,
+        marginTop: 0,
     },
     arrowSymbolContainer: {
         marginVertical: 2,
@@ -1331,17 +1665,17 @@ const styles = StyleSheet.create({
         marginTop: -20,
     },
     arrowSymbol: {
-        fontSize: 104,
+        fontSize: 128,
         color: '#000',
         fontWeight: 'bold',
         textShadowColor: 'rgba(255,255,255,0.9)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
-        marginTop: -50,
+        marginTop: -72,
     },
     arrowDistance: {
         color: '#000',
-        fontSize: 20,
+        fontSize: 36,
         fontWeight: 'bold',
         textShadowColor: 'rgba(255,255,255,0.9)',
         textShadowOffset: { width: 1, height: 1 },
@@ -1374,8 +1708,22 @@ const styles = StyleSheet.create({
         textShadowRadius: 4,
     },
     vehicleMarker: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        // Exact bounding box of the triangle: (borderLeft+borderRight) × borderBottom
+        // = 24 × 28. No flex centering — marginLeft on child does the precise placement.
+        width: 24,
+        height: 28,
+    },
+    vehicleArrow: {
+        width: 0,
+        height: 0,
+        // marginLeft = half of total width (12) → apex at x=12, left border→x=0, right border→x=24
+        marginLeft: 12,
+        borderLeftWidth: 12,
+        borderRightWidth: 12,
+        borderBottomWidth: 28,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderBottomColor: '#1565C0',
     },
     vehicleMarkerText: {
         fontSize: 32,
@@ -1384,8 +1732,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 90,
         left: 16,
-        width: 140,
-        height: 140,
+        width: 120,
+        height: 180,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 2,
@@ -1402,11 +1750,25 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     miniMapMarker: {
-        alignItems: 'center',
-        justifyContent: 'center',
+        // Exact bounding box: (7+7) × 16 = 14 × 16
+        width: 14,
+        height: 16,
+    },
+    miniMapArrow: {
+        width: 0,
+        height: 0,
+        marginLeft: 7,
+        borderLeftWidth: 7,
+        borderRightWidth: 7,
+        borderBottomWidth: 16,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderBottomColor: '#1565C0',
     },
     miniMapMarkerText: {
         fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 28,
     },
     
     navigationCard: {
@@ -1468,6 +1830,47 @@ const styles = StyleSheet.create({
     saveModalButton: { backgroundColor: '#2196F3' },
     cancelModalText: { color: '#666', fontWeight: 'bold' },
     saveModalText: { color: '#fff', fontWeight: 'bold' },
+    clearButton: { backgroundColor: '#757575' },
+    planningStatsBar: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,152,0,0.95)',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+    },
+    planningInstructions: {
+        position: 'absolute',
+        bottom: 90,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 20,
+    },
+    planningInstructionsText: {
+        backgroundColor: 'rgba(0,0,0,0.72)',
+        color: '#fff',
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 20,
+        fontSize: 14,
+    },
+    planningLoading: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: 0, right: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 30,
+    },
+    planningLoadingText: {
+        color: '#fff',
+        marginTop: 12,
+        fontSize: 14,
+    },
 });
 
 export default RideRecorder;

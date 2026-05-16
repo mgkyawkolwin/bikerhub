@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import type ForumPost from '@/models/forumPost';
-import initialData from '@/services/mockdata.json';
+import initialData from '@/services/mockdata';
 
 export default function ForumIndexScreen() {
   const insets = useSafeAreaInsets();

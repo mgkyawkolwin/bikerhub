@@ -1,5 +1,4 @@
-import { File, Paths } from 'expo-file-system';
-import initialData from './mockdata.json';
+import initialData from './mockdata';
 import type { BikeListing } from '../models/bikeListing';
 import type { StolenBikeReport } from '../models/stolenBikeReport';
 import type ChatMessage from '../models/chatMesage';
@@ -15,9 +14,6 @@ import type Route from '../models/route';
 import type Group from '../models/group';
 import type Challenge from '../models/challenge';
 import type SocialProfile from '../models/socialProfile';
-
-const DATABASE_FILE_NAME = 'mockdatax.json';
-const DATABASE_FILE = new File(Paths.document, DATABASE_FILE_NAME);
 
 export type DatabaseCollections = {
   users: User[];
@@ -49,42 +45,16 @@ export type JsonDatabase = {
   collections: DatabaseCollections;
 };
 
-let databasePromise: Promise<JsonDatabase> | null = null;
+let database: JsonDatabase | null = null;
 
 export function getDatabase() {
-  if (!databasePromise) {
-    databasePromise = initializeDatabase();
+  if (!database) {
+    database = JSON.parse(JSON.stringify(initialData)) as JsonDatabase;
   }
 
-  return databasePromise;
+  return Promise.resolve(database);
 }
 
 export async function saveDatabase(db: JsonDatabase) {
-  const fileInfo = await DATABASE_FILE.info();
-  if (!fileInfo.exists) {
-    await DATABASE_FILE.create();
-  }
-
-  await DATABASE_FILE.write(JSON.stringify(db));
-}
-
-async function initializeDatabase(): Promise<JsonDatabase> {
-  const fileInfo = await DATABASE_FILE.info();
-
-  if (fileInfo.exists) {
-    try {
-      const contents = await DATABASE_FILE.text();
-      return JSON.parse(contents) as JsonDatabase;
-    } catch {
-      // If the file is malformed, recreate it.
-    }
-  }
-
-  const db = JSON.parse(JSON.stringify(initialData)) as JsonDatabase;
-  if (!fileInfo.exists) {
-    await DATABASE_FILE.create({ overwrite: true });
-  }
-
-  await DATABASE_FILE.write(JSON.stringify(db));
-  return db;
+  database = db;
 }

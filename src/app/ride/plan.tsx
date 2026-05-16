@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
 import { setRouteDraft } from '@/services/routeTransfer';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMRoute } from '@/models/route';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -53,6 +54,13 @@ const RoutePlanner: React.FC = () => {
   const [saveDescription, setSaveDescription] = useState('');
   const params = useLocalSearchParams();
   const planId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const [planOwnerId, setPlanOwnerId] = useState<string | null>(null);
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
+  const currentUserId = authUser?.id;
+  const effectiveOwnerId = planOwnerId ?? viewedUserId;
+  const isOwnData = !effectiveOwnerId || effectiveOwnerId === currentUserId;
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(planId ?? null);
   const [savedRoutes, setSavedRoutes] = useState<any[]>([]);
   const [showSavedModal, setShowSavedModal] = useState(false);
@@ -354,6 +362,11 @@ const RoutePlanner: React.FC = () => {
           });
         }
 
+        const ownerId = plan.createdById ?? plan.userId ?? null;
+        if (ownerId) {
+          setPlanOwnerId(ownerId);
+        }
+
         if ((!plan.segments || plan.segments.length === 0) && normalizedWaypoints.length >= 2) {
           await calculateAllRoutes(normalizedWaypoints);
         }
@@ -584,16 +597,19 @@ const RoutePlanner: React.FC = () => {
           <MaterialIcons name="directions-bike" size={24} color={colors.primary} />
           <Text style={[styles.headerButtonText, { color: colors.primary }]}>Ride</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={clearAllWaypoints} style={styles.headerButton}>
-          <MaterialIcons name="close" size={24} color={colors.primary} />
-          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Clear</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={openSaveModal} style={styles.headerButton}>
-          <MaterialIcons name="save" size={24} color={colors.primary} />
-          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Save</Text>
-        </TouchableOpacity>
+        {isOwnData ? ( 
+          <> 
+            <TouchableOpacity onPress={clearAllWaypoints} style={styles.headerButton}> 
+              <MaterialIcons name="close" size={24} color={colors.primary} /> 
+              <Text style={[styles.headerButtonText, { color: colors.primary }]}>Clear</Text> 
+            </TouchableOpacity> 
+            <TouchableOpacity onPress={openSaveModal} style={styles.headerButton}> 
+              <MaterialIcons name="save" size={24} color={colors.primary} /> 
+              <Text style={[styles.headerButtonText, { color: colors.primary }]}>Save</Text> 
+            </TouchableOpacity> 
+          </> 
+        ) : null} 
       </View>
-
       {/* Stats Bar */}
       {waypoints.length > 0 && (
         <View style={styles.statsBar}>

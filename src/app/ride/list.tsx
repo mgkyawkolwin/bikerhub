@@ -22,6 +22,7 @@ export default function RouteListScreen() {
   const { isDark } = useThemeContext();
   const { getAuthUser } = useAuthContext();
   const authUser = getAuthUser();
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
 
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -46,16 +47,30 @@ export default function RouteListScreen() {
     async (pageNumber: number, reset = false) => {
       setLoading(true);
       try {
-        const result = await routeService.getRoutes(pageNumber, 10);
-        setRoutes((prev) => (reset ? result.items : [...prev, ...result.items]));
-        setPage(result.page);
-        setTotal(result.total);
+        console.log('Loading routes for userId:', viewedUserId);
+        if (viewedUserId) {
+          const db = await getDatabase();
+          const allRoutes = (db.collections.routes as Route[] | undefined) ?? [];
+          console.log('All routes loaded:', allRoutes);
+          const filteredRoutes = allRoutes.filter(
+            (route) => route.createdById === viewedUserId,
+          );
+          console.log('Filtered routes:', filteredRoutes);
+          setRoutes(filteredRoutes);
+          setPage(1);
+          setTotal(filteredRoutes.length);
+        } else {
+          // const result = await routeService.getRoutes(pageNumber, 10);
+          setRoutes([]);
+          setPage(0);
+          setTotal(0);
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [routeService],
+    [routeService, viewedUserId],
   );
 
   useFocusEffect(
@@ -110,24 +125,23 @@ export default function RouteListScreen() {
         ) : null}
         <ThemedText style={[styles.cardSummary, { color: colors.secondary }]} numberOfLines={3}>{item.description}</ThemedText>
       </View>
-      {item.gpxUrl ? (
-        <TouchableOpacity
-          onPress={() => {
-            if (item.gpxUrl) {
-              void Linking.openURL(item.gpxUrl);
-            }
-          }}
-          style={[styles.downloadButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={styles.downloadText}>Open</ThemedText>
-        </TouchableOpacity>
-      ) : null}
+      <TouchableOpacity
+        onPress={() => {
+          if (item.gpxUrl) {
+            void Linking.openURL(item.gpxUrl);
+          } else {
+            loadRide(item);
+          }
+        }}
+        style={[styles.downloadButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
+        activeOpacity={0.8}
+      >
+        <ThemedText style={styles.downloadText}>View</ThemedText>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
   const currentUserId = authUser?.id;
-  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const isOwnRoutes = !viewedUserId || viewedUserId === currentUserId;
 
   const parseDistance = (distanceText?: string): number => {

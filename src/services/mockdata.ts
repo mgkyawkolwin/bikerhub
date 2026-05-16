@@ -1,4 +1,4 @@
-{
+export default {
   "collections": {
     "routes": [
       {
@@ -9,8 +9,36 @@
         "duration": "12 hours",
         "type": "Off-road",
         "gpxUrl": "https://example.com/routes/yangon-mandalay.gpx",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Mr.Biker"
+        "createdById": "user-1",
+        "userId": "user-1",
+        "createdByName": "Khin Zaw",
+        "routePath": [
+          { "latitude": 16.805004, "longitude": 96.156012 },
+          { "latitude": 21.975003, "longitude": 96.083956 }
+        ],
+        "locations": [
+          { "latitude": 16.805004, "longitude": 96.156012 },
+          { "latitude": 21.975003, "longitude": 96.083956 }
+        ],
+        "waypoints": [
+          { "id": "wp-1", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+          { "id": "wp-2", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-1", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+            "to": { "id": "wp-2", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "end", "order": 1 },
+            "distance": 600,
+            "duration": 720,
+            "polyline": [
+              { "latitude": 16.805004, "longitude": 96.156012 },
+              { "latitude": 21.975003, "longitude": 96.083956 }
+            ]
+          }
+        ],
+        "totalDistance": 600,
+        "totalDuration": 720,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       },
       {
         "id": "route-2",
@@ -20,8 +48,36 @@
         "duration": "6 hours",
         "type": "Highway",
         "gpxUrl": "https://example.com/routes/mandalay-naypyitaw.gpx",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Shadow Biker"
+        "createdById": "user-2",
+        "userId": "user-2",
+        "createdByName": "Mya Lin",
+        "routePath": [
+          { "latitude": 21.975003, "longitude": 96.083956 },
+          { "latitude": 19.762963, "longitude": 96.077712 }
+        ],
+        "locations": [
+          { "latitude": 21.975003, "longitude": 96.083956 },
+          { "latitude": 19.762963, "longitude": 96.077712 }
+        ],
+        "waypoints": [
+          { "id": "wp-3", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "start", "order": 0 },
+          { "id": "wp-4", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-3", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "start", "order": 0 },
+            "to": { "id": "wp-4", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 },
+            "distance": 350,
+            "duration": 360,
+            "polyline": [
+              { "latitude": 21.975003, "longitude": 96.083956 },
+              { "latitude": 19.762963, "longitude": 96.077712 }
+            ]
+          }
+        ],
+        "totalDistance": 350,
+        "totalDuration": 360,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       },
       {
         "id": "route-3",
@@ -31,18 +87,47 @@
         "duration": "4 hours",
         "type": "Mixed",
         "gpxUrl": "https://example.com/routes/naypyitaw-bago.gpx",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Thiri"
+        "createdById": "user-3",
+        "userId": "user-3",
+        "createdByName": "Aung Ko",
+        "routePath": [
+          { "latitude": 19.762963, "longitude": 96.077712 },
+          { "latitude": 17.334822, "longitude": 96.470212 }
+        ],
+        "locations": [
+          { "latitude": 19.762963, "longitude": 96.077712 },
+          { "latitude": 17.334822, "longitude": 96.470212 }
+        ],
+        "waypoints": [
+          { "id": "wp-5", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "start", "order": 0 },
+          { "id": "wp-6", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-5", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "start", "order": 0 },
+            "to": { "id": "wp-6", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "end", "order": 1 },
+            "distance": 200,
+            "duration": 240,
+            "polyline": [
+              { "latitude": 19.762963, "longitude": 96.077712 },
+              { "latitude": 17.334822, "longitude": 96.470212 }
+            ]
+          }
+        ],
+        "totalDistance": 200,
+        "totalDuration": 240,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       },
       {
         "id": "ride-yangon-bago",
-        "name": "Yangon to Bago Sample Ride",
-        "description": "A sample ride along the Yangon-Bago corridor using OSRM route metadata.",
+        "name": "Yangon to Bago Sample Route",
+        "description": "A sample route along the Yangon-Bago corridor using OSRM route metadata.",
         "distance": "80 km",
         "duration": "1h 7m",
         "type": "Highway",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Sample Rider",
+        "createdById": "user-1",
+        "userId": "user-1",
+        "createdByName": "Khin Zaw",
         "routePath": [
           { "latitude": 16.805004, "longitude": 96.156012 },
           { "latitude": 17.334822, "longitude": 96.470212 }
@@ -50,17 +135,37 @@
         "locations": [
           { "latitude": 16.805004, "longitude": 96.156012 },
           { "latitude": 17.334822, "longitude": 96.470212 }
-        ]
+        ],
+        "waypoints": [
+          { "id": "wp-7", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+          { "id": "wp-8", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-7", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+            "to": { "id": "wp-8", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "end", "order": 1 },
+            "distance": 80.2371,
+            "duration": 66.89,
+            "polyline": [
+              { "latitude": 16.805004, "longitude": 96.156012 },
+              { "latitude": 17.334822, "longitude": 96.470212 }
+            ]
+          }
+        ],
+        "totalDistance": 80.2371,
+        "totalDuration": 66.89,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       },
       {
         "id": "ride-bago-naypyitaw",
-        "name": "Bago to Naypyitaw Sample Ride",
-        "description": "A sample ride from Bago to Naypyitaw using OSRM route metadata.",
+        "name": "Bago to Naypyitaw Sample Route",
+        "description": "A sample route from Bago to Naypyitaw using OSRM route metadata.",
         "distance": "314 km",
         "duration": "3h 53m",
         "type": "Highway",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Sample Rider",
+        "createdById": "user-2",
+        "userId": "user-2",
+        "createdByName": "Mya Lin",
         "routePath": [
           { "latitude": 17.334822, "longitude": 96.470212 },
           { "latitude": 19.762963, "longitude": 96.077712 }
@@ -68,17 +173,37 @@
         "locations": [
           { "latitude": 17.334822, "longitude": 96.470212 },
           { "latitude": 19.762963, "longitude": 96.077712 }
-        ]
+        ],
+        "waypoints": [
+          { "id": "wp-9", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "start", "order": 0 },
+          { "id": "wp-10", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-9", "latitude": 17.334822, "longitude": 96.470212, "title": "Bago", "type": "start", "order": 0 },
+            "to": { "id": "wp-10", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 },
+            "distance": 314,
+            "duration": 233,
+            "polyline": [
+              { "latitude": 17.334822, "longitude": 96.470212 },
+              { "latitude": 19.762963, "longitude": 96.077712 }
+            ]
+          }
+        ],
+        "totalDistance": 314,
+        "totalDuration": 233,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       },
       {
         "id": "ride-mandalay-naypyitaw",
-        "name": "Mandalay to Naypyitaw Sample Ride",
-        "description": "An express sample ride from Mandalay to Naypyitaw based on OSRM distance and duration data.",
+        "name": "Mandalay to Naypyitaw Sample Route",
+        "description": "An express sample route from Mandalay to Naypyitaw based on OSRM distance and duration data.",
         "distance": "271 km",
         "duration": "3h 34m",
         "type": "Expressway",
-        "createdById": "00000000-0000-0000-0000-000000000000",
-        "createdByName": "Sample Rider",
+        "createdById": "user-3",
+        "userId": "user-3",
+        "createdByName": "Aung Ko",
         "routePath": [
           { "latitude": 21.975003, "longitude": 96.083956 },
           { "latitude": 19.762963, "longitude": 96.077712 }
@@ -86,7 +211,102 @@
         "locations": [
           { "latitude": 21.975003, "longitude": 96.083956 },
           { "latitude": 19.762963, "longitude": 96.077712 }
-        ]
+        ],
+        "waypoints": [
+          { "id": "wp-11", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "start", "order": 0 },
+          { "id": "wp-12", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-11", "latitude": 21.975003, "longitude": 96.083956, "title": "Mandalay", "type": "start", "order": 0 },
+            "to": { "id": "wp-12", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "end", "order": 1 },
+            "distance": 271.4781,
+            "duration": 214.126,
+            "polyline": [
+              { "latitude": 21.975003, "longitude": 96.083956 },
+              { "latitude": 19.762963, "longitude": 96.077712 }
+            ]
+          }
+        ],
+        "totalDistance": 271.4781,
+        "totalDuration": 214.126,
+        "createdAt": "2026-05-16T00:00:00.000Z"
+      },
+      {
+        "id": "route-yangon-pyay",
+        "name": "Yangon to Pyay",
+        "description": "A scenic coastal and inland route from Yangon to Pyay.",
+        "distance": "282 Km",
+        "duration": "4h 15m",
+        "type": "Mixed",
+        "createdById": "user-4",
+        "userId": "user-4",
+        "createdByName": "Ei Mon",
+        "routePath": [
+          { "latitude": 16.805004, "longitude": 96.156012 },
+          { "latitude": 18.815533, "longitude": 95.247235 }
+        ],
+        "locations": [
+          { "latitude": 16.805004, "longitude": 96.156012 },
+          { "latitude": 18.815533, "longitude": 95.247235 }
+        ],
+        "waypoints": [
+          { "id": "wp-13", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+          { "id": "wp-14", "latitude": 18.815533, "longitude": 95.247235, "title": "Pyay", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-13", "latitude": 16.805004, "longitude": 96.156012, "title": "Yangon", "type": "start", "order": 0 },
+            "to": { "id": "wp-14", "latitude": 18.815533, "longitude": 95.247235, "title": "Pyay", "type": "end", "order": 1 },
+            "distance": 282.789,
+            "duration": 255,
+            "polyline": [
+              { "latitude": 16.805004, "longitude": 96.156012 },
+              { "latitude": 18.815533, "longitude": 95.247235 }
+            ]
+          }
+        ],
+        "totalDistance": 282.789,
+        "totalDuration": 255,
+        "createdAt": "2026-05-16T00:00:00.000Z"
+      },
+      {
+        "id": "route-naypyitaw-pyay",
+        "name": "Naypyitaw to Pyay",
+        "description": "A central Burma route connecting Naypyitaw and Pyay.",
+        "distance": "241 Km",
+        "duration": "3h 30m",
+        "type": "Highway",
+        "createdById": "user-5",
+        "userId": "user-5",
+        "createdByName": "Nyein Thiri",
+        "routePath": [
+          { "latitude": 19.762963, "longitude": 96.077712 },
+          { "latitude": 18.815533, "longitude": 95.247235 }
+        ],
+        "locations": [
+          { "latitude": 19.762963, "longitude": 96.077712 },
+          { "latitude": 18.815533, "longitude": 95.247235 }
+        ],
+        "waypoints": [
+          { "id": "wp-15", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "start", "order": 0 },
+          { "id": "wp-16", "latitude": 18.815533, "longitude": 95.247235, "title": "Pyay", "type": "end", "order": 1 }
+        ],
+        "segments": [
+          {
+            "from": { "id": "wp-15", "latitude": 19.762963, "longitude": 96.077712, "title": "Naypyitaw", "type": "start", "order": 0 },
+            "to": { "id": "wp-16", "latitude": 18.815533, "longitude": 95.247235, "title": "Pyay", "type": "end", "order": 1 },
+            "distance": 241.135,
+            "duration": 210.4,
+            "polyline": [
+              { "latitude": 19.762963, "longitude": 96.077712 },
+              { "latitude": 18.815533, "longitude": 95.247235 }
+            ]
+          }
+        ],
+        "totalDistance": 241.135,
+        "totalDuration": 210.4,
+        "createdAt": "2026-05-16T00:00:00.000Z"
       }
     ],
     "plans": [
@@ -835,7 +1055,7 @@
         "headline": "How to shop safely for your next motorcycle online",
         "summary": "Important steps to verify sellers, inspect listings, and avoid scams when buying bikes from marketplaces.",
         "content": "Shopping online can save you time and money, but it's essential to confirm seller credentials, check bike history, and arrange secure payment. Follow our checklist before you commit.",
-        "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1514464142261-8f31de6dea63?auto=format&fit=crop&w=1200&q=80",
         "source": "BikerHub Advice",
         "dateTimeUTC": "2026-04-27T10:15:00Z"
       }
@@ -1364,4 +1584,4 @@
       }
     ]
   }
-}
+};

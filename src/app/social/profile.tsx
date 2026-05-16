@@ -307,9 +307,13 @@ export default function SocialProfileScreen() {
                     <MaterialIcons name="garage" size={20} color={colors.primary} />
                     <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Garages</ThemedText>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push('/route')}>
+                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/list', params: { userId } })}>
                     <MaterialIcons name="pedal-bike" size={20} color={colors.primary} />
                     <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Rides</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/plans', params: { userId } })}>
+                    <MaterialIcons name="playlist-add" size={20} color={colors.primary} />
+                    <ThemedText style={[styles.profileActionLabel, { color: colors.primary }]}>Plans</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.profileActionButton}

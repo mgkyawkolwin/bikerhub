@@ -8,7 +8,7 @@ import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
 import type ForumPost from '@/models/forumPost';
 import type { ForumReply } from '@/models/forumPost';
-import initialData from '@/services/mockdata.json';
+import initialData from '@/services/mockdata';
 
 export default function ForumDetailScreen() {
   const insets = useSafeAreaInsets();
