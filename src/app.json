@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Biker Hub",
-    "slug": "bikerhub",
+    "slug": "ride-hub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -64,7 +64,14 @@
         }
       ],
       "expo-build-properties",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@maplibre/maplibre-react-native",
+      [
+        "react-native-maps",
+        {
+          "androidGoogleMapsApiKey": "AIzaSyDhdk-puMVacWKP-sxoM205gR5Yl4LX4Wk"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -10,7 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import MapView, { Polyline, Marker, Callout, Region, LatLng } from 'react-native-maps';
+import * as MapLibreGL from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -39,10 +39,20 @@ interface RouteSegment {
   osrmRoute?: OSRMRoute;
 }
 
-const RoutePlannerGoogleMap: React.FC = () => {
+interface LatLng {
+  latitude: number;
+  longitude: number;
+}
+
+// Free OSM tile style (no API key required)
+// const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json"; // 'https://tiles.stadiamaps.com/styles/alidade_smooth.json';
+const MAP_STYLE_URL = 'https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key=ff8aa78e-2e01-432f-8303-1a7f32b2107d';
+
+const RoutePlanner: React.FC = () => {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [segments, setSegments] = useState<RouteSegment[]>([]);
-  const [mapRegion, setMapRegion] = useState<Region | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 0]);
+  const [mapZoom, setMapZoom] = useState(12);
   const [isLoading, setIsLoading] = useState(false);
   const [totalDistance, setTotalDistance] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
@@ -52,6 +62,7 @@ const RoutePlannerGoogleMap: React.FC = () => {
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
   const [saveDescription, setSaveDescription] = useState('');
+  const [mapLoaded, setMapLoaded] = useState(false);
   const params = useLocalSearchParams();
   const planId = Array.isArray(params.id) ? params.id[0] : params.id;
   const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
@@ -79,7 +90,49 @@ const RoutePlannerGoogleMap: React.FC = () => {
     [isDark],
   );
 
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapLibreGL.MapRef>(null);
+  const cameraRef = useRef<MapLibreGL.CameraRef>(null);
+
+  // Convert route segments to GeoJSON for MapLibre
+  const routeGeoJSON = useMemo(() => {
+    if (segments.length === 0) return null;
+    
+    const allCoordinates: [number, number][] = [];
+    segments.forEach(segment => {
+      segment.polyline.forEach(point => {
+        allCoordinates.push([point.longitude, point.latitude]);
+      });
+    });
+    
+    return {
+      type: 'Feature' as const,
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: allCoordinates,
+      },
+      properties: {},
+    };
+  }, [segments]);
+
+  const getBoundsFromCoordinates = (coordinates: [number, number][]): [number, number, number, number] => {
+    if (coordinates.length === 0) {
+      return [0, 0, 0, 0];
+    }
+
+    let west = coordinates[0][0];
+    let south = coordinates[0][1];
+    let east = coordinates[0][0];
+    let north = coordinates[0][1];
+
+    coordinates.forEach(([lon, lat]) => {
+      west = Math.min(west, lon);
+      south = Math.min(south, lat);
+      east = Math.max(east, lon);
+      north = Math.max(north, lat);
+    });
+
+    return [west, south, east, north];
+  };
 
   // Load saved routes on mount
   useEffect(() => {
@@ -107,18 +160,8 @@ const RoutePlannerGoogleMap: React.FC = () => {
           accuracy: Location.Accuracy.Balanced,
         });
 
-        const initialRegion: Region = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        };
-
-        setMapRegion(initialRegion);
-        if (mapRef.current) {
-          const map = mapRef.current as any;
-          map.animateToRegion(initialRegion, 300);
-        }
+        setMapCenter([location.coords.longitude, location.coords.latitude]);
+        setMapZoom(14);
       }
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -135,17 +178,8 @@ const RoutePlannerGoogleMap: React.FC = () => {
 
       const response = await fetch(url);
       const data = await response.json();
-      console.log('OSRM response:', JSON.stringify(data));
 
       if (data.code === 'Ok' && data.routes[0]) {
-        console.log('OSRM route geometry:', JSON.stringify(data.routes[0].geometry));
-        console.log(`OSRM route legs: ${data.routes[0].legs}`);
-        data.routes[0].legs?.forEach((leg: any, index: number) => {
-          console.log(`Leg ${index}: distance=${leg.distance}m, duration=${leg.duration}s, steps=${leg.steps.length}`);
-        });
-        data.routes[0].waypoints?.forEach((wp: any, index: number) => {
-          console.log(`Waypoint ${index}: name=${wp.name}, location=${wp.location}`);
-        });
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map((coord: [number, number]) => ({
           latitude: coord[1],
@@ -195,23 +229,15 @@ const RoutePlannerGoogleMap: React.FC = () => {
     setSegments(newSegments);
     setIsLoading(false);
 
-    // Fit map to show all waypoints
-    if (mapRef.current && waypointList.length > 0) {
-      const coordinates = waypointList.map(w => ({
-        latitude: w.latitude,
-        longitude: w.longitude,
-      }));
-
-      const map = mapRef.current as any;
-      map.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-        duration: 300,
-      });
+    // Fit map to show all waypoints after map is ready
+    if (mapLoaded && cameraRef.current && waypointList.length > 0) {
+      const coordinates = waypointList.map(w => [w.longitude, w.latitude] as [number, number]);
+      const bounds = getBoundsFromCoordinates(coordinates);
+      cameraRef.current.fitBounds(bounds, { padding: { top: 50, right: 50, bottom: 50, left: 50 }, duration: 300 });
     }
 
     return newSegments;
-  }, [waypoints]);
+  }, [waypoints, mapLoaded]);
 
   const normalizeWaypoints = (waypointList: Waypoint[]) => {
     const orderedList = [...waypointList].sort((a, b) => a.order - b.order);
@@ -244,9 +270,15 @@ const RoutePlannerGoogleMap: React.FC = () => {
     });
   };
 
-  // Handle long press on map
-  const handleLongPress = (event: any) => {
-    const { coordinate } = event.nativeEvent;
+  // Handle map press
+  const handleMapPress = async (event: any) => {
+    const lngLat = event?.nativeEvent?.lngLat;
+    if (!lngLat || lngLat.length !== 2) return;
+
+    const coordinate = {
+      latitude: lngLat[1],
+      longitude: lngLat[0],
+    };
 
     if (waypoints.length === 0) {
       addWaypoint(coordinate, 'start');
@@ -280,18 +312,6 @@ const RoutePlannerGoogleMap: React.FC = () => {
   };
 
   // Move marker
-  const handleMarkerDragEnd = async (id: string, coordinate: LatLng) => {
-    const updatedWaypoints = waypoints.map(wp =>
-      wp.id === id ? { ...wp, latitude: coordinate.latitude, longitude: coordinate.longitude } : wp
-    );
-    setWaypoints(updatedWaypoints);
-
-    // Recalculate routes
-    if (updatedWaypoints.length >= 2) {
-      await calculateAllRoutes();
-    }
-  };
-
   const deleteWaypoint = async (id: string) => {
     const newWaypoints = waypoints.filter(w => w.id !== id);
     if (newWaypoints.length === 0) {
@@ -349,17 +369,10 @@ const RoutePlannerGoogleMap: React.FC = () => {
         setTotalDuration(plan.totalDuration || 0);
         setShowSavedModal(false);
 
-        if (mapRef.current && normalizedWaypoints.length > 0) {
-          const coordinates = normalizedWaypoints.map((w: Waypoint) => ({
-            latitude: w.latitude,
-            longitude: w.longitude,
-          }));
-          const map = mapRef.current as any;
-          map.fitToCoordinates(coordinates, {
-            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-            animated: true,
-            duration: 300,
-          });
+        if (normalizedWaypoints.length > 0 && cameraRef.current && mapLoaded) {
+          const coordinates = normalizedWaypoints.map((w: Waypoint) => [w.longitude, w.latitude] as [number, number]);
+          const bounds = getBoundsFromCoordinates(coordinates);
+          cameraRef.current.fitBounds(bounds, { padding: { top: 50, right: 50, bottom: 50, left: 50 }, duration: 300 });
         }
 
         const ownerId = plan.createdById ?? plan.userId ?? null;
@@ -374,7 +387,7 @@ const RoutePlannerGoogleMap: React.FC = () => {
     };
 
     void loadPlanById();
-  }, [planId, calculateAllRoutes]);
+  }, [planId, calculateAllRoutes, mapLoaded]);
 
   // Clear all waypoints
   const clearAllWaypoints = () => {
@@ -513,17 +526,10 @@ const RoutePlannerGoogleMap: React.FC = () => {
     setTotalDuration(route.totalDuration);
     setShowSavedModal(false);
 
-    if (mapRef.current && normalizedWaypoints.length > 0) {
-      const coordinates = normalizedWaypoints.map((w: Waypoint) => ({
-        latitude: w.latitude,
-        longitude: w.longitude,
-      }));
-      const map = mapRef.current as any;
-      map.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-        duration: 300,
-      });
+    if (normalizedWaypoints.length > 0 && cameraRef.current && mapLoaded && mapLoaded) {
+      const coordinates = normalizedWaypoints.map((w: Waypoint) => [w.longitude, w.latitude] as [number, number]);
+      const bounds = getBoundsFromCoordinates(coordinates);
+      cameraRef.current.fitBounds(bounds, { padding: { top: 50, right: 50, bottom: 50, left: 50 }, duration: 300 });
     }
 
     if (!route.segments || route.segments.length === 0) {
@@ -532,6 +538,17 @@ const RoutePlannerGoogleMap: React.FC = () => {
 
     Alert.alert('Success', `Loaded ${route.name}`);
   };
+
+  useEffect(() => {
+    if (!mapLoaded || !cameraRef.current || waypoints.length === 0) return;
+
+    const coordinates = waypoints.map((w) => [w.longitude, w.latitude] as [number, number]);
+    const bounds = getBoundsFromCoordinates(coordinates);
+    cameraRef.current.fitBounds(bounds, {
+      padding: { top: 50, right: 50, bottom: 50, left: 50 },
+      duration: 300,
+    });
+  }, [mapLoaded, waypoints]);
 
   const deleteSavedRoute = async (routeId: string) => {
     try {
@@ -630,43 +647,56 @@ const RoutePlannerGoogleMap: React.FC = () => {
 
       {/* Map View */}
       <View style={styles.mapContainer}>
-        <MapView
+        <MapLibreGL.Map
           ref={mapRef}
           style={styles.map}
-          region={mapRegion || undefined}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          onLongPress={handleLongPress}
-          onRegionChangeComplete={(region) => setMapRegion(region)}
+          mapStyle={MAP_STYLE_URL}
+          onPress={handleMapPress}
+          onDidFinishLoadingMap={() => setMapLoaded(true)}
         >
+          <MapLibreGL.Camera
+            ref={cameraRef}
+            zoom={mapZoom}
+            center={mapCenter}
+          />
+          
+          <MapLibreGL.UserLocation />
+
           {/* Route Polylines */}
-          {segments.map((segment, index) => (
-            <Polyline
-              key={index}
-              coordinates={segment.polyline}
-              strokeColor="#FF9800"
-              strokeWidth={4}
-              lineDashPattern={[0]}
-            />
-          ))}
+          {routeGeoJSON && (
+            <MapLibreGL.GeoJSONSource id="routeSource" data={routeGeoJSON}>
+              <MapLibreGL.Layer
+                id="routeLine"
+                type="line"
+                paint={{
+                  "line-color": '#FF9800',
+                  "line-width": 5,
+                }}
+                layout={{
+                  "line-cap": 'round',
+                  "line-join": 'round',
+                }}
+              />
+            </MapLibreGL.GeoJSONSource>
+          )}
 
           {/* Waypoint Markers */}
           {waypoints.map((waypoint) => (
-            <Marker
+            <MapLibreGL.Marker
               key={waypoint.id}
-              coordinate={{
-                latitude: waypoint.latitude,
-                longitude: waypoint.longitude,
-              }}
-              pinColor={getMarkerColor(waypoint.type)}
-              draggable
-              onDragEnd={(e) => handleMarkerDragEnd(waypoint.id, e.nativeEvent.coordinate)}
-              onPress={() => void handleMarkerPress(waypoint)}
-              title={waypoint.title}
-              description={`${waypoint.type.toUpperCase()} - Tap to edit`}
+              id={waypoint.id}
+              lngLat={[waypoint.longitude, waypoint.latitude]}
+              onPress={() => handleMarkerPress(waypoint)}
             >
-              <Callout onPress={() => editWaypointTitle(waypoint)}>
-                <View style={styles.callout}>
+              <View style={{ flex: 0, alignSelf: 'flex-start', overflow: 'visible' }}>
+                <View style={[styles.customMarker, { backgroundColor: getMarkerColor(waypoint.type) }]}>
+                  <Text style={styles.markerText}>
+                    {waypoint.type === 'start' ? 'S' : waypoint.type === 'end' ? 'E' : (waypoint.order + 1).toString()}
+                  </Text>
+                </View>
+                
+                <MapLibreGL.Callout>
+                  <View style={styles.callout}>
                   <Text style={styles.calloutTitle}>{waypoint.title}</Text>
                   <Text style={styles.calloutType}>{waypoint.type.toUpperCase()}</Text>
                   {waypoint.type === 'stop' && (
@@ -677,11 +707,18 @@ const RoutePlannerGoogleMap: React.FC = () => {
                       <Text style={styles.calloutDeleteText}>Delete</Text>
                     </TouchableOpacity>
                   )}
+                  <TouchableOpacity
+                    onPress={() => editWaypointTitle(waypoint)}
+                    style={styles.calloutEdit}
+                  >
+                    <Text style={styles.calloutEditText}>Edit Title</Text>
+                  </TouchableOpacity>
                 </View>
-              </Callout>
-            </Marker>
+              </MapLibreGL.Callout>
+            </View>
+            </MapLibreGL.Marker>
           ))}
-        </MapView>
+        </MapLibreGL.Map>
 
         {/* Loading Indicator */}
         {isLoading && (
@@ -695,7 +732,7 @@ const RoutePlannerGoogleMap: React.FC = () => {
         {waypoints.length === 0 && (
           <View style={styles.instructions}>
             <MaterialIcons name="touch-app" size={32} color="#fff" />
-            <Text style={styles.instructionsText}>Long press on map to set start point</Text>
+            <Text style={styles.instructionsText}>Tap on map to set start point</Text>
           </View>
         )}
       </View>
@@ -934,6 +971,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  customMarker: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  markerText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   callout: {
     padding: 8,
     minWidth: 120,
@@ -954,8 +1010,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 4,
+    marginBottom: 4,
   },
   calloutDeleteText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  calloutEdit: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  calloutEditText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
@@ -1057,4 +1125,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RoutePlannerGoogleMap;
+export default RoutePlanner;
