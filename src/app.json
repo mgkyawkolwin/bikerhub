@@ -63,9 +63,7 @@
           }
         }
       ],
-      "expo-build-properties",
       "expo-web-browser",
-      "@maplibre/maplibre-react-native",
       [
         "react-native-maps",
         {

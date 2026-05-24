@@ -105,7 +105,7 @@ export default function RoutePlansScreen() {
         <TouchableOpacity
           style={[styles.viewButton, { backgroundColor: colors.accent }]}
           activeOpacity={0.8}
-          onPress={() => router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`)}
+          onPress={() => router.push(`/ride/planGoogle?id=${encodeURIComponent(item.id)}`)}
         >
           <ThemedText style={styles.viewButtonText}>View</ThemedText>
         </TouchableOpacity>

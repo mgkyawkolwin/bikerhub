@@ -39,7 +39,7 @@ interface RouteSegment {
   osrmRoute?: OSRMRoute;
 }
 
-const RoutePlannerGoogleMap: React.FC = () => {
+const PlanGoogle: React.FC = () => {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [segments, setSegments] = useState<RouteSegment[]>([]);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
@@ -1057,4 +1057,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RoutePlannerGoogleMap;
+export default PlanGoogle;
