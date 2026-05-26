@@ -1,0 +1,30 @@
+namespace BikerHub.Dtos;
+
+public sealed record BikeListingDto(
+    int? Id = null,
+    string? Title = null,
+    string? Make = null,
+    string? Model = null,
+    int? Year = null,
+    decimal? Price = null,
+    string? Cc = null,
+    string? Type = null,
+    string? SellerId = null,
+    string? SellerName = null,
+    string? Location = null,
+    double? Rating = null,
+    int RatingCount = 0,
+    string? Phone = null,
+    string? ImageUrl = null,
+    IEnumerable<string>? Images = null,
+    string? Mileage = null,
+    string? Km = null,
+    string? Vin = null,
+    string? Description = null,
+    int FavoritesCount = 0,
+    bool IsFavorite = false,
+    bool IsLiked = false,
+    int LikeCount = 0,
+    int ViewCount = 0,
+    DateTime? CreatedAt = null
+);
