@@ -3,9 +3,9 @@ import { StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();

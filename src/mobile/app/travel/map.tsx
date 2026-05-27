@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeColor } from '@/mobile/hooks/use-theme-color';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useI18n } from '@/i18n';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 
 const INITIAL_REGION = {
   latitude: 16.8661,

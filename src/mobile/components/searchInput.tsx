@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
+import { useThemeContext } from '@/hooks/use-theme-context';
 
 type SearchInputProps = {
   value: string;

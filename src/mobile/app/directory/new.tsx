@@ -4,16 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useI18n } from '@/i18n';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { ConfigServiceToken } from '@/services/configService';
 import { DirectoryServiceToken } from '@/services/directoryService';
 import type { ConfigService } from '@/services/configService';
 import type { DirectoryService } from '@/services/directoryService';
 import type Directory from '@/models/directory';
-import SnackBar from '@/mobile/components/snackbar';
+import SnackBar from '@/components/snackbar';
 
 type DropdownField = 'businessType' | 'city' | 'stateDivision' | null;
 

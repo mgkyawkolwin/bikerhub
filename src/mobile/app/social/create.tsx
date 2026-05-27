@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();

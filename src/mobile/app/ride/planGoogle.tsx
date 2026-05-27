@@ -16,9 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
 import { setRouteDraft } from '@/services/routeTransfer';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMRoute } from '@/models/route';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
+import { useThemeContext } from '@/hooks/use-theme-context';
 import { MaterialIcons } from '@expo/vector-icons';
 
 interface Waypoint {

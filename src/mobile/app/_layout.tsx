@@ -3,11 +3,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { ThemeContextProvider, useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { AuthContextProvider } from '@/mobile/hooks/use-auth-context';
-import { I18nProvider } from '@/mobile/i18n';
+import { ThemeContextProvider, useThemeContext } from '@/hooks/use-theme-context';
+import { AuthContextProvider } from '@/hooks/use-auth-context';
+import { I18nProvider } from '@/i18n';
 import '@/services/diContainer';
-import SnackBar from '@/mobile/components/snackbar';
+import SnackBar from '@/components/snackbar';
 
 function InnerLayout() {
   const { colorScheme, isDark } = useThemeContext();

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { ThemedText } from '@/components/themedText';
 
 type SnackBarType = 'success' | 'error';
 

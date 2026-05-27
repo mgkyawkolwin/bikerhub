@@ -3,9 +3,9 @@ import { ScrollView, StyleSheet, View, TouchableOpacity, Modal, TouchableWithout
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useI18n } from '@/i18n';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 import type { BikeType, MarketplaceFilter } from '@/models/marketplace';
 
 const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;

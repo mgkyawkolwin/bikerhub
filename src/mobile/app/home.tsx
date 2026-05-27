@@ -2,10 +2,10 @@ import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, type Href } from 'expo-router';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
-import { useI18n } from '@/mobile/i18n';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
+import { useI18n } from '@/i18n';
 
 function useSections() {
   const { t } = useI18n();

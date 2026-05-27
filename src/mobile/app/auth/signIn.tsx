@@ -3,14 +3,14 @@ import { View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { useI18n } from '@/mobile/i18n';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { useI18n } from '@/i18n';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { container, AuthServiceToken } from '@/services';
 import type { AuthService } from '@/services';
 import { GoogleAuthConfig } from '@/services/googleAuthConfig';
-import SnackBar from '@/mobile/components/snackbar';
+import SnackBar from '@/components/snackbar';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -24,7 +24,6 @@ export default function SignInScreen() {
 
   WebBrowser.maybeCompleteAuthSession();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    expoClientId: GoogleAuthConfig.expoClientId,
     iosClientId: GoogleAuthConfig.iosClientId,
     androidClientId: GoogleAuthConfig.androidClientId,
     webClientId: GoogleAuthConfig.webClientId,

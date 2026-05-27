@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
 
 export default function BlankScreen() {
   const insets = useSafeAreaInsets();

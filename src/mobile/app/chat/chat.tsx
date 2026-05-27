@@ -3,9 +3,9 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoi
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { useI18n } from '@/mobile/i18n';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
 import type { ChatService } from '@/services';
 import ChatMessage from '@/models/chatMesage';

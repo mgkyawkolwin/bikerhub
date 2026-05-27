@@ -3,9 +3,9 @@ import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useI18n } from '@/i18n';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { NewsServiceToken } from '@/services/newsService';
 import type { NewsService } from '@/services/newsService';

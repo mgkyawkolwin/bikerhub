@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app needs location access to record your motorbike rides",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to track your rides"
-      }
+      },
+      "bundleIdentifier": "com.cluspedia.bikerhub"
     },
     "android": {
       "package": "com.cluspedia.bikerhub",

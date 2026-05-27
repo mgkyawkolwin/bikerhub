@@ -3,9 +3,9 @@ import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
+import { useI18n } from '@/i18n';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { BlogServiceToken } from '@/services/blogService';
 import type { BlogService } from '@/services/blogService';

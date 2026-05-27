@@ -10,13 +10,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { useI18n } from '@/mobile/i18n';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
 import type { ChatService } from '@/services';
 import ChatHead from '@/models/chatHead';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
 
 export default function ChatsScreen() {

@@ -3,8 +3,8 @@ import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { GroupServiceToken } from '@/services/groupService';
 import { SocialPostServiceToken } from '@/services/socialPostService';

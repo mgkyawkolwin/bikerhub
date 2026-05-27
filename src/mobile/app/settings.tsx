@@ -2,9 +2,9 @@ import { StyleSheet, View, TouchableOpacity, Switch, ScrollView } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { ThemedText } from '@/mobile/components/themedText';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { useI18n } from '@/mobile/i18n';
+import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { useI18n } from '@/i18n';
 
 const A = '#E85D04';
 

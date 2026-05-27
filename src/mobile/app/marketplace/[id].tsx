@@ -3,10 +3,10 @@ import { Dimensions, ScrollView, StyleSheet, View, TouchableOpacity, Image, Link
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useI18n } from '@/mobile/i18n';
-import { useThemeContext } from '@/mobile/hooks/use-theme-context';
-import { ThemedText } from '@/mobile/components/themedText';
-import { Rating } from '@/mobile/components/rating';
+import { useI18n } from '@/i18n';
+import { useThemeContext } from '@/hooks/use-theme-context';
+import { ThemedText } from '@/components/themedText';
+import { Rating } from '@/components/rating';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';

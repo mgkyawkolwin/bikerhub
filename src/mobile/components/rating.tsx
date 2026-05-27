@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, type StyleProp, type ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/mobile/components/themedText';
+import { ThemedText } from '@/components/themedText';
 
 type RatingProps = {
   value: number;

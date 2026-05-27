@@ -17,7 +17,7 @@ import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
 import { getDatabase, saveDatabase } from '@/services/localDatabase';
 import { getRouteDraft, clearRouteDraft } from '@/services/routeTransfer';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMResponse } from '@/models/route';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

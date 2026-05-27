@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useAuthContext } from '@/mobile/hooks/use-auth-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
