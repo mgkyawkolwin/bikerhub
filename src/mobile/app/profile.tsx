@@ -9,22 +9,12 @@ import { useAuthContext } from '@/hooks/use-auth-context';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const router = useRouter();
   const { getAuthUser, setAuthUser } = useAuthContext();
   const authUser = getAuthUser();
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const handleSignOut = () => {
     setAuthUser(null);
@@ -35,9 +25,9 @@ export default function ProfileScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Profile</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Profile</ThemedText>
         <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton} activeOpacity={0.8}>
           <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
         </TouchableOpacity>
@@ -51,7 +41,7 @@ export default function ProfileScreen() {
             onPress={() => router.push({ pathname: '/social/profile', params: { userId: authUser?.id ?? '' } })}
           >
             <MaterialIcons name="person" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Profile</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Profile</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
@@ -59,7 +49,7 @@ export default function ProfileScreen() {
             onPress={() => router.push({ pathname: '/social/garage', params: { userId: authUser?.id ?? '' } })}
           >
             <MaterialIcons name="garage" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Garage</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Garage</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
@@ -67,7 +57,7 @@ export default function ProfileScreen() {
             onPress={() => router.push({ pathname: '/social/listing', params: { userId: authUser?.id ?? '' } })}
           >
             <MaterialIcons name="storefront" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>My Listing</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>My Listing</ThemedText>
           </TouchableOpacity>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
@@ -77,7 +67,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/ride/list')}
           >
             <MaterialIcons name="pedal-bike" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Rides</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Rides</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
@@ -85,7 +75,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/ride/plans')}
           >
             <MaterialIcons name="event" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Plans</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Plans</ThemedText>
           </TouchableOpacity>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
@@ -95,7 +85,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/group/explore')}
           >
             <MaterialIcons name="settings" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Manage Groups</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Manage Groups</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
@@ -103,7 +93,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/group/explore?section=myGroups')}
           >
             <MaterialIcons name="groups" size={22} color={colors.accent} />
-            <ThemedText style={[styles.navLabel, { color: colors.primary }]}>Followed Groups</ThemedText>
+            <ThemedText style={[styles.navLabel, { color: colors.text }]}>Followed Groups</ThemedText>
           </TouchableOpacity>
         </View>
       </ScrollView>

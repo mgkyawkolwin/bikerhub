@@ -1,19 +1,30 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using BikerHub.Dtos;
 
 namespace BikerHub.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly ILogger<HomeController> _logger;
+    private readonly IConfiguration _configuration;
+
+    public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
     {
-        return View();
+        _logger = logger;
+        _configuration = configuration;
     }
 
-    public IActionResult Privacy()
+    public IActionResult Index()
     {
-        return View();
+        _logger.LogInformation("Retrieving application version from configuration.");
+
+        var version = _configuration["Version"] ?? "unknown";
+
+        _logger.LogDebug("Application version retrieved: {Version}", version);
+
+        return Json(new { version });
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -1,10 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { ChallengeServiceToken } from '@/services/challengeService';
@@ -13,22 +12,10 @@ import type Challenge from '@/models/challenge';
 
 export default function ChallengeCurrentScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const challengeService = useMemo(() => container.resolve<ChallengeService>(ChallengeServiceToken), []);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'past' | 'current' | 'future'>('current');
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const loadChallenges = useCallback(async () => {
     const result = await challengeService.getCurrentChallenges();
@@ -49,8 +36,8 @@ export default function ChallengeCurrentScreen() {
       <View style={[styles.challengeCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
         <Image source={{ uri: item.imageUrl }} style={styles.challengeImage} />
         <View style={styles.challengeInfo}>
-          <ThemedText style={[styles.challengeTitle, { color: colors.primary }]}>{item.title}</ThemedText>
-          <ThemedText style={[styles.challengeSubtitle, { color: colors.secondary }]} numberOfLines={2}>{item.description}</ThemedText>
+          <Text style={[styles.challengeTitle, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.challengeSubtitle, { color: colors.secondaryText }]} numberOfLines={2}>{item.description}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -61,9 +48,9 @@ export default function ChallengeCurrentScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <View style={styles.headerTop}> 
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Current Challenges</ThemedText>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Current Challenges</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -73,24 +60,24 @@ export default function ChallengeCurrentScreen() {
             activeOpacity={0.85}
             onPress={() => setSelectedPeriod('past')}
           >
-            <MaterialIcons name="history" size={20} color={selectedPeriod === 'past' ? '#FFFFFF' : colors.primary} />
-            <ThemedText style={[styles.periodLabel, { color: selectedPeriod === 'past' ? '#FFFFFF' : colors.primary }]}>Past</ThemedText>
+            <MaterialIcons name="history" size={20} color={selectedPeriod === 'past' ? '#FFFFFF' : colors.text} />
+            <Text style={[styles.periodLabel, { color: selectedPeriod === 'past' ? '#FFFFFF' : colors.text }]}>Past</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.periodButton, selectedPeriod === 'current' && { backgroundColor: colors.accent }]}
             activeOpacity={0.85}
             onPress={() => setSelectedPeriod('current')}
           >
-            <MaterialIcons name="emoji-events" size={20} color={selectedPeriod === 'current' ? '#FFFFFF' : colors.primary} />
-            <ThemedText style={[styles.periodLabel, { color: selectedPeriod === 'current' ? '#FFFFFF' : colors.primary }]}>Current</ThemedText>
+            <MaterialIcons name="emoji-events" size={20} color={selectedPeriod === 'current' ? '#FFFFFF' : colors.text} />
+            <Text style={[styles.periodLabel, { color: selectedPeriod === 'current' ? '#FFFFFF' : colors.text }]}>Current</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.periodButton, selectedPeriod === 'future' && { backgroundColor: colors.accent }]}
             activeOpacity={0.85}
             onPress={() => setSelectedPeriod('future')}
           >
-            <MaterialIcons name="trending-up" size={20} color={selectedPeriod === 'future' ? '#FFFFFF' : colors.primary} />
-            <ThemedText style={[styles.periodLabel, { color: selectedPeriod === 'future' ? '#FFFFFF' : colors.primary }]}>Future</ThemedText>
+            <MaterialIcons name="trending-up" size={20} color={selectedPeriod === 'future' ? '#FFFFFF' : colors.text} />
+            <Text style={[styles.periodLabel, { color: selectedPeriod === 'future' ? '#FFFFFF' : colors.text }]}>Future</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -102,7 +89,7 @@ export default function ChallengeCurrentScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>No challenges available.</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No challenges available.</Text>
           </View>
         }
       />

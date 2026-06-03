@@ -9,26 +9,14 @@ import { ThemedText } from '@/components/themedText';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const router = useRouter();
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState<'Public' | 'Friends Only'>('Public');
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-      placeholder: isDark ? '#8A8A8A' : '#999999',
-      surface: isDark ? '#1E1E1E' : '#F9F9F9',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const requestCamera = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -99,9 +87,9 @@ export default function SocialCreateScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: ins.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Create Post</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Create Post</ThemedText>
         <View style={styles.headerRight}>
           <TouchableOpacity style={[styles.postButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
             <ThemedText style={styles.postButtonText}>Post</ThemedText>
@@ -117,21 +105,21 @@ export default function SocialCreateScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.dropdownValueRow}>
-              <ThemedText style={[styles.dropdownValue, { color: colors.secondary }]}>{visibility}</ThemedText>
-              <MaterialIcons name="keyboard-arrow-down" size={20} color={colors.secondary} />
+              <ThemedText style={[styles.dropdownValue, { color: colors.secondaryText }]}>{visibility}</ThemedText>
+              <MaterialIcons name="keyboard-arrow-down" size={20} color={colors.secondaryText} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.card }]} activeOpacity={0.8} onPress={handleCameraPress}>
-            <MaterialIcons name="photo-camera" size={20} color={colors.primary} />
+            <MaterialIcons name="photo-camera" size={20} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.card }]} activeOpacity={0.8} onPress={handleGalleryPress}>
-            <MaterialIcons name="photo-library" size={20} color={colors.primary} />
+            <MaterialIcons name="photo-library" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <TextInput
-          style={[styles.textArea, { borderColor: colors.border, color: colors.primary, backgroundColor: colors.card }]}
+          style={[styles.textArea, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
           placeholder="Write your post..."
           placeholderTextColor={colors.placeholder}
           multiline
@@ -170,7 +158,7 @@ export default function SocialCreateScreen() {
                 activeOpacity={0.7}
                 onPress={() => selectVisibility(option)}
               >
-                <ThemedText style={[styles.optionText, { color: colors.primary }]}>{option}</ThemedText>
+                <ThemedText style={[styles.optionText, { color: colors.text }]}>{option}</ThemedText>
                 {visibility === option ? <MaterialIcons name="check" size={20} color={colors.accent} /> : null}
               </TouchableOpacity>
             ))}

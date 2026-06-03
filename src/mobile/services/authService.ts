@@ -4,8 +4,8 @@ import { fetchJson } from './apiClient';
 export const AuthServiceToken = Symbol('AuthService');
 
 export interface AuthService {
-  signIn(email: string, password: string): Promise<User>;
-  register(name: string, email: string, password: string): Promise<User>;
+  signIn(username: string, password: string): Promise<User>;
+  register(name: string, password: string, email?: string, phone?: string): Promise<User>;
   signInWithGoogle(idToken: string): Promise<User>;
 }
 
@@ -18,25 +18,11 @@ interface ApiAuthResponse {
   message?: string;
 }
 
-function mapApiUserToUser(user: User, token: string): User {
-  return {
-    id: user?.id?.toString(),
-    name: user?.name,
-    email: user?.email,
-    address: user?.address,
-    city: user?.city,
-    rating: user?.rating,
-    ratingCount: user?.ratingCount,
-    profilePictureUrl: user?.profilePictureUrl,
-    token,
-  };
-}
-
 export class AuthServiceClient implements AuthService {
-  async signIn(email: string, password: string): Promise<User> {
+  async signIn(username: string, password: string): Promise<User> {
     const result = await fetchJson<ApiAuthResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
 
     if (!result.success || !result.data) {
@@ -49,13 +35,13 @@ export class AuthServiceClient implements AuthService {
       throw new Error('Authentication service did not return a valid user payload.');
     }
 
-    return mapApiUserToUser(user, token);
+    return { ...user, token };
   }
 
-  async register(name: string, email: string, password: string): Promise<User> {
+  async register(name: string, password: string, email?: string, phone?: string): Promise<User> {
     const result = await fetchJson<ApiAuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, phone }),
     });
 
     if (!result.success || !result.data) {
@@ -68,7 +54,7 @@ export class AuthServiceClient implements AuthService {
       throw new Error('Authentication service did not return a valid user payload.');
     }
 
-    return mapApiUserToUser(user, token);
+    return { ...user, token };
   }
 
   async signInWithGoogle(idToken: string): Promise<User> {
@@ -87,6 +73,6 @@ export class AuthServiceClient implements AuthService {
       throw new Error('Authentication service did not return a valid user payload.');
     }
 
-    return mapApiUserToUser(user, token);
+    return { ...user, token };
   }
 }

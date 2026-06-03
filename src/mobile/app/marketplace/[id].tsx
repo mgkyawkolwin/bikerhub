@@ -17,7 +17,7 @@ export default function BikeDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const marketplaceService = useMemo(
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
@@ -42,19 +42,7 @@ export default function BikeDetailScreen() {
     };
   }, [id, marketplaceService]);
 
-  const colors = useMemo(
-    () => ({
-      root: '#000000',
-      header: '#000000',
-      headerText: '#FFFFFF',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const images = listing?.images?.length ? listing.images : listing?.imageUrl ? [listing.imageUrl] : [];
 
@@ -90,7 +78,7 @@ export default function BikeDetailScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.header }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
@@ -143,56 +131,56 @@ export default function BikeDetailScreen() {
             </View>
 
             <View style={styles.photoText}>
-              <ThemedText style={[styles.title, { color: colors.primary }]}>{listing.title}</ThemedText>
+              <ThemedText style={[styles.title, { color: colors.text }]}>{listing.title}</ThemedText>
               <ThemedText style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</ThemedText>
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-              <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>{t.Title.specs}</ThemedText>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.specs}</ThemedText>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.make}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.make}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.make}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.make}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.model}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.model}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.model}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.model}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.modelYear}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.year}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.modelYear}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.year}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.cc}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.cc}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.cc}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.cc}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.type}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.type}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.type}</ThemedText>
               </View>
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
               <View style={styles.sectionHeader}>
-                <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>{t.Title.sellerInfo}</ThemedText>
+                <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.sellerInfo}</ThemedText>
                 <Rating value={listing.rating ?? 0} onRate={handleRate} />
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.sellerInfo}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.sellerName}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerInfo}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.sellerName}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.location}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.location}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.location}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.location}</ThemedText>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>{t.Title.phone}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.primary }]}>{listing.phone ?? '-'}</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</ThemedText>
+                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.phone ?? '-'}</ThemedText>
               </View>
               <View style={styles.ratingRow}>
-                <ThemedText style={[styles.label, { color: colors.secondary }]}>Rating</ThemedText>
+                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>Rating</ThemedText>
                 <View style={styles.ratingValue}>
                   <Rating value={listing.rating ?? 0} />
-                  <ThemedText style={[styles.ratingCount, { color: colors.secondary }]}>({listing.ratingCount ?? 0})</ThemedText>
+                  <ThemedText style={[styles.ratingCount, { color: colors.secondaryText }]}>({listing.ratingCount ?? 0})</ThemedText>
                 </View>
               </View>
 
@@ -210,7 +198,7 @@ export default function BikeDetailScreen() {
           </>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.primary }]}>{t.Text.noListings}</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.text }]}>{t.Text.noListings}</ThemedText>
           </View>
         )}
       </ScrollView>

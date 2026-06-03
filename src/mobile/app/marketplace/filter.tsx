@@ -25,7 +25,7 @@ function getParamValue(value?: string | string[]) {
 export default function MarketplaceFilterScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -50,18 +50,7 @@ export default function MarketplaceFilterScreen() {
     setDraftFilter(initialFilter);
   }, [initialFilter]);
 
-  const colors = useMemo(
-    () => ({
-      root: '#000000',
-      card: isDark ? '#121212' : '#1A1A1A',
-      border: '#232323',
-      primary: '#FFFFFF',
-      secondary: '#B0B0B0',
-      accent: '#E85D04',
-      overlay: 'rgba(0,0,0,0.45)',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   function handleSelectOption(value: string, field: DropdownField) {
     if (!field) return;
@@ -129,12 +118,12 @@ export default function MarketplaceFilterScreen() {
   const dropdownOptions = getDropdownItems(activeDropdown);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.root }]}> 
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.filterTitle}</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.filterTitle}</ThemedText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -148,65 +137,65 @@ export default function MarketplaceFilterScreen() {
           ] as const
         ).map(({ label, field }) => (
           <View key={field} style={styles.fieldGroup}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{label}</ThemedText>
+            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{label}</ThemedText>
             <TouchableOpacity
               style={[styles.dropdown, { borderColor: colors.border, backgroundColor: colors.card }]}
               onPress={() => setActiveDropdown(field)}
               activeOpacity={0.8}
             >
-              <ThemedText style={[styles.dropdownText, { color: colors.primary }]}>{getDisplayText(field)}</ThemedText>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondary} />
+              <ThemedText style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText(field)}</ThemedText>
+              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
         ))}
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.modelYear}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={draftFilter.modelYear}
             onChangeText={(text) => setDraftFilter((prev) => ({ ...prev, modelYear: text }))}
             placeholder={t.Title.modelYear}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
             keyboardType="number-pad"
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.cc}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={draftFilter.cc}
             onChangeText={(text) => setDraftFilter((prev) => ({ ...prev, cc: text }))}
             placeholder={t.Title.cc}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
             keyboardType="number-pad"
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.priceRange}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.priceRange}</ThemedText>
           <View style={styles.priceRow}>
             <TextInput
-              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={draftFilter.priceMin != null ? draftFilter.priceMin.toString() : ''}
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9]/g, '');
                 setDraftFilter((prev) => ({ ...prev, priceMin: cleaned ? Number(cleaned) : undefined }));
               }}
               placeholder={t.Title.priceRange}
-              placeholderTextColor={colors.secondary}
+              placeholderTextColor={colors.secondaryText}
               keyboardType="number-pad"
             />
             <TextInput
-              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={draftFilter.priceMax != null ? draftFilter.priceMax.toString() : ''}
               onChangeText={(text) => {
                 const cleaned = text.replace(/[^0-9]/g, '');
                 setDraftFilter((prev) => ({ ...prev, priceMax: cleaned ? Number(cleaned) : undefined }));
               }}
               placeholder={t.Title.priceRangeMax}
-              placeholderTextColor={colors.secondary}
+              placeholderTextColor={colors.secondaryText}
               keyboardType="number-pad"
             />
           </View>
@@ -214,7 +203,7 @@ export default function MarketplaceFilterScreen() {
 
         <View style={styles.footerActions}>
           <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border }]} onPress={clearFilter}>
-            <ThemedText style={[styles.clearText, { color: colors.primary }]}>{t.Title.clear}</ThemedText>
+            <ThemedText style={[styles.clearText, { color: colors.text }]}>{t.Title.clear}</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.applyButton, { backgroundColor: colors.accent }]} onPress={applyFilter}>
             <ThemedText style={styles.applyText}>{t.Title.apply}</ThemedText>
@@ -228,9 +217,9 @@ export default function MarketplaceFilterScreen() {
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}> 
           <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: colors.primary }]}>{activeDropdown ? t.Title.selectOption : ''}</ThemedText>
+            <ThemedText style={[styles.sheetTitle, { color: colors.text }]}>{activeDropdown ? t.Title.selectOption : ''}</ThemedText>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
-              <MaterialIcons name="close" size={22} color={colors.secondary} />
+              <MaterialIcons name="close" size={22} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
@@ -241,7 +230,7 @@ export default function MarketplaceFilterScreen() {
                 onPress={() => activeDropdown && handleSelectOption(option, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <ThemedText style={[styles.sheetItemText, { color: colors.primary }]}>{option}</ThemedText>
+                <ThemedText style={[styles.sheetItemText, { color: colors.text }]}>{option}</ThemedText>
               </TouchableOpacity>
             ))}
           </ScrollView>

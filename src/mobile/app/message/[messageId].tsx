@@ -15,20 +15,13 @@ export default function MessageDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
   const [message, setMessage] = useState<Message | null>(null);
 
   const messageId = typeof params.messageId === 'string' ? params.messageId : '';
 
-  const colors = {
-    background: isDark ? '#000000' : '#F7F7F7',
-    card: isDark ? '#181818' : '#FFFFFF',
-    border: isDark ? '#2B2B2B' : '#E0E0E0',
-    primary: isDark ? '#FFFFFF' : '#000000',
-    secondary: isDark ? '#B0B0B0' : '#666666',
-    accent: '#E85D04',
-  };
+  const { colors } = useThemeContext();
 
   useEffect(() => {
     if (!messageId) return;
@@ -51,9 +44,9 @@ export default function MessageDetailScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>Message</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.text }]}>Message</ThemedText>
           <View style={styles.placeholder} />
         </View>
       </View>
@@ -62,24 +55,24 @@ export default function MessageDetailScreen() {
         {message ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.cardHeader}>
-              <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{message.title}</ThemedText>
-              <ThemedText style={[styles.cardTime, { color: colors.secondary }]}>
+              <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{message.title}</ThemedText>
+              <ThemedText style={[styles.cardTime, { color: colors.secondaryText }]}>
                 {message.dateTimeUTC ? new Date(message.dateTimeUTC).toLocaleString() : ''}
               </ThemedText>
             </View>
-            <ThemedText style={[styles.cardBody, { color: colors.primary }]}>{message.body}</ThemedText>
+            <ThemedText style={[styles.cardBody, { color: colors.text }]}>{message.body}</ThemedText>
             <View style={styles.messageStatus}>
               <MaterialIcons
                 name={message.read ? 'visibility' : 'arrow-forward'}
                 size={18}
                 color={colors.accent}
               />
-              <ThemedText style={[styles.statusText, { color: colors.secondary }]}> {message.read ? 'Read' : 'Unread'}</ThemedText>
+              <ThemedText style={[styles.statusText, { color: colors.secondaryText }]}> {message.read ? 'Read' : 'Unread'}</ThemedText>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.primary }]}>Loading message...</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.text }]}>Loading message...</ThemedText>
           </View>
         )}
       </ScrollView>

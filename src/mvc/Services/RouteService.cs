@@ -3,6 +3,7 @@ using System.Text.Json;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 using RouteEntity = BikerHub.Entities.Route;
 
 namespace BikerHub.Services;
@@ -40,6 +41,8 @@ public class RouteService : IRouteService
 
     public async Task<RouteDto> CreateRouteAsync(CreateRouteDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+
         var entity = new RouteEntity
         {
             Name = dto.Name,

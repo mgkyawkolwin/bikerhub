@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 using DirectoryEntity = BikerHub.Entities.Directory;
 
 namespace BikerHub.Services;
@@ -69,6 +70,8 @@ public class DirectoryService : IDirectoryService
 
     public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+
         var entity = new DirectoryEntity
         {
             Name = dto.Name,

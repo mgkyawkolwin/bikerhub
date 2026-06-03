@@ -16,7 +16,7 @@ export default function NewsDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const newsService = useMemo(() => container.resolve<NewsService>(NewsServiceToken), []);
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [article, setArticle] = useState<News | null>(null);
@@ -37,46 +37,36 @@ export default function NewsDetailScreen() {
     };
   }, [id, newsService]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={styles.header}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>News</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>News</ThemedText>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {article ? (
           <View style={styles.page}>
             {article.imageUrl ? <Image source={{ uri: article.imageUrl }} style={styles.image} /> : null}
             <View style={styles.textBlock}>
-              <ThemedText style={[styles.headline, { color: colors.primary }]}>{article.headline}</ThemedText>
+              <ThemedText style={[styles.headline, { color: colors.text }]}>{article.headline}</ThemedText>
               <View style={styles.metaRow}>
-                <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(article.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+                <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(article.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
               </View>
               <View style={styles.metaRow}>
-                <MaterialIcons name="source" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{article.source}</ThemedText>
+                <MaterialIcons name="source" size={14} color={colors.secondaryText} />
+                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{article.source}</ThemedText>
               </View>
-              <ThemedText style={[styles.bodyText, { color: colors.secondary }]}>{article.content ?? article.summary}</ThemedText>
+              <ThemedText style={[styles.bodyText, { color: colors.secondaryText }]}>{article.content ?? article.summary}</ThemedText>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</ThemedText>
           </View>
         )}
       </ScrollView>

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 
 namespace BikerHub.Services;
 
@@ -35,6 +36,8 @@ public class GroupService : IGroupService
 
     public async Task<GroupDto> CreateGroupAsync(CreateGroupDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.Title, "Title");
+
         var entity = new Group
         {
             Title = dto.Title,

@@ -15,22 +15,12 @@ import type { MarketplaceService } from '@/services/marketplaceService';
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
 
   const [favorites, setFavorites] = useState<BikeListing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      root: '#000000',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const marketplaceService = container.resolve<MarketplaceService>(MarketplaceServiceToken);
 
@@ -73,7 +63,7 @@ export default function FavoritesScreen() {
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHeader}>
-          <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
+          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
           <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
             <MaterialIcons name="favorite" size={22} color={colors.accent} />
           </TouchableOpacity>
@@ -81,18 +71,18 @@ export default function FavoritesScreen() {
         <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         <View style={styles.cardFooter}>
           <ThemedText style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</ThemedText>
-          <ThemedText style={[styles.cardSeller, { color: colors.secondary }]}>{item.sellerName}</ThemedText>
+          <ThemedText style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</ThemedText>
         </View>
         <View style={styles.cardLocationRow}>
-          <MaterialIcons name="location-on" size={14} color={colors.secondary} />
-          <ThemedText style={[styles.cardLocationText, { color: colors.secondary }]}>{item.location}</ThemedText>
+          <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
+          <ThemedText style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
         </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}>
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
@@ -106,11 +96,11 @@ export default function FavoritesScreen() {
         keyExtractor={(item) => item.id ?? ''}
         renderItem={renderBikeCard}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !refreshing ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noFavorites || 'No favorites yet.'}</ThemedText>
+              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noFavorites || 'No favorites yet.'}</ThemedText>
             </View>
           ) : null
         }

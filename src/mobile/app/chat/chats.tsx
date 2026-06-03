@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Text
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
@@ -22,7 +22,7 @@ import { useAuthContext } from '@/hooks/use-auth-context';
 export default function ChatsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const { t } = useI18n();
   const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
   const [threads, setThreads] = useState<ChatHead[]>([]);
@@ -63,25 +63,16 @@ export default function ChatsScreen() {
     void loadThreads(1, true);
   }, [loadThreads]);
 
-  const colors = {
-    background: isDark ? '#000000' : '#F7F7F7',
-    card: isDark ? '#181818' : '#FFFFFF',
-    border: isDark ? '#2B2B2B' : '#E0E0E0',
-    primary: isDark ? '#FFFFFF' : '#000000',
-    secondary: isDark ? '#B0B0B0' : '#666666',
-    accent: '#E85D04',
-  };
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.chats ?? 'Chats'}</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>{t.Title.chats ?? 'Chats'}</Text>
           <TouchableOpacity onPress={() => {}} hitSlop={14} style={styles.iconButton}>
-            <MaterialIcons name="search" size={20} color={colors.primary} />
+            <MaterialIcons name="search" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -92,7 +83,7 @@ export default function ChatsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadThreads(1, true)}
-            tintColor={colors.primary}
+            tintColor={colors.text}
           />
         }
         contentContainerStyle={styles.list}
@@ -105,13 +96,13 @@ export default function ChatsScreen() {
         }}
         ListFooterComponent={() => {
           if (!loadingMore) return null;
-          return <ActivityIndicator style={styles.loadingMore} size="small" color={colors.primary} />;
+          return <ActivityIndicator style={styles.loadingMore} size="small" color={colors.text} />;
         }}
         ListEmptyComponent={() => {
           if (!initialLoading) {
             return (
               <View style={styles.emptyState}>
-                <ThemedText style={[styles.emptyText, { color: colors.primary }]}>No chats available.</ThemedText>
+                <Text style={[styles.emptyText, { color: colors.text }]}>No chats available.</Text>
               </View>
             );
           }
@@ -124,18 +115,18 @@ export default function ChatsScreen() {
             onPress={() => router.push(`/chat/chat?friendId=${chat.friendId}`)}
           >
             <View style={[styles.avatar, { backgroundColor: colors.accent }]}> 
-              <ThemedText style={styles.avatarText}>{chat.friendName?.charAt(0)}</ThemedText>
+              <Text style={styles.avatarText}>{chat.friendName?.charAt(0)}</Text>
             </View>
             <View style={styles.chatInfo}>
               <View style={styles.chatHeader}>
-                <ThemedText style={[styles.chatName, { color: colors.primary }]}>{chat.friendName}</ThemedText>
-                <ThemedText style={[styles.chatTime, { color: colors.secondary }]}>{new Date(chat.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+                <Text style={[styles.chatName, { color: colors.text }]}>{chat.friendName}</Text>
+                <Text style={[styles.chatTime, { color: colors.secondaryText }]}>{new Date(chat.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
               </View>
               <View style={styles.chatRow}>
-                <ThemedText style={[styles.chatPreview, { color: colors.secondary }]} numberOfLines={1}>{chat.textMessage}</ThemedText>
+                <Text style={[styles.chatPreview, { color: colors.secondaryText }]} numberOfLines={1}>{chat.textMessage}</Text>
                 {chat.unreadCount ? (
                   <View style={[styles.unreadBadge, { backgroundColor: colors.accent }]}> 
-                    <ThemedText style={styles.unreadText}>{chat.unreadCount}</ThemedText>
+                    <Text style={styles.unreadText}>{chat.unreadCount}</Text>
                   </View>
                 ) : null}
               </View>

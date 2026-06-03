@@ -15,7 +15,7 @@ export default function NewsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const newsService = useMemo(() => container.resolve<NewsService>(NewsServiceToken), []);
 
   const [articles, setArticles] = useState<News[]>([]);
@@ -24,17 +24,7 @@ export default function NewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadArticles = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -81,19 +71,19 @@ export default function NewsScreen() {
             <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
           ) : null}
           <View style={styles.cardBody}>
-            <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.headline}</ThemedText>
-            <ThemedText style={[styles.cardSummary, { color: colors.secondary }]} numberOfLines={3}>
+            <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.headline}</ThemedText>
+            <ThemedText style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
               {item.summary}
             </ThemedText>
           </View>
           <View style={styles.cardFooter}>
             <View style={styles.metaRow}>
-              <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-              <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+              <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+              <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
             </View>
             <View style={styles.metaRow}>
-              <MaterialIcons name="source" size={14} color={colors.secondary} />
-              <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.source}</ThemedText>
+              <MaterialIcons name="source" size={14} color={colors.secondaryText} />
+              <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.source}</ThemedText>
             </View>
           </View>
         </View>
@@ -105,9 +95,9 @@ export default function NewsScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.news}</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.news}</ThemedText>
       </View>
       <FlatList
         data={articles}
@@ -116,11 +106,11 @@ export default function NewsScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</ThemedText>
             </View>
           ) : null
         }

@@ -15,7 +15,7 @@ import type { StolenBikeReport } from '@/models/stolenBikeReport';
 export default function StolenListScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const stolenBikeService = useMemo(
     () => container.resolve<StolenBikeService>(StolenBikeServiceToken),
     [],
@@ -23,17 +23,7 @@ export default function StolenListScreen() {
   const [reports, setReports] = useState<StolenBikeReport[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -63,15 +53,15 @@ export default function StolenListScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.stolenList}</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>{t.Title.stolenList}</ThemedText>
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.reportTopButton} onPress={openReportForm} hitSlop={12}>
-            <ThemedText style={[styles.reportTopButtonText, { color: colors.primary }]}>Report</ThemedText>
+            <ThemedText style={[styles.reportTopButtonText, { color: colors.text }]}>Report</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
-            <MaterialIcons name="tune" size={22} color={colors.primary} />
+            <MaterialIcons name="tune" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -83,8 +73,8 @@ export default function StolenListScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <MaterialIcons name="warning-amber" size={48} color={colors.secondary} />
-              <ThemedText style={[styles.emptyText, { color: colors.secondary, marginTop: 12 }]}>No stolen reports yet.</ThemedText>
+              <MaterialIcons name="warning-amber" size={48} color={colors.secondaryText} />
+              <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No stolen reports yet.</ThemedText>
             </View>
           ) : null
         }
@@ -94,15 +84,15 @@ export default function StolenListScreen() {
               <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
             ) : null}
             <View style={styles.cardContent}>
-              <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
-              <ThemedText style={[styles.cardSubtitle, { color: colors.secondary }]}>{`${item.make} ${item.model} • ${item.year}`}</ThemedText>
+              <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
+              <ThemedText style={[styles.cardSubtitle, { color: colors.secondaryText }]}>{`${item.make} ${item.model} • ${item.year}`}</ThemedText>
               <View style={styles.metaRow}>
-                <MaterialIcons name="location-on" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.location}</ThemedText>
+                <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
+                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
               </View>
               <View style={styles.metaRow}>
-                <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(item.reportedAt ?? '').toLocaleDateString()}</ThemedText>
+                <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.reportedAt ?? '').toLocaleDateString()}</ThemedText>
               </View>
             </View>
           </View>

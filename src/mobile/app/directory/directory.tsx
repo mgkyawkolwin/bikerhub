@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import SearchInput from '@/components/searchInput';
 import { container } from '@/services';
 import { DirectoryServiceToken, type DirectoryFilter, type DirectoryService } from '@/services/directoryService';
@@ -22,7 +21,7 @@ export default function DirectoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
   const params = useLocalSearchParams();
   const paramBusinessType = getParamValue(params.businessType);
@@ -37,17 +36,6 @@ export default function DirectoryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const routeFilters = useMemo<DirectoryFilter>(() => ({
     businessType: paramBusinessType || undefined,
@@ -107,22 +95,22 @@ export default function DirectoryScreen() {
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
         {item.coverImageUrl ? <Image source={{ uri: item.coverImageUrl }} style={styles.cardImage} /> : null}
         <View style={styles.cardBody}>
-          <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.name}</ThemedText>
-          <ThemedText style={[styles.cardSummary, { color: colors.secondary }]} numberOfLines={2}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={2}>
             {item.businessType} · {item.city}
-          </ThemedText>
-          <ThemedText style={[styles.cardAddress, { color: colors.secondary }]} numberOfLines={2}>
+          </Text>
+          <Text style={[styles.cardAddress, { color: colors.secondaryText }]} numberOfLines={2}>
             {item.address}
-          </ThemedText>
+          </Text>
         </View>
         <View style={styles.cardFooter}>
           <View style={styles.metaRow}>
-            <MaterialIcons name="favorite" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.likesCount ?? 0}</ThemedText>
+            <MaterialIcons name="favorite" size={14} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.likesCount ?? 0}</Text>
           </View>
           <View style={styles.metaRow}>
-            <MaterialIcons name="star" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</ThemedText>
+            <MaterialIcons name="star" size={14} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
           </View>
         </View>
       </View>
@@ -134,9 +122,9 @@ export default function DirectoryScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>{t.Title.directory}</Text>
         </View>
         <View style={styles.headerRightIcons}>
           <TouchableOpacity
@@ -151,10 +139,10 @@ export default function DirectoryScreen() {
             style={styles.iconButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MaterialIcons name="search" size={24} color={colors.primary} />
+            <MaterialIcons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/directory/directorySearch')} style={styles.filterButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <MaterialIcons name="filter-list" size={24} color={colors.primary} />
+            <MaterialIcons name="filter-list" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -184,11 +172,11 @@ export default function DirectoryScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
             </View>
           ) : null
         }

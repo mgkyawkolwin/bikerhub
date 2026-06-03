@@ -6,7 +6,6 @@ import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useI18n } from '@/i18n';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { ThemedText } from '@/components/themedText';
 
@@ -35,27 +34,23 @@ const DARK_MAP_STYLE = [
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors, isDark } = useThemeContext();
   const mapRef = useRef<MapView>(null);
 
-  const background = useThemeColor({}, 'background');
-  const border = useThemeColor({}, 'border');
-
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar style="light" backgroundColor="#000000" />
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: colors.background }]}> 
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background }] }>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>{t.Title.map}</ThemedText>
-        <View style={styles.headerSpacer} />
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>{t.Title.map}</ThemedText>
       </View>
 
       {/* Map */}
-      <View style={[styles.body, { backgroundColor: background }]}>
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
         <MapView
           ref={mapRef}
           style={styles.map}

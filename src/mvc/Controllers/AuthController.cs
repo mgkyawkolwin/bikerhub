@@ -25,19 +25,19 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Attempting to register user with email {Email}", dto.Email);
+            _logger.LogInformation("Attempting to register user {Name}", dto.Name);
             _logger.LogDebug("Register DTO: {Dto}", JsonSerializer.Serialize(dto));
 
             var response = await _authService.RegisterAsync(dto);
 
-            _logger.LogInformation("User registered successfully for email {Email}", dto.Email);
+            _logger.LogInformation("User registered successfully for {Name}", dto.Name);
             _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new {Success = true, Data = response});
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Registration failed for email {Email}", dto.Email);
+            _logger.LogWarning(ex, "Registration failed for user {Name}", dto.Name);
             return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
@@ -52,19 +52,19 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Login attempt for email {Email}", dto.Email);
+            _logger.LogInformation("Login attempt for username {Username}", dto.Username);
             _logger.LogDebug("Login DTO: {Dto}", JsonSerializer.Serialize(dto));
 
             var response = await _authService.SignInAsync(dto);
 
-            _logger.LogInformation("Login successful for email {Email}", dto.Email);
+            _logger.LogInformation("Login successful for username {Username}", dto.Username);
             _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new {Success = true, Data = response});
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Login failed for email {Email}", dto.Email);
+            _logger.LogWarning(ex, "Login failed for username {Username}", dto.Username);
             return BadRequest(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)

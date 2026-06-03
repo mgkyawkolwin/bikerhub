@@ -1,9 +1,7 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace BikerHub.Dtos;
 
 public sealed record CreateBikeListingDto(
-    [property: Required] string Title,
+    string Title,
     string? Make,
     string? Model,
     int? Year,

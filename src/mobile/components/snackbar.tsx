@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/themedText';
+import { Label } from '@react-navigation/elements';
 
 type SnackBarType = 'success' | 'error';
 
@@ -112,7 +112,7 @@ const SnackBar: SnackBarComponentType = () => {
         },
       ]}
     >
-      <ThemedText style={styles.snackbarText}>{snackbar.message}</ThemedText>
+      <Label style={styles.snackbarText}>{snackbar.message}</Label>
     </Animated.View>
   );
 };

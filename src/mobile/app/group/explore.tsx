@@ -13,7 +13,7 @@ import type Group from '@/models/group';
 
 export default function GroupExploreScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -34,17 +34,7 @@ export default function GroupExploreScreen() {
     [groups, searchQuery],
   );
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadGroups = useCallback(async () => {
     const result = await groupService.getGroups();
@@ -68,15 +58,15 @@ export default function GroupExploreScreen() {
           <MaterialIcons name={item.icon as any} size={24} color={colors.background} />
         </View>
         <View style={styles.groupInfo}>
-          <ThemedText style={[styles.groupTitle, { color: colors.primary }]}>{item.title}</ThemedText>
+          <ThemedText style={[styles.groupTitle, { color: colors.text }]}>{item.title}</ThemedText>
           {item.description ? (
-            <ThemedText style={[styles.groupDescription, { color: colors.secondary }]}>{item.description}</ThemedText>
+            <ThemedText style={[styles.groupDescription, { color: colors.secondaryText }]}>{item.description}</ThemedText>
           ) : null}
           <View style={styles.groupMetaRow}>
-            <ThemedText style={[styles.groupMetaText, { color: item.isPrivate ? colors.accent : colors.secondary }]}> 
+            <ThemedText style={[styles.groupMetaText, { color: item.isPrivate ? colors.accent : colors.secondaryText }]}> 
               {item.isPrivate ? 'Private' : 'Public'}
             </ThemedText>
-            <ThemedText style={[styles.groupMetaText, { color: colors.secondary }]}> 
+            <ThemedText style={[styles.groupMetaText, { color: colors.secondaryText }]}> 
               {item.membersCount ?? 0} members
             </ThemedText>
           </View>
@@ -90,9 +80,9 @@ export default function GroupExploreScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <View style={styles.headerTopRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Groups</ThemedText>
+          <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Groups</ThemedText>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -102,24 +92,24 @@ export default function GroupExploreScreen() {
             activeOpacity={0.8}
             onPress={() => setActiveSection('explore')}
           >
-            <MaterialIcons name="explore" size={20} color={activeSection === 'explore' ? '#FFFFFF' : colors.primary} />
-            <ThemedText style={[styles.iconButtonText, { color: activeSection === 'explore' ? '#FFFFFF' : colors.primary }]}>Explore</ThemedText>
+            <MaterialIcons name="explore" size={20} color={activeSection === 'explore' ? '#FFFFFF' : colors.text} />
+            <ThemedText style={[styles.iconButtonText, { color: activeSection === 'explore' ? '#FFFFFF' : colors.text }]}>Explore</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconButton, activeSection === 'myGroups' && { backgroundColor: colors.accent }]}
             activeOpacity={0.8}
             onPress={() => setActiveSection('myGroups')}
           >
-            <MaterialIcons name="groups" size={20} color={activeSection === 'myGroups' ? '#FFFFFF' : colors.primary} />
-            <ThemedText style={[styles.iconButtonText, { color: activeSection === 'myGroups' ? '#FFFFFF' : colors.primary }]}>My Groups</ThemedText>
+            <MaterialIcons name="groups" size={20} color={activeSection === 'myGroups' ? '#FFFFFF' : colors.text} />
+            <ThemedText style={[styles.iconButtonText, { color: activeSection === 'myGroups' ? '#FFFFFF' : colors.text }]}>My Groups</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
             activeOpacity={0.8}
             onPress={() => router.push({ pathname: '/group/create' })}
           >
-            <MaterialIcons name="group-add" size={20} color={colors.primary} />
-            <ThemedText style={[styles.iconButtonText, { color: colors.primary }]}>Create</ThemedText>
+            <MaterialIcons name="group-add" size={20} color={colors.text} />
+            <ThemedText style={[styles.iconButtonText, { color: colors.text }]}>Create</ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -127,8 +117,8 @@ export default function GroupExploreScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Search groups"
-          placeholderTextColor={colors.secondary}
-          style={[styles.searchInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.primary }]}
+          placeholderTextColor={colors.secondaryText}
+          style={[styles.searchInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
         />
       </View>
 
@@ -139,7 +129,7 @@ export default function GroupExploreScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>No groups available.</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No groups available.</ThemedText>
           </View>
         }
       />

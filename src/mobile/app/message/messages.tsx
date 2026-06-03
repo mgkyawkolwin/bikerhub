@@ -12,7 +12,7 @@ import type { MessageService, MessageItem } from '@/services';
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const { t } = useI18n();
   const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
   const [items, setItems] = useState<MessageItem[]>([]);
@@ -23,14 +23,7 @@ export default function MessagesScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  const colors = {
-    background: isDark ? '#000000' : '#F7F7F7',
-    card: isDark ? '#181818' : '#FFFFFF',
-    border: isDark ? '#2B2B2B' : '#E0E0E0',
-    primary: isDark ? '#FFFFFF' : '#000000',
-    secondary: isDark ? '#B0B0B0' : '#666666',
-    accent: '#E85D04',
-  };
+  const { colors } = useThemeContext();
 
   const loadMessages = useCallback(
     async (nextPage: number, replace = false) => {
@@ -65,9 +58,9 @@ export default function MessagesScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>Messages</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.text }]}>Messages</ThemedText>
           <View style={styles.placeholder} />
         </View>
       </View>
@@ -79,7 +72,7 @@ export default function MessagesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadMessages(1, true)}
-            tintColor={colors.primary}
+            tintColor={colors.text}
           />
         }
         contentContainerStyle={styles.list}
@@ -90,11 +83,11 @@ export default function MessagesScreen() {
             void loadMessages(page + 1, false);
           }
         }}
-        ListFooterComponent={() => (loadingMore ? <ActivityIndicator style={styles.loadingMore} size="small" color={colors.primary} /> : null)}
+        ListFooterComponent={() => (loadingMore ? <ActivityIndicator style={styles.loadingMore} size="small" color={colors.text} /> : null)}
         ListEmptyComponent={() =>
           !initialLoading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.primary }]}>No messages found.</ThemedText>
+              <ThemedText style={[styles.emptyText, { color: colors.text }]}>No messages found.</ThemedText>
             </View>
           ) : null
         }
@@ -108,11 +101,11 @@ export default function MessagesScreen() {
               onPress={() => router.push({ pathname: '/message/[messageId]', params: { messageId: item.id } })}
             >
               <View style={styles.itemHeader}>
-                <ThemedText style={[styles.itemTitle, { color: colors.primary }]}>{item.title}</ThemedText>
-                <ThemedText style={[styles.itemTime, { color: colors.secondary }]}>{displayDate}</ThemedText>
+                <ThemedText style={[styles.itemTitle, { color: colors.text }]}>{item.title}</ThemedText>
+                <ThemedText style={[styles.itemTime, { color: colors.secondaryText }]}>{displayDate}</ThemedText>
               </View>
               <View style={styles.itemFooter}>
-                <ThemedText style={[styles.itemPreview, { color: colors.secondary }]} numberOfLines={2}>{previewText}</ThemedText>
+                <ThemedText style={[styles.itemPreview, { color: colors.secondaryText }]} numberOfLines={2}>{previewText}</ThemedText>
                 {!item.read ? (
                   <View style={[styles.unread, { backgroundColor: colors.accent }]}>
                     <ThemedText style={styles.unreadText}>NEW</ThemedText>

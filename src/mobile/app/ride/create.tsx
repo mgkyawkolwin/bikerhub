@@ -17,7 +17,7 @@ export default function RouteCreateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
 
   const [name, setName] = useState('');
@@ -31,17 +31,7 @@ export default function RouteCreateScreen() {
   const [formErrors, setFormErrors] = useState<Partial<Record<'name' | 'description' | 'distance' | 'duration' | 'type' | 'createdByName' | 'gpxUri', string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   function getGpxExtension(uri: string, name?: string) {
     const extract = (value: string | undefined) => {
@@ -111,99 +101,99 @@ export default function RouteCreateScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.card }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.uploadRoute}</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.uploadRoute}</ThemedText>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.routeName}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.routeName}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: formErrors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: formErrors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={name}
             onChangeText={(text) => {
               setName(text);
               if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
             }}
             placeholder={t.Title.routeName}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.description}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.description}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: formErrors.description ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary, minHeight: 100, textAlignVertical: 'top' }]}
+            style={[styles.textInput, { borderColor: formErrors.description ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text, minHeight: 100, textAlignVertical: 'top' }]}
             value={description}
             onChangeText={(text) => {
               setDescription(text);
               if (formErrors.description) setFormErrors((prev) => ({ ...prev, description: undefined }));
             }}
             placeholder={t.Title.description}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
             multiline
           />
         </View>
         <View style={styles.splitRow}>
           <View style={styles.splitItem}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.distance}</ThemedText>
+            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.distance}</ThemedText>
             <TextInput
-              style={[styles.textInput, { borderColor: formErrors.distance ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              style={[styles.textInput, { borderColor: formErrors.distance ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={distance}
               onChangeText={(text) => {
                 setDistance(text);
                 if (formErrors.distance) setFormErrors((prev) => ({ ...prev, distance: undefined }));
               }}
               placeholder={t.Title.distance}
-              placeholderTextColor={colors.secondary}
+              placeholderTextColor={colors.secondaryText}
             />
           </View>
           <View style={styles.splitItem}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.duration}</ThemedText>
+            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.duration}</ThemedText>
             <TextInput
-              style={[styles.textInput, { borderColor: formErrors.duration ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              style={[styles.textInput, { borderColor: formErrors.duration ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={duration}
               onChangeText={(text) => {
                 setDuration(text);
                 if (formErrors.duration) setFormErrors((prev) => ({ ...prev, duration: undefined }));
               }}
               placeholder={t.Title.duration}
-              placeholderTextColor={colors.secondary}
+              placeholderTextColor={colors.secondaryText}
             />
           </View>
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.type}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: formErrors.type ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: formErrors.type ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={type}
             onChangeText={(text) => {
               setType(text);
               if (formErrors.type) setFormErrors((prev) => ({ ...prev, type: undefined }));
             }}
             placeholder={t.Title.type}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.createdBy}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.createdBy}</ThemedText>
           <TextInput
-            style={[styles.textInput, { borderColor: formErrors.createdByName ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: formErrors.createdByName ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={createdByName}
             onChangeText={(text) => {
               setCreatedByName(text);
               if (formErrors.createdByName) setFormErrors((prev) => ({ ...prev, createdByName: undefined }));
             }}
             placeholder={t.Title.createdBy}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.gpxFile}</ThemedText>
+          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.gpxFile}</ThemedText>
           <TouchableOpacity style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]} onPress={pickGpx} activeOpacity={0.8}>
-            <ThemedText style={[styles.uploadText, { color: colors.primary }]}>{gpxUri ? t.Title.changeGpx : t.Title.selectGpx}</ThemedText>
-            <MaterialIcons name="upload-file" size={20} color={colors.secondary} />
+            <ThemedText style={[styles.uploadText, { color: colors.text }]}>{gpxUri ? t.Title.changeGpx : t.Title.selectGpx}</ThemedText>
+            <MaterialIcons name="upload-file" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
-          <ThemedText style={[styles.fileName, { color: colors.secondary }]} numberOfLines={1}>{gpxFileName || (gpxUri ? gpxUri.split('/').pop() : t.Title.noFileSelected)}</ThemedText>
+          <ThemedText style={[styles.fileName, { color: colors.secondaryText }]} numberOfLines={1}>{gpxFileName || (gpxUri ? gpxUri.split('/').pop() : t.Title.noFileSelected)}</ThemedText>
           {formErrors.gpxUri ? <ThemedText style={styles.errorText}>{formErrors.gpxUri}</ThemedText> : null}
         </View>
         <TouchableOpacity

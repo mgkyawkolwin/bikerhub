@@ -66,18 +66,7 @@ const PlanGoogle: React.FC = () => {
   const [showSavedModal, setShowSavedModal] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isDark } = useThemeContext();
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const mapRef = useRef<MapView>(null);
 
@@ -587,25 +576,25 @@ const PlanGoogle: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Route Planner</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Route Planner</Text>
         <View style={styles.headerPlaceholder} />
       </View>
       <View style={[styles.actionButtonsRow, { backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={startRide} style={styles.headerButton}>
-          <MaterialIcons name="directions-bike" size={24} color={colors.primary} />
-          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Ride</Text>
+          <MaterialIcons name="directions-bike" size={24} color={colors.text} />
+          <Text style={[styles.headerButtonText, { color: colors.text }]}>Ride</Text>
         </TouchableOpacity>
         {isOwnData ? ( 
           <> 
             <TouchableOpacity onPress={clearAllWaypoints} style={styles.headerButton}> 
-              <MaterialIcons name="close" size={24} color={colors.primary} /> 
-              <Text style={[styles.headerButtonText, { color: colors.primary }]}>Clear</Text> 
+              <MaterialIcons name="close" size={24} color={colors.text} /> 
+              <Text style={[styles.headerButtonText, { color: colors.text }]}>Clear</Text> 
             </TouchableOpacity> 
             <TouchableOpacity onPress={openSaveModal} style={styles.headerButton}> 
-              <MaterialIcons name="save" size={24} color={colors.primary} /> 
-              <Text style={[styles.headerButtonText, { color: colors.primary }]}>Save</Text> 
+              <MaterialIcons name="save" size={24} color={colors.text} /> 
+              <Text style={[styles.headerButtonText, { color: colors.text }]}>Save</Text> 
             </TouchableOpacity> 
           </> 
         ) : null} 

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { ConfigServiceToken } from '@/services/configService';
 import type { ConfigService } from '@/services/configService';
@@ -24,7 +23,7 @@ export default function DirectorySearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const configService = useMemo(() => container.resolve<ConfigService>(ConfigServiceToken), []);
 
   const [businessTypes, setBusinessTypes] = useState<string[]>([]);
@@ -38,19 +37,6 @@ export default function DirectorySearchScreen() {
   const selectedCityParam = getParamValue(params.city);
   const selectedStateDivisionParam = getParamValue(params.stateDivision);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-      overlay: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
-    }),
-    [isDark],
-  );
 
   useEffect(() => {
     void (async () => {
@@ -117,9 +103,9 @@ export default function DirectorySearchScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.directorySearch}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.directorySearch}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -132,24 +118,24 @@ export default function DirectorySearchScreen() {
           ] as const
         ).map(({ label, field }) => (
           <View key={field} style={styles.fieldGroup}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{label}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{label}</Text>
             <TouchableOpacity
               style={[styles.dropdown, { borderColor: colors.border, backgroundColor: colors.card }]}
               onPress={() => setActiveDropdown(field)}
               activeOpacity={0.8}
             >
-              <ThemedText style={[styles.dropdownText, { color: colors.primary }]}>{getDisplayText(field)}</ThemedText>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondary} />
+              <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText(field)}</Text>
+              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
         ))}
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border }]} onPress={clearFilters} activeOpacity={0.8}>
-            <ThemedText style={[styles.clearText, { color: colors.primary }]}>{t.Title.clear}</ThemedText>
+            <Text style={[styles.clearText, { color: colors.text }]}>{t.Title.clear}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.applyButton, { backgroundColor: colors.accent }]} onPress={applyFilters} activeOpacity={0.8}>
-            <ThemedText style={styles.applyText}>{t.Title.apply}</ThemedText>
+            <Text style={styles.applyText}>{t.Title.apply}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -160,9 +146,9 @@ export default function DirectorySearchScreen() {
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}> 
           <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: colors.primary }]}>{t.Title.selectOption}</ThemedText>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
-              <MaterialIcons name="close" size={22} color={colors.secondary} />
+              <MaterialIcons name="close" size={22} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
@@ -173,7 +159,7 @@ export default function DirectorySearchScreen() {
                 onPress={() => activeDropdown && selectOption(option, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <ThemedText style={[styles.sheetItemText, { color: colors.primary }]}>{option}</ThemedText>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

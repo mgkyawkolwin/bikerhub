@@ -13,7 +13,7 @@ import type { BikeListing, MarketplaceFilter } from '@/models/marketplace';
 
 export default function SocialGarageScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const marketplaceService = useMemo(
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
@@ -36,17 +36,7 @@ export default function SocialGarageScreen() {
     location: '',
   }), []);
 
-  const colors = useMemo(
-    () => ({
-      root: '#000000',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadGarage = useCallback(async () => {
     setLoading(true);
@@ -79,7 +69,7 @@ export default function SocialGarageScreen() {
     >
       <Image source={{ uri: item.imageUrl }} style={styles.bikeImage} />
       <View style={styles.bikeInfo}>
-        <ThemedText style={[styles.bikeTitle, { color: colors.primary }]} numberOfLines={1}>
+        <ThemedText style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
           {item.title}
         </ThemedText>
       </View>
@@ -87,13 +77,13 @@ export default function SocialGarageScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.primary }]}>Garage</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.text }]}>Garage</ThemedText>
           <View style={styles.headerSpacer} />
         </View>
       </View>
@@ -106,7 +96,7 @@ export default function SocialGarageScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>No bikes in garage.</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No bikes in garage.</ThemedText>
           </View>
         ) : null}
       />

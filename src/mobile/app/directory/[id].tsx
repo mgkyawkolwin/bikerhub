@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { DirectoryServiceToken } from '@/services/directoryService';
 import type { DirectoryService } from '@/services/directoryService';
@@ -16,7 +15,7 @@ export default function DirectoryDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [item, setItem] = useState<Directory | null>(null);
@@ -37,25 +36,13 @@ export default function DirectoryDetailScreen() {
     };
   }, [id, directoryService]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.directory}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.directory}</Text>
         <View style={styles.headerSpacer} />
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
@@ -63,25 +50,25 @@ export default function DirectoryDetailScreen() {
           <View style={[styles.page, { backgroundColor: colors.background }]}> 
             {item.coverImageUrl ? <Image source={{ uri: item.coverImageUrl }} style={styles.image} /> : null}
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-              <ThemedText style={[styles.titleText, { color: colors.primary }]}>{item.name}</ThemedText>
-              <ThemedText style={[styles.subtitle, { color: colors.secondary }]}>{item.businessType}</ThemedText>
+              <Text style={[styles.titleText, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.subtitle, { color: colors.secondaryText }]}>{item.businessType}</Text>
               <View style={styles.row}>
-                <MaterialIcons name="location-on" size={16} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.address}</ThemedText>
+                <MaterialIcons name="location-on" size={16} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.address}</Text>
               </View>
               <View style={styles.row}>
-                <MaterialIcons name="phone" size={16} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.phone}</ThemedText>
+                <MaterialIcons name="phone" size={16} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.phone}</Text>
               </View>
               <View style={styles.row}>
-                <MaterialIcons name="star" size={16} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</ThemedText>
+                <MaterialIcons name="star" size={16} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
               </View>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
           </View>
         )}
       </ScrollView>

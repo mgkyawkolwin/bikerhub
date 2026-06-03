@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { BlogServiceToken } from '@/services/blogService';
 import type { BlogService } from '@/services/blogService';
@@ -16,7 +15,7 @@ export default function BlogScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const blogService = useMemo(() => container.resolve<BlogService>(BlogServiceToken), []);
 
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -24,18 +23,6 @@ export default function BlogScreen() {
   const [total, setTotal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const loadBlogs = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -78,19 +65,19 @@ export default function BlogScreen() {
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
         {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.cardImage} /> : null}
         <View style={styles.cardBody}>
-          <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
-          <ThemedText style={[styles.cardSummary, { color: colors.secondary }]} numberOfLines={3}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
             {item.summary}
-          </ThemedText>
+          </Text>
         </View>
         <View style={styles.cardFooter}>
           <View style={styles.metaRow}>
-            <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+            <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</Text>
           </View>
           <View style={styles.metaRow}>
-            <MaterialIcons name="person" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.author}</ThemedText>
+            <MaterialIcons name="person" size={14} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.author}</Text>
           </View>
         </View>
       </View>
@@ -101,12 +88,12 @@ export default function BlogScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.blogs}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.blogs}</Text>
         <View style={styles.spacer} />
         <TouchableOpacity onPress={() => router.push('/blog/create')} style={[styles.writeButton, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
-          <ThemedText style={styles.writeButtonText}>Write Blog</ThemedText>
+          <Text style={styles.writeButtonText}>Write Blog</Text>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -116,11 +103,11 @@ export default function BlogScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
             </View>
           ) : null
         }

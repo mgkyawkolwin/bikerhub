@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { BlogServiceToken } from '@/services/blogService';
 import type { BlogService } from '@/services/blogService';
@@ -16,7 +15,7 @@ export default function BlogDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const blogService = useMemo(() => container.resolve<BlogService>(BlogServiceToken), []);
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [blog, setBlog] = useState<Blog | null>(null);
@@ -37,46 +36,34 @@ export default function BlogDetailScreen() {
     };
   }, [id, blogService]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={styles.header}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.blogs}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.blogs}</Text>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {blog ? (
           <View style={[styles.page, { backgroundColor: colors.background }]}> 
             {blog.imageUrl ? <Image source={{ uri: blog.imageUrl }} style={styles.image} /> : null}
             <View style={styles.card}> 
-              <ThemedText style={[styles.headline, { color: colors.primary }]}>{blog.title}</ThemedText>
+              <Text style={[styles.headline, { color: colors.text }]}>{blog.title}</Text>
               <View style={styles.metaRow}>
-                <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(blog.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+                <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(blog.dateTimeUTC ?? '').toLocaleDateString()}</Text>
               </View>
               <View style={styles.metaRow}>
-                <MaterialIcons name="person" size={14} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{blog.author}</ThemedText>
+                <MaterialIcons name="person" size={14} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{blog.author}</Text>
               </View>
-              <ThemedText style={[styles.bodyText, { color: colors.secondary }]}>{blog.content ?? blog.summary}</ThemedText>
+              <Text style={[styles.bodyText, { color: colors.secondaryText }]}>{blog.content ?? blog.summary}</Text>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noListings}</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
           </View>
         )}
       </ScrollView>

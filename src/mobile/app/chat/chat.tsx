@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
@@ -15,7 +14,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -50,18 +49,6 @@ export default function ChatScreen() {
     };
   }, [friendId, chatService]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#181818' : '#FFFFFF',
-      border: isDark ? '#2B2B2B' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
-
   const handleSend = async () => {
     if (!friendId) return;
     const text = draft.trim();
@@ -81,14 +68,14 @@ export default function ChatScreen() {
     >
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
-          <ThemedText style={[styles.chatTitle, { color: colors.primary }]} numberOfLines={1}>{friendId}</ThemedText>
-          <ThemedText style={[styles.chatSubtitle, { color: colors.secondary }]}>Online</ThemedText>
+          <Text style={[styles.chatTitle, { color: colors.text }]} numberOfLines={1}>{friendId}</Text>
+          <Text style={[styles.chatSubtitle, { color: colors.secondaryText }]}>Online</Text>
         </View>
         <TouchableOpacity hitSlop={14} style={styles.callButton}>
-          <MaterialIcons name="call" size={20} color={colors.primary} />
+          <MaterialIcons name="call" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -98,7 +85,7 @@ export default function ChatScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator style={styles.loading} size="small" color={colors.primary} />
+          <ActivityIndicator style={styles.loading} size="small" color={colors.text} />
         ) : (
           messages.map((message) => {
             const currentUserId = '00000000-0000-0000-0000-000000000000';
@@ -114,15 +101,15 @@ export default function ChatScreen() {
             return (
               <View key={message.id} style={[styles.messageRow, isMine ? styles.messageRowRight : styles.messageRowLeft]}>
                 <View style={[styles.messageBubble, { backgroundColor: isMine ? colors.accent : colors.card, alignSelf: isMine ? 'flex-end' : 'flex-start' }]}> 
-                  <ThemedText style={[styles.messageText, { color: '#FFFFFF' }]}>{message.textMessage}</ThemedText>
+                  <Text style={[styles.messageText, { color: '#FFFFFF' }]}>{message.textMessage}</Text>
                   <View style={styles.messageFooter}>
-                    <ThemedText style={[styles.messageTime, { color: isMine ? 'rgba(255,255,255,0.8)' : colors.secondary }]}>{displayTime}</ThemedText>
+                    <Text style={[styles.messageTime, { color: isMine ? 'rgba(255,255,255,0.8)' : colors.secondaryText }]}>{displayTime}</Text>
                     <View style={styles.messageIcons}>
                       {statusIcon ? (
                         <MaterialIcons
                           name={statusIcon}
                           size={14}
-                          color={isMine ? '#FFFFFF' : colors.secondary}
+                          color={isMine ? '#FFFFFF' : colors.secondaryText}
                         />
                       ) : null}
                     </View>
@@ -148,9 +135,9 @@ export default function ChatScreen() {
           <MaterialIcons name="keyboard-voice" size={22} color={colors.accent} />
         </TouchableOpacity>
         <TextInput
-          style={[styles.textInput, { color: colors.primary, borderColor: colors.border, backgroundColor: colors.background }]}
+          style={[styles.textInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
           placeholder={t.Title.typeMessage ?? 'Type a message...'}
-          placeholderTextColor={colors.secondary}
+          placeholderTextColor={colors.secondaryText}
           value={draft}
           onChangeText={setDraft}
           returnKeyType="send"

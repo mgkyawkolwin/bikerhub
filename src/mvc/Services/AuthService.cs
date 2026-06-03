@@ -58,20 +58,28 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        _logger.LogTrace("RegisterAsync called with email {Email}", dto.Email);
-        _logger.LogInformation("Registering user {Email}", dto.Email);
-
-        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
-
-        if (await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail))
+        DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+        if (!string.IsNullOrWhiteSpace(dto.Email))
         {
-            _logger.LogWarning("Registration conflict for email {Email}", dto.Email);
-            throw new CustomException("A user with this email already exists.");
+            DtoValidationHelper.ValidateEmail(dto.Email);
+        }
+        DtoValidationHelper.ValidateRequiredString(dto.Password, "Password");
+
+        _logger.LogTrace("RegisterAsync called for user {Name}", dto.Name);
+        _logger.LogInformation("Registering user {Name}", dto.Name);
+
+        var normalizedName = dto.Name.Trim();
+        var normalizedEmail = string.IsNullOrWhiteSpace(dto.Email) ? string.Empty : dto.Email.Trim().ToLowerInvariant();
+
+        if (await _dbContext.Users.AnyAsync(u => u.Name == normalizedName || (!string.IsNullOrEmpty(normalizedEmail) && u.Email == normalizedEmail)))
+        {
+            _logger.LogWarning("Registration conflict for user {Name}", dto.Name);
+            throw new CustomException("A user with this username or email already exists.");
         }
 
         var user = new User
         {
-            Name = dto.Name.Trim(),
+            Name = normalizedName,
             Email = normalizedEmail,
             CreatedAt = DateTime.UtcNow,
         };
@@ -107,25 +115,30 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> SignInAsync(LoginDto dto)
     {
-        _logger.LogTrace("SignInAsync called with email {Email}", dto.Email);
+        DtoValidationHelper.ValidateRequiredString(dto.Username, "Username");
+        DtoValidationHelper.ValidateRequiredString(dto.Password, "Password");
 
-        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
-        var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Email == normalizedEmail);
+        _logger.LogTrace("SignInAsync called with username {Username}", dto.Username);
+
+        var normalizedUsername = dto.Username.Trim();
+        var normalizedEmail = normalizedUsername.Contains('@') ? normalizedUsername.ToLowerInvariant() : null;
+        var normalizedName = normalizedUsername.ToLowerInvariant();
+        var user = await _dbContext.Users.SingleOrDefaultAsync(u => (normalizedEmail != null && u.Email == normalizedEmail) || u.Name.ToLower() == normalizedName);
 
         if (user == null)
         {
-            _logger.LogWarning("Sign-in failed for unknown email {Email}", dto.Email);
-            throw new CustomException("Invalid email or password.");
+            _logger.LogWarning("Sign-in failed for unknown username {Username}", dto.Username);
+            throw new CustomException("Invalid username or password.");
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            _logger.LogWarning("Sign-in failed for email {Email}: invalid password", dto.Email);
-            throw new CustomException("Invalid email or password.");
-        }
+_logger.LogWarning("Sign-in failed for username {Username}: invalid password", dto.Username);
+        throw new CustomException("Invalid username or password.");
+    }
 
-        _logger.LogInformation("User {Email} authenticated successfully", dto.Email);
+    _logger.LogInformation("User {Username} authenticated successfully", dto.Username);
 
         var token = CreateJwtToken(user);
         var response = new AuthResponseDto(

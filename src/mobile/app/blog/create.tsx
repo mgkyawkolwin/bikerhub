@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Alert, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { BlogServiceToken } from '@/services/blogService';
 import type { BlogService } from '@/services/blogService';
@@ -16,7 +15,7 @@ export default function BlogCreateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const blogService = useMemo(() => container.resolve<BlogService>(BlogServiceToken), []);
 
   const [title, setTitle] = useState('');
@@ -24,17 +23,6 @@ export default function BlogCreateScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -82,9 +70,9 @@ export default function BlogCreateScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Create Blog</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Blog</Text>
       </View>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
@@ -94,33 +82,33 @@ export default function BlogCreateScreen() {
               <Image source={{ uri: imageUri }} style={styles.uploadImage} />
             ) : (
               <View style={styles.uploadPlaceholder}>
-                <MaterialIcons name="cloud-upload" size={28} color={colors.secondary} />
-                <ThemedText style={[styles.uploadText, { color: colors.secondary }]}>Upload Cover Image</ThemedText>
+                <MaterialIcons name="cloud-upload" size={28} color={colors.secondaryText} />
+                <Text style={[styles.uploadText, { color: colors.secondaryText }]}>Upload Cover Image</Text>
               </View>
             )}
           </TouchableOpacity>
 
           <View style={styles.fieldGroup}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.primary }]}>Title</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Title</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
               placeholder="Enter blog title"
-              placeholderTextColor={colors.secondary}
-              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              placeholderTextColor={colors.secondaryText}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             />
           </View>
 
           <View style={styles.fieldGroup}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.primary }]}>Content</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.text }]}>Content</Text>
             <TextInput
               value={content}
               onChangeText={setContent}
               placeholder="Write your story..."
-              placeholderTextColor={colors.secondary}
+              placeholderTextColor={colors.secondaryText}
               multiline
               textAlignVertical="top"
-              style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+              style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             />
           </View>
 
@@ -128,7 +116,7 @@ export default function BlogCreateScreen() {
             {saving ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+              <Text style={styles.saveButtonText}>Save</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

@@ -1,9 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { ChallengeServiceToken } from '@/services/challengeService';
@@ -12,22 +11,10 @@ import type Challenge from '@/models/challenge';
 
 export default function ChallengeDetailScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const challengeService = useMemo(() => container.resolve<ChallengeService>(ChallengeServiceToken), []);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const loadChallenge = useCallback(async () => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -45,13 +32,13 @@ export default function ChallengeDetailScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
         <View style={[styles.header, { borderBottomColor: colors.border }]}> 
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Challenge detail</ThemedText>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Challenge detail</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.emptyState}>
-          <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>Challenge not found.</ThemedText>
+          <Text style={[styles.emptyText, { color: colors.secondaryText }]}>Challenge not found.</Text>
         </View>
       </View>
     );
@@ -61,34 +48,34 @@ export default function ChallengeDetailScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}> 
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{challenge.title}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{challenge.title}</Text>
         <TouchableOpacity style={[styles.joinButton, { borderColor: colors.accent }]} activeOpacity={0.8} onPress={() => {}}>
           <MaterialIcons name="group-add" size={18} color={colors.accent} />
-          <ThemedText style={[styles.joinButtonText, { color: colors.accent }]}>Join</ThemedText>
+          <Text style={[styles.joinButtonText, { color: colors.accent }]}>Join</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
         <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} />
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-          <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>Description</ThemedText>
-          <ThemedText style={[styles.sectionText, { color: colors.secondary }]}>{challenge.description}</ThemedText>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
+          <Text style={[styles.sectionText, { color: colors.secondaryText }]}>{challenge.description}</Text>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-          <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>Leaderboard</ThemedText>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Leaderboard</Text>
           <FlatList
             data={challenge.leaderboard}
             keyExtractor={(item) => item.rank.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
               <View style={styles.leaderRow}>
-                <ThemedText style={[styles.leaderRank, { color: colors.accent }]}>{item.rank}</ThemedText>
+                <Text style={[styles.leaderRank, { color: colors.accent }]}>{item.rank}</Text>
                 <View style={styles.leaderTextBlock}>
-                  <ThemedText style={[styles.leaderName, { color: colors.primary }]}>{item.riderName}</ThemedText>
-                  <ThemedText style={[styles.leaderScore, { color: colors.secondary }]}>{`${item.score} pts`}</ThemedText>
+                  <Text style={[styles.leaderName, { color: colors.text }]}>{item.riderName}</Text>
+                  <Text style={[styles.leaderScore, { color: colors.secondaryText }]}>{`${item.score} pts`}</Text>
                 </View>
               </View>
             )}

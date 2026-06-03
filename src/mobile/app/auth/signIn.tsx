@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { useAuthContext } from '@/hooks/use-auth-context';
@@ -14,11 +13,11 @@ import SnackBar from '@/components/snackbar';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const { t } = useI18n();
   const { setAuthUser } = useAuthContext();
   const authService = useMemo(() => container.resolve<AuthService>(AuthServiceToken), []);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -36,24 +35,15 @@ export default function SignInScreen() {
     }
   }, [response]);
 
-  const colors = {
-    background: isDark ? '#000000' : '#F7F7F7',
-    card: isDark ? '#181818' : '#FFFFFF',
-    border: isDark ? '#2B2B2B' : '#E0E0E0',
-    primary: isDark ? '#FFFFFF' : '#000000',
-    secondary: isDark ? '#B0B0B0' : '#666666',
-    accent: '#E85D04',
-  };
-
   const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
-      SnackBar.Error('Please enter both email and password.');
+    if (!username.trim() || !password.trim()) {
+      SnackBar.Error('Please enter both username and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const user = await authService.signIn(email.trim(), password.trim());
+      const user = await authService.signIn(username.trim(), password.trim());
       setAuthUser(user);
       router.replace('/');
     } catch (error) {
@@ -79,33 +69,21 @@ export default function SignInScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
-        <ThemedText style={[styles.title, { color: colors.primary }]}>Sign In</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>Sign In</Text>
       </View>
-      <TouchableOpacity
-        style={[styles.googleButton, { backgroundColor: '#4285F4' }]}
-        onPress={() => promptAsync()}
-        disabled={!request || loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <ThemedText style={styles.googleButtonText}>Continue with Google</ThemedText>
-        )}
-      </TouchableOpacity>
       <View style={styles.content}>
         <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.primary, backgroundColor: colors.card }]}
-          placeholder={t.Text.email ?? 'Email'}
-          placeholderTextColor={colors.secondary}
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
+          placeholder={t.Text.username ?? 'Username'}
+          placeholderTextColor={colors.secondaryText}
           autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
+          value={username}
+          onChangeText={setUsername}
         />
         <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.primary, backgroundColor: colors.card }]}
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
           placeholder={t.Text.password ?? 'Password'}
-          placeholderTextColor={colors.secondary}
+          placeholderTextColor={colors.secondaryText}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -114,8 +92,22 @@ export default function SignInScreen() {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <ThemedText style={styles.buttonText}>Sign In</ThemedText>
+            <Text style={styles.buttonText}>Sign In</Text>
           )}
+        </TouchableOpacity>
+        {/* <TouchableOpacity
+          style={[styles.googleButton, { backgroundColor: '#4285F4', visibility: "hidden" }]}
+          onPress={() => promptAsync()}
+          disabled={!request || loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={[styles.googleButtonText, {visibility: "hidden"}]}>Continue with Google</Text>
+          )}
+        </TouchableOpacity> */}
+        <TouchableOpacity style={[styles.registerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/auth/register')} disabled={loading}>
+          <Text style={[styles.registerButtonText, { color: colors.text }]}>Register</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -136,6 +128,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
+    height: 40,
   },
   content: {
     marginTop: 32,
@@ -165,6 +158,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
+    backgroundColor: '#4285F4',
+  },
+  registerButton: {
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: 'transparent',
+  },
+  registerButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '700',
   },
   googleButtonText: {
     color: '#FFFFFF',

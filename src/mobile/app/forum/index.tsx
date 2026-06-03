@@ -1,9 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import type ForumPost from '@/models/forumPost';
@@ -13,7 +12,7 @@ export default function ForumIndexScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
 
   const allForums = useMemo<ForumPost[]>(() => {
     return (initialData.collections?.forums ?? []) as ForumPost[];
@@ -25,18 +24,6 @@ export default function ForumIndexScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const forums = useMemo(() => allForums.slice(0, page * pageSize), [allForums, page]);
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -63,24 +50,24 @@ export default function ForumIndexScreen() {
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
         <View style={styles.cardHeader}>
-          <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</ThemedText>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
           <View style={styles.metaChip}>
-            <ThemedText style={[styles.metaChipText, { color: colors.primary }]}>{item.category}</ThemedText>
+            <Text style={[styles.metaChipText, { color: colors.text }]}>{item.category}</Text>
           </View>
         </View>
-        <ThemedText style={[styles.excerpt, { color: colors.secondary }]}>{item.excerpt}</ThemedText>
+        <Text style={[styles.excerpt, { color: colors.secondaryText }]}>{item.excerpt}</Text>
         <View style={styles.statsRow}>
           <View style={styles.statsItem}>
-            <MaterialIcons name="person" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.statsText, { color: colors.secondary }]}>{item.author}</ThemedText>
+            <MaterialIcons name="person" size={14} color={colors.secondaryText} />
+            <Text style={[styles.statsText, { color: colors.secondaryText }]}>{item.author}</Text>
           </View>
           <View style={styles.statsItem}>
-            <MaterialIcons name="chat-bubble-outline" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.statsText, { color: colors.secondary }]}>{item.replies.length} replies</ThemedText>
+            <MaterialIcons name="chat-bubble-outline" size={14} color={colors.secondaryText} />
+            <Text style={[styles.statsText, { color: colors.secondaryText }]}>{item.replies.length} replies</Text>
           </View>
           <View style={styles.statsItem}>
-            <MaterialIcons name="visibility" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.statsText, { color: colors.secondary }]}>{item.views}</ThemedText>
+            <MaterialIcons name="visibility" size={14} color={colors.secondaryText} />
+            <Text style={[styles.statsText, { color: colors.secondaryText }]}>{item.views}</Text>
           </View>
         </View>
       </View>
@@ -91,9 +78,9 @@ export default function ForumIndexScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.forums}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.forums}</Text>
       </View>
 
       <FlatList
@@ -101,10 +88,10 @@ export default function ForumIndexScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} color={colors.primary} /> : null}
+        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} color={colors.text} /> : null}
         showsVerticalScrollIndicator={false}
       />
     </View>

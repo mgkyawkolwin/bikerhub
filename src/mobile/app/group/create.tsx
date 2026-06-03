@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Text
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,8 +16,7 @@ import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { ThemedText } from '@/components/themedText';
+import { useThemeContext } from '@/hooks/use-theme-context';
 import SnackBar from '@/components/snackbar';
 import { container } from '@/services';
 import { GroupServiceToken } from '@/services/groupService';
@@ -28,29 +28,7 @@ export default function GroupCreateScreen() {
   const { t } = useI18n();
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
 
-  const background = useThemeColor({}, 'background');
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
-  const primary = useThemeColor({}, 'text');
-  const secondary = useThemeColor({}, 'secondaryText');
-  const accent = useThemeColor({}, 'accent');
-  const placeholder = useThemeColor({}, 'placeholder');
-  const button = useThemeColor({}, 'button');
-  const buttonText = useThemeColor({}, 'buttonText');
-
-  const colors = {
-    root: background,
-    card,
-    border,
-    primary,
-    secondary,
-    accent,
-    placeholder,
-    button,
-    buttonText,
-    black: '#000000',
-    white: '#FFFFFF',
-  };
+  const { colors } = useThemeContext();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -121,13 +99,13 @@ export default function GroupCreateScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.root, paddingTop: insets.top }]}> 
-      <StatusBar style="light" backgroundColor={colors.root} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.root }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
+      <StatusBar style="light" backgroundColor={colors.background} />
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Create Group</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Group</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -137,9 +115,9 @@ export default function GroupCreateScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>Group Title</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>Group Title</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: errors.title ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: errors.title ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={title}
             onChangeText={(value) => {
               setTitle(value);
@@ -148,13 +126,13 @@ export default function GroupCreateScreen() {
             placeholder="Enter group title"
             placeholderTextColor={colors.placeholder}
           />
-          {errors.title ? <ThemedText style={styles.errorText}>{errors.title}</ThemedText> : null}
+          {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>Description</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>Description</Text>
           <TextInput
-            style={[styles.textArea, { borderColor: errors.description ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textArea, { borderColor: errors.description ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={description}
             onChangeText={(value) => {
               setDescription(value);
@@ -164,7 +142,7 @@ export default function GroupCreateScreen() {
             placeholderTextColor={colors.placeholder}
             multiline
           />
-          {errors.description ? <ThemedText style={styles.errorText}>{errors.description}</ThemedText> : null}
+          {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
         </View>
 
         <View style={styles.imageRow}>
@@ -177,8 +155,8 @@ export default function GroupCreateScreen() {
               <Image source={{ uri: logoUrl }} style={styles.imagePreview} />
             ) : (
               <>
-                <MaterialIcons name="photo" size={20} color={colors.secondary} />
-                <ThemedText style={[styles.imagePickerText, { color: colors.secondary }]}>Logo</ThemedText>
+                <MaterialIcons name="photo" size={20} color={colors.secondaryText} />
+                <Text style={[styles.imagePickerText, { color: colors.secondaryText }]}>Logo</Text>
               </>
             )}
           </TouchableOpacity>
@@ -191,15 +169,15 @@ export default function GroupCreateScreen() {
               <Image source={{ uri: coverPhotoUrl }} style={styles.imagePreview} />
             ) : (
               <>
-                <MaterialIcons name="image" size={20} color={colors.secondary} />
-                <ThemedText style={[styles.imagePickerText, { color: colors.secondary }]}>Cover</ThemedText>
+                <MaterialIcons name="image" size={20} color={colors.secondaryText} />
+                <Text style={[styles.imagePickerText, { color: colors.secondaryText }]}>Cover</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.switchRow}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>Private Group</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>Private Group</Text>
           <Switch
             value={isPrivate}
             onValueChange={setIsPrivate}
@@ -214,7 +192,7 @@ export default function GroupCreateScreen() {
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
-          <ThemedText style={[styles.submitText, { color: colors.white }]}>{isSubmitting ? 'Creating...' : 'Create Group'}</ThemedText>
+          <Text style={[styles.submitText, { color: colors.white }]}>{isSubmitting ? 'Creating...' : 'Create Group'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

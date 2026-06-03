@@ -63,26 +63,15 @@ function useSections() {
 
 export default function HomeScreen() {
   const ins = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const { getAuthUser } = useAuthContext();
   const sections = useSections();
-  const dk = isDark;
-  const authUser = getAuthUser();
+    const authUser = getAuthUser();
 
-  const c = {
-    bg:      '#000000',
-    card:    dk ? '#333333' : '#FFFFFF',
-    border:  dk ? '#444444' : '#E0E0E0',
-    iconBg:  dk ? '#FFFFFF' : '#000000',
-    iconFg:  dk ? '#000000' : '#FFFFFF',
-    pri:     dk ? '#FFFFFF' : '#000000',
-    sec:     dk ? '#AAAAAA' : '#666666',
-    ter:     dk ? '#777777' : '#999999',
-    headPri: '#FFFFFF',
-  };
+  const { colors } = useThemeContext();
 
   return (
-    <View style={[$.root, { backgroundColor: c.bg }]}>
+    <View style={[$.root, { backgroundColor: colors.background }]}>
 
       {/* ── header ── */}
       <View style={[$.header, { paddingTop: ins.top + 8 }]}>
@@ -91,28 +80,28 @@ export default function HomeScreen() {
           <View style={$.headerSide}>
             <Link href="/settings" asChild>
               <TouchableOpacity hitSlop={12}>
-                <MaterialIcons name="tune" size={22} color={c.headPri} />
+                <MaterialIcons name="tune" size={22} color={colors.text} />
               </TouchableOpacity>
             </Link>
             <Link href="/message/messages" asChild>
               <TouchableOpacity hitSlop={12}>
                 <View>
-                  <MaterialIcons name="notifications-none" size={22} color={c.headPri} />
+                  <MaterialIcons name="notifications-none" size={22} color={colors.text} />
                   <View style={$.bellDot} />
                 </View>
               </TouchableOpacity>
             </Link>
           </View>
-          <ThemedText style={[$.logo, { color: c.headPri }]}>BIKERHUB</ThemedText>
+          <ThemedText style={[$.logo, { color: colors.text }]}>BIKERHUB</ThemedText>
           <View style={$.headerSide}>
             <Link href="/chat/chats" asChild>
               <TouchableOpacity hitSlop={12}>
-                <MaterialIcons name="chat-bubble-outline" size={20} color={c.headPri} />
+                <MaterialIcons name="chat-bubble-outline" size={20} color={colors.text} />
               </TouchableOpacity>
             </Link>
             <Link href="/profile" asChild>
               <TouchableOpacity hitSlop={12}>
-                <MaterialIcons name="person-outline" size={22} color={c.headPri} />
+                <MaterialIcons name="person-outline" size={22} color={colors.text} />
               </TouchableOpacity>
             </Link>
           </View>
@@ -120,7 +109,7 @@ export default function HomeScreen() {
 
         {/* info row — welcome + weather */}
         <View style={$.infoRow}>
-          <ThemedText style={[$.welcome, { color: c.headPri }]}>Welcome, {authUser?.name ?? 'MM Biker'}</ThemedText>
+          <ThemedText style={[$.welcome, { color: colors.text }]}>Welcome, {authUser?.name ?? 'MM Biker'}</ThemedText>
           <View style={$.weatherRow}>
             <MaterialIcons name="wb-sunny" size={14} color="#FFC107" />
             <ThemedText style={$.weatherText}>34°C · Yangon</ThemedText>
@@ -130,23 +119,23 @@ export default function HomeScreen() {
         {/* stats row */}
         <View style={$.statsRow}>
           <View style={$.statItem}>
-            <MaterialIcons name="two-wheeler" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>3</ThemedText>
+            <MaterialIcons name="two-wheeler" size={20} color={colors.text} />
+            <ThemedText style={[$.statValue, { color: colors.text }]}>3</ThemedText>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
-            <MaterialIcons name="water-drop" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>3,000 Km</ThemedText>
+            <MaterialIcons name="water-drop" size={20} color={colors.text} />
+            <ThemedText style={[$.statValue, { color: colors.text }]}>3,000 Km</ThemedText>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
-            <MaterialIcons name="settings" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>5,000 Km</ThemedText>
+            <MaterialIcons name="settings" size={20} color={colors.text} />
+            <ThemedText style={[$.statValue, { color: colors.text }]}>5,000 Km</ThemedText>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
-            <MaterialIcons name="trip-origin" size={20} color={c.headPri} />
-            <ThemedText style={[$.statValue, { color: c.headPri }]}>9,100 Km</ThemedText>
+            <MaterialIcons name="trip-origin" size={20} color={colors.text} />
+            <ThemedText style={[$.statValue, { color: colors.text }]}>9,100 Km</ThemedText>
           </View>
         </View>
       </View>
@@ -160,8 +149,8 @@ export default function HomeScreen() {
 
             {/* group header */}
             <View style={$.groupHead}>
-              <MaterialIcons name={sec.icon as any} size={18} color={c.sec} />
-              <ThemedText style={[$.groupTitle, { color: c.pri }]}>{sec.title}</ThemedText>
+              <MaterialIcons name={sec.icon as any} size={18} color={colors.secondaryText} />
+              <ThemedText style={[$.groupTitle, { color: colors.text }]}>{sec.title}</ThemedText>
             </View>
 
             <View style={[$.divider, { backgroundColor: c.border }]} />
@@ -174,7 +163,7 @@ export default function HomeScreen() {
                     <View style={[$.tileIcon, { backgroundColor: c.iconBg }]}>
                       <MaterialIcons name={item.icon as any} size={22} color={c.iconFg} />
                     </View>
-                    <ThemedText style={[$.tileLabel, { color: c.pri }]} numberOfLines={2}>
+                    <ThemedText style={[$.tileLabel, { color: colors.text }]} numberOfLines={2}>
                       {item.label}
                     </ThemedText>
                   </TouchableOpacity>

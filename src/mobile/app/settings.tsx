@@ -2,36 +2,25 @@ import { StyleSheet, View, TouchableOpacity, Switch, ScrollView } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
-
-const A = '#E85D04';
+import { Label } from '@react-navigation/elements';
 
 export default function SettingsScreen() {
   const ins = useSafeAreaInsets();
-  const { isDark, toggleTheme } = useThemeContext();
+  const { colors, isDark, toggleTheme } = useThemeContext();
   const { t, locale, setLocale } = useI18n();
-  const dk = isDark;
 
-  const c = {
-    bg:      '#000000',
-    card:    dk ? '#333333' : '#FFFFFF',
-    border:  dk ? '#444444' : '#E0E0E0',
-    pri:     dk ? '#FFFFFF' : '#000000',
-    sec:     dk ? '#AAAAAA' : '#666666',
-    headPri: '#FFFFFF',
-  };
 
   return (
-    <View style={[$.root, { backgroundColor: c.bg }]}>
+    <View style={[$.root, { backgroundColor: colors.background }]}>
 
       {/* header */}
       <View style={[$.header, { paddingTop: ins.top + 8 }]}>
         <TouchableOpacity hitSlop={14} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={22} color={c.headPri} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[$.title, { color: c.headPri }]}>{t.Title.settings}</ThemedText>
+        <Label style={[$.title, { color: colors.text }]}>{t.Title.settings}</Label>
         <View style={{ width: 22 }} />
       </View>
 
@@ -40,14 +29,14 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* language card */}
-        <View style={[$.card, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={$.cardHead}>
-            <MaterialIcons name="translate" size={18} color={c.sec} />
-            <ThemedText style={[$.cardTitle, { color: c.pri }]}>{t.Title.language}</ThemedText>
+            <MaterialIcons name="translate" size={18} color={colors.secondaryText} />
+            <Label style={[$.cardTitle, { color: colors.text }]}>{t.Title.language}</Label>
           </View>
-          <View style={[$.divider, { backgroundColor: c.border }]} />
+          <View style={[$.divider, { backgroundColor: colors.border }]} />
           <View style={$.cardBody}>
-            <ThemedText style={[$.desc, { color: c.sec }]}>{t.Text.selectLanguage}</ThemedText>
+            <Label style={[$.desc, { color: colors.secondaryText }]}>{t.Text.selectLanguage}</Label>
             <View style={$.langRow}>
               {(['en', 'my'] as const).map((code) => {
                 const active = locale === code;
@@ -59,12 +48,12 @@ export default function SettingsScreen() {
                     activeOpacity={0.6}
                     style={[
                       $.langBtn,
-                      { borderColor: active ? A : c.border, backgroundColor: active ? A + '0C' : 'transparent' },
+                      { borderColor: active ? colors.accent : colors.border, backgroundColor: active ? colors.accent + '0C' : 'transparent' },
                     ]}>
-                    {active && <MaterialIcons name="check" size={14} color={A} />}
-                    <ThemedText style={[$.langText, { color: active ? A : c.sec }]}>
+                    {active && <MaterialIcons name="check" size={14} color={colors.accent} />}
+                    <Label style={[$.langText, { color: active ? colors.accent : colors.secondaryText }]}>
                       {label}
-                    </ThemedText>
+                    </Label>
                   </TouchableOpacity>
                 );
               })}
@@ -73,14 +62,14 @@ export default function SettingsScreen() {
         </View>
 
         {/* dark mode card */}
-        <View style={[$.card, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[$.cardBody, $.switchRow]}>
-            <MaterialIcons name={dk ? 'dark-mode' : 'light-mode'} size={18} color={c.sec} />
-            <ThemedText style={[$.cardTitle, { color: c.pri, flex: 1 }]}>{t.Title.darkMode}</ThemedText>
+            <MaterialIcons name={isDark ? 'dark-mode' : 'light-mode'} size={18} color={colors.secondaryText} />
+            <Label style={[$.cardTitle, { color: colors.text, flex: 1 }]}>{t.Title.darkMode}</Label>
             <Switch
-              value={dk}
+              value={isDark}
               onValueChange={toggleTheme}
-              trackColor={{ false: c.border, true: A }}
+              trackColor={{ false: colors.border, true: colors.accent }}
               thumbColor="#fff"
             />
           </View>

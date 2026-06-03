@@ -3,6 +3,7 @@ using System.Text.Json;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 
 namespace BikerHub.Services;
 
@@ -59,6 +60,8 @@ public class MarketplaceService : IMarketplaceService
 
     public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.Title, "Title");
+
         var entity = new BikeListing
         {
             Title = dto.Title,

@@ -15,7 +15,7 @@ import type SocialPost from '@/models/socialPost';
 
 export default function GroupPostsScreen() {
   const insets = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
   const postService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
@@ -26,17 +26,7 @@ export default function GroupPostsScreen() {
 
   const groupId = Array.isArray(params.groupId) ? params.groupId[0] : params.groupId;
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
@@ -75,14 +65,14 @@ export default function GroupPostsScreen() {
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
         <View style={[styles.header, { borderBottomColor: colors.border }]}> 
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Group</ThemedText>
+          <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Group</ThemedText>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.emptyState}>
-          <MaterialIcons name="group" size={44} color={colors.secondary} />
-          <ThemedText style={[styles.emptyText, { color: colors.secondary, marginTop: 12 }]}>Group not found.</ThemedText>
+          <MaterialIcons name="group" size={44} color={colors.secondaryText} />
+          <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>Group not found.</ThemedText>
         </View>
       </View>
     );
@@ -92,9 +82,9 @@ export default function GroupPostsScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}> 
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>Group</ThemedText>
+        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Group</ThemedText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -106,14 +96,14 @@ export default function GroupPostsScreen() {
             <View style={styles.postHeader}>
               <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
               <View style={styles.postMeta}>
-                <ThemedText style={[styles.authorName, { color: colors.primary }]}>{item.authorName}</ThemedText>
+                <ThemedText style={[styles.authorName, { color: colors.text }]}>{item.authorName}</ThemedText>
                 <View style={styles.metaRow}>
-                  <MaterialIcons name="schedule" size={12} color={colors.secondary} />
-                  <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</ThemedText>
+                  <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
+                  <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</ThemedText>
                 </View>
               </View>
             </View>
-            <ThemedText style={[styles.postContent, { color: colors.primary }]}>{item.content}</ThemedText>
+            <ThemedText style={[styles.postContent, { color: colors.text }]}>{item.content}</ThemedText>
             {item.imageUrls?.length ? (
               <View style={styles.imageGrid}>
                 {item.imageUrls.map((uri, idx) => (
@@ -127,16 +117,16 @@ export default function GroupPostsScreen() {
             ) : null}
             <View style={styles.postActions}>
               <View style={styles.actionBlock}>
-                <MaterialIcons name="favorite-border" size={18} color={colors.secondary} />
-                <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.loveCount ?? 0}</ThemedText>
+                <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
+                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount ?? 0}</ThemedText>
               </View>
               <View style={styles.actionBlock}>
-                <MaterialIcons name="comment" size={18} color={colors.secondary} />
-                <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.commentCount ?? 0}</ThemedText>
+                <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
+                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount ?? 0}</ThemedText>
               </View>
               <View style={styles.actionBlock}>
-                <MaterialIcons name="share" size={18} color={colors.secondary} />
-                <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.shareCount ?? 0}</ThemedText>
+                <MaterialIcons name="share" size={18} color={colors.secondaryText} />
+                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.shareCount ?? 0}</ThemedText>
               </View>
             </View>
           </View>
@@ -151,12 +141,12 @@ export default function GroupPostsScreen() {
                     <MaterialIcons name={group.icon as any} size={24} color={colors.card} />
                   </View>
                   <View style={styles.groupHeaderInfo}>
-                    <ThemedText style={[styles.groupHeaderTitle, { color: colors.primary }]}>{group.title}</ThemedText>
+                    <ThemedText style={[styles.groupHeaderTitle, { color: colors.text }]}>{group.title}</ThemedText>
                     <View style={styles.groupHeaderMetaRow}>
-                      <ThemedText style={[styles.groupMetaText, { color: group.isPrivate ? colors.accent : colors.secondary }]}>
+                      <ThemedText style={[styles.groupMetaText, { color: group.isPrivate ? colors.accent : colors.secondaryText }]}>
                         {group.isPrivate ? 'Private' : 'Public'}
                       </ThemedText>
-                      <ThemedText style={[styles.groupMetaText, { color: colors.secondary }]}>
+                      <ThemedText style={[styles.groupMetaText, { color: colors.secondaryText }]}>
                         {group.membersCount ?? 0} members
                       </ThemedText>
                     </View>
@@ -166,11 +156,11 @@ export default function GroupPostsScreen() {
                   </TouchableOpacity>
                 </View>
                 {group.description ? (
-                  <ThemedText style={[styles.groupDescription, { color: colors.secondary }]}>{group.description}</ThemedText>
+                  <ThemedText style={[styles.groupDescription, { color: colors.secondaryText }]}>{group.description}</ThemedText>
                 ) : null}
                 <View style={styles.postsHeader}>
-                  <ThemedText style={[styles.postsTitle, { color: colors.primary }]}>Group Posts</ThemedText>
-                  <ThemedText style={[styles.postsCount, { color: colors.secondary }]}>{posts.length}</ThemedText>
+                  <ThemedText style={[styles.postsTitle, { color: colors.text }]}>Group Posts</ThemedText>
+                  <ThemedText style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</ThemedText>
                 </View>
               </View>
             </>
@@ -180,8 +170,8 @@ export default function GroupPostsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <MaterialIcons name="post-add" size={48} color={colors.secondary} />
-            <ThemedText style={[styles.emptyText, { color: colors.secondary, marginTop: 12 }]}>No posts in this group yet.</ThemedText>
+            <MaterialIcons name="post-add" size={48} color={colors.secondaryText} />
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No posts in this group yet.</ThemedText>
           </View>
         ) : null}
       />

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 
 namespace BikerHub.Services;
 
@@ -44,6 +45,8 @@ public class BlogService : IBlogService
 
     public async Task<BlogDto> CreateBlogAsync(CreateBlogDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.Title, "Title");
+
         var blog = new Blog
         {
             Title = dto.Title,

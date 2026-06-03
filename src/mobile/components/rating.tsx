@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, type StyleProp, type ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 
 type RatingProps = {
   value: number;
@@ -17,7 +16,6 @@ export function Rating({
   max = 5,
   size = 18,
   color = '#E85D04',
-  count,
   onRate,
   style,
 }: RatingProps) {

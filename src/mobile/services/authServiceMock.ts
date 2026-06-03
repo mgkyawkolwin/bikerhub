@@ -10,19 +10,19 @@ export class MockAuthService implements AuthService {
     token: 'demo-token',
   };
 
-  async signIn(email: string, password: string) {
+  async signIn(username: string, password: string) {
     return {
       ...this.authUser,
-      email,
+      name: username,
     };
   }
 
-  async register(name: string, email: string, password: string) {
+  async register(name: string, password: string, email?: string, phone?: string) {
     return {
       ...this.authUser,
       id: '00000000-0000-0000-0000-000000000000',
       name,
-      email,
+      email: email || this.authUser.email,
     };
   }
 

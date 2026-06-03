@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
+using BikerHub.Exceptions;
 
 namespace BikerHub.Services;
 
@@ -66,6 +67,9 @@ public class ChatService : IChatService
 
     public async Task<ChatMessageDto> SendChatMessageAsync(string currentUserId, SendChatMessageDto dto)
     {
+        DtoValidationHelper.ValidateRequiredString(dto.ReceiverId, "ReceiverId");
+        DtoValidationHelper.ValidateRequiredString(dto.TextMessage, "TextMessage");
+
         var message = new ChatMessage
         {
             SenderId = currentUserId,

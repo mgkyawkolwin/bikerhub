@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import type ForumPost from '@/models/forumPost';
 import type { ForumReply } from '@/models/forumPost';
 import initialData from '@/services/mockdata';
@@ -15,7 +14,7 @@ export default function ForumDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
 
   const [forum, setForum] = useState<ForumPost | null>(null);
@@ -29,17 +28,6 @@ export default function ForumDetailScreen() {
     setReplies(selected?.replies ?? []);
   }, [id]);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
 
   const handleReply = () => {
     if (!replyText.trim()) return;
@@ -57,9 +45,9 @@ export default function ForumDetailScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>{t.Title.forums}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.forums}</Text>
       </View>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
@@ -68,34 +56,34 @@ export default function ForumDetailScreen() {
             <>
               <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
                 <View style={styles.postHeader}>
-                  <ThemedText style={[styles.postTitle, { color: colors.primary }]}>{forum.title}</ThemedText>
+                  <Text style={[styles.postTitle, { color: colors.text }]}>{forum.title}</Text>
                   <View style={styles.postMetaRow}>
-                    <ThemedText style={[styles.postMeta, { color: colors.secondary }]}>{forum.author}</ThemedText>
-                    <ThemedText style={[styles.postMeta, { color: colors.secondary }]}>{new Date(forum.postedAt).toLocaleDateString()}</ThemedText>
+                    <Text style={[styles.postMeta, { color: colors.secondaryText }]}>{forum.author}</Text>
+                    <Text style={[styles.postMeta, { color: colors.secondaryText }]}>{new Date(forum.postedAt).toLocaleDateString()}</Text>
                   </View>
                 </View>
-                <ThemedText style={[styles.postExcerpt, { color: colors.secondary }]}>{forum.excerpt}</ThemedText>
+                <Text style={[styles.postExcerpt, { color: colors.secondaryText }]}>{forum.excerpt}</Text>
                 <View style={styles.postStats}>
                   <View style={styles.postStatItem}>
-                    <MaterialIcons name="visibility" size={14} color={colors.secondary} />
-                    <ThemedText style={[styles.postStatText, { color: colors.secondary }]}>{forum.views} views</ThemedText>
+                    <MaterialIcons name="visibility" size={14} color={colors.secondaryText} />
+                    <Text style={[styles.postStatText, { color: colors.secondaryText }]}>{forum.views} views</Text>
                   </View>
                   <View style={styles.postStatItem}>
-                    <MaterialIcons name="chat-bubble-outline" size={14} color={colors.secondary} />
-                    <ThemedText style={[styles.postStatText, { color: colors.secondary }]}>{replies.length} replies</ThemedText>
+                    <MaterialIcons name="chat-bubble-outline" size={14} color={colors.secondaryText} />
+                    <Text style={[styles.postStatText, { color: colors.secondaryText }]}>{replies.length} replies</Text>
                   </View>
                 </View>
               </View>
 
               <View style={styles.repliesSection}>
-                <ThemedText style={[styles.sectionTitle, { color: colors.primary }]}>Replies</ThemedText>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Replies</Text>
                 {replies.map((reply) => (
                   <View key={reply.id} style={[styles.replyCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
                     <View style={styles.replyHeader}>
-                      <ThemedText style={[styles.replyAuthor, { color: colors.primary }]}>{reply.author}</ThemedText>
-                      <ThemedText style={[styles.replyTime, { color: colors.secondary }]}>{new Date(reply.postedAt).toLocaleString()}</ThemedText>
+                      <Text style={[styles.replyAuthor, { color: colors.text }]}>{reply.author}</Text>
+                      <Text style={[styles.replyTime, { color: colors.secondaryText }]}>{new Date(reply.postedAt).toLocaleString()}</Text>
                     </View>
-                    <ThemedText style={[styles.replyText, { color: colors.secondary }]}>{reply.content}</ThemedText>
+                    <Text style={[styles.replyText, { color: colors.secondaryText }]}>{reply.content}</Text>
                   </View>
                 ))}
               </View>
@@ -105,19 +93,19 @@ export default function ForumDetailScreen() {
                   value={replyText}
                   onChangeText={setReplyText}
                   placeholder="Write a reply..."
-                  placeholderTextColor={colors.secondary}
-                  style={[styles.replyInput, { borderColor: colors.border, color: colors.primary, backgroundColor: colors.card }]}
+                  placeholderTextColor={colors.secondaryText}
+                  style={[styles.replyInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
                   multiline
                   textAlignVertical="top"
                 />
                 <TouchableOpacity style={[styles.replyButton, { backgroundColor: colors.accent }]} onPress={handleReply} activeOpacity={0.85}>
-                  <ThemedText style={styles.replyButtonText}>Reply</ThemedText>
+                  <Text style={styles.replyButtonText}>Reply</Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>Forum thread not found.</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>Forum thread not found.</Text>
             </View>
           )}
         </ScrollView>

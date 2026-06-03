@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { ConfigServiceToken } from '@/services/configService';
 import { DirectoryServiceToken } from '@/services/directoryService';
@@ -21,7 +20,7 @@ export default function DirectoryCreateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const configService = useMemo(() => container.resolve<ConfigService>(ConfigServiceToken), []);
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
 
@@ -52,19 +51,6 @@ export default function DirectoryCreateScreen() {
       setStateDivisions(states);
     })();
   }, [configService]);
-
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-      overlay: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)',
-    }),
-    [isDark],
-  );
 
   const dropdownItems = useMemo(
     () => ({
@@ -168,121 +154,121 @@ export default function DirectoryCreateScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.primary }]}>{t.Title.submitBusiness}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.submitBusiness}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 28 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.businessName}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessName}</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: errors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: errors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={name}
             onChangeText={(text) => {
               setName(text);
               if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             placeholder={t.Title.businessName}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.businessType}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessType}</Text>
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: errors.businessType ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
             onPress={() => setActiveDropdown('businessType')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.primary }]}>{getDisplayText('businessType')}</ThemedText>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondary} />
+            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('businessType')}</Text>
+            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.address}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.address}</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: errors.address ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: errors.address ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={address}
             onChangeText={(text) => {
               setAddress(text);
               if (errors.address) setErrors((prev) => ({ ...prev, address: undefined }));
             }}
             placeholder={t.Title.address}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.city}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city}</Text>
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: errors.city ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
             onPress={() => setActiveDropdown('city')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.primary }]}>{getDisplayText('city')}</ThemedText>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondary} />
+            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('city')}</Text>
+            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.stateDivision}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.stateDivision}</Text>
           <TouchableOpacity
             style={[styles.dropdown, { borderColor: errors.stateDivision ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
             onPress={() => setActiveDropdown('stateDivision')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.primary }]}>{getDisplayText('stateDivision')}</ThemedText>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondary} />
+            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('stateDivision')}</Text>
+            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.phone}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.phone}</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.primary }]}
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={phone}
             onChangeText={setPhone}
             placeholder={t.Title.phone}
-            placeholderTextColor={colors.secondary}
+            placeholderTextColor={colors.secondaryText}
             keyboardType="phone-pad"
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.logoImage}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.logoImage}</Text>
           <TouchableOpacity
             style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={() => void pickImage(setLogoUri)}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.uploadText, { color: colors.primary }]}>
+            <Text style={[styles.uploadText, { color: colors.text }]}>
               {logoUri ? t.Title.changeImage : t.Title.uploadLogo}
-            </ThemedText>
-            <MaterialIcons name="photo-library" size={20} color={colors.secondary} />
+            </Text>
+            <MaterialIcons name="photo-library" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
           {logoUri ? <Image source={{ uri: logoUri }} style={styles.previewImage} resizeMode="cover" /> : null}
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondary }]}>{t.Title.coverImageUrl}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.coverImageUrl}</Text>
           <TouchableOpacity
             style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={() => void pickImage(setCoverUri)}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.uploadText, { color: colors.primary }]}>
+            <Text style={[styles.uploadText, { color: colors.text }]}>
               {coverUri ? t.Title.changeImage : t.Title.uploadCover}
-            </ThemedText>
-            <MaterialIcons name="photo-library" size={20} color={colors.secondary} />
+            </Text>
+            <MaterialIcons name="photo-library" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
           {coverUri ? <Image source={{ uri: coverUri }} style={styles.previewImage} resizeMode="cover" /> : null}
         </View>
 
         <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={handleSubmit} disabled={isSubmitting}>
-          <ThemedText style={styles.submitText}>{t.Title.submit}</ThemedText>
+          <Text style={styles.submitText}>{t.Title.submit}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -292,9 +278,9 @@ export default function DirectoryCreateScreen() {
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}> 
           <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: colors.primary }]}>{t.Title.selectOption}</ThemedText>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
-              <MaterialIcons name="close" size={22} color={colors.secondary} />
+              <MaterialIcons name="close" size={22} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
@@ -305,7 +291,7 @@ export default function DirectoryCreateScreen() {
                 onPress={() => activeDropdown && selectOption(option, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <ThemedText style={[styles.sheetItemText, { color: colors.primary }]}>{option}</ThemedText>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

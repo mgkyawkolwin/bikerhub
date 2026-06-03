@@ -19,7 +19,7 @@ export default function RouteListScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const { t } = useI18n();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const { getAuthUser } = useAuthContext();
   const authUser = getAuthUser();
   const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
@@ -31,17 +31,7 @@ export default function RouteListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#F7F7F7',
-      card: isDark ? '#121212' : '#FFFFFF',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadRoutes = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -98,7 +88,7 @@ export default function RouteListScreen() {
     >
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
-          <ThemedText style={[styles.cardTitle, { color: colors.primary }]}>{item.name}</ThemedText>
+          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.name}</ThemedText>
           {isOwnRoutes ? (
             <TouchableOpacity
               style={styles.deleteButton}
@@ -110,20 +100,20 @@ export default function RouteListScreen() {
           ) : null}
         </View>
         <View style={styles.metaRow}> 
-          <MaterialIcons name="schedule" size={14} color={colors.secondary} />
-          <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{t.Title.duration}: {item.duration}</ThemedText>
+          <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
+          <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {item.duration}</ThemedText>
         </View>
         <View style={styles.metaRow}> 
-          <MaterialIcons name="straighten" size={14} color={colors.secondary} />
-          <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{t.Title.distance}: {item.distance}</ThemedText>
+          <MaterialIcons name="straighten" size={14} color={colors.secondaryText} />
+          <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {item.distance}</ThemedText>
         </View>
         {item.createdByName ? (
           <View style={styles.metaRow}>
-            <MaterialIcons name="person" size={14} color={colors.secondary} />
-            <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{t.Title.createdBy}: {item.createdByName}</ThemedText>
+            <MaterialIcons name="person" size={14} color={colors.secondaryText} />
+            <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.createdBy}: {item.createdByName}</ThemedText>
           </View>
         ) : null}
-        <ThemedText style={[styles.cardSummary, { color: colors.secondary }]} numberOfLines={3}>{item.description}</ThemedText>
+        <ThemedText style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>{item.description}</ThemedText>
       </View>
       <TouchableOpacity
         onPress={() => {
@@ -195,9 +185,9 @@ export default function RouteListScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.background }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>Rides</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.text }]}>Rides</ThemedText>
         <View style={styles.actionsRow}>
           {isOwnRoutes ? (
             <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/ride/rides')}>
@@ -214,11 +204,11 @@ export default function RouteListScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{t.Text.noRoutes}</ThemedText>
+              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noRoutes}</ThemedText>
             </View>
           ) : null
         }

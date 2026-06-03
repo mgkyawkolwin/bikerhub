@@ -13,7 +13,7 @@ import type SocialPost from '@/models/socialPost';
 
 export default function SocialPostsScreen() {
   const ins = useSafeAreaInsets();
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
 
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -22,17 +22,7 @@ export default function SocialPostsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const colors = useMemo(
-    () => ({
-      background: isDark ? '#000000' : '#FFFFFF',
-      card: isDark ? '#121212' : '#F7F7F7',
-      border: isDark ? '#232323' : '#E0E0E0',
-      primary: isDark ? '#FFFFFF' : '#000000',
-      secondary: isDark ? '#B0B0B0' : '#666666',
-      accent: '#E85D04',
-    }),
-    [isDark],
-  );
+  const { colors } = useThemeContext();
 
   const loadPosts = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -77,16 +67,16 @@ export default function SocialPostsScreen() {
         >
           <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.avatar} />
           <View style={styles.postMeta}>
-              <ThemedText style={[styles.authorName, { color: colors.primary }]}>{item.authorName}</ThemedText>
+              <ThemedText style={[styles.authorName, { color: colors.text }]}>{item.authorName}</ThemedText>
               <View style={styles.metaRow}>
-                <MaterialIcons name="schedule" size={12} color={colors.secondary} />
-                <ThemedText style={[styles.metaText, { color: colors.secondary }]}>{new Date(item.createdAt ?? '').toLocaleDateString()}</ThemedText>
+                <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
+                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.createdAt ?? '').toLocaleDateString()}</ThemedText>
               </View>
             </View>
           </TouchableOpacity>
       </View>
 
-      <ThemedText style={[styles.postContent, { color: colors.primary }]}>{item.content}</ThemedText>
+      <ThemedText style={[styles.postContent, { color: colors.text }]}>{item.content}</ThemedText>
 
       {item.imageUrls?.length ? (
         <View style={styles.imageGrid}>
@@ -102,16 +92,16 @@ export default function SocialPostsScreen() {
 
       <View style={styles.postActions}>
         <View style={styles.actionBlock}>
-          <MaterialIcons name="favorite-border" size={18} color={colors.secondary} />
-          <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.loveCount}</ThemedText>
+          <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
+          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</ThemedText>
         </View>
         <View style={styles.actionBlock}>
-          <MaterialIcons name="comment" size={18} color={colors.secondary} />
-          <ThemedText style={[styles.actionText, { color: colors.secondary }]}>{item.commentCount}</ThemedText>
+          <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
+          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</ThemedText>
         </View>
         <TouchableOpacity style={[styles.shareButton]} activeOpacity={0.75}>
-          <MaterialIcons name="share" size={18} color={colors.primary} />
-          <ThemedText style={[styles.shareText, { color: colors.primary }]}>Share</ThemedText>
+          <MaterialIcons name="share" size={18} color={colors.text} />
+          <ThemedText style={[styles.shareText, { color: colors.text }]}>Share</ThemedText>
         </TouchableOpacity>
       </View>
     </View>
@@ -124,24 +114,24 @@ export default function SocialPostsScreen() {
         <View style={styles.headerTop}>
           <View style={styles.headerSide}>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/settings')}>
-              <MaterialIcons name="tune" size={22} color={colors.primary} />
+              <MaterialIcons name="tune" size={22} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/message/messages')}>
               <View>
-                <MaterialIcons name="notifications-none" size={22} color={colors.primary} />
+                <MaterialIcons name="notifications-none" size={22} color={colors.text} />
                 <View style={styles.bellDot} />
               </View>
             </TouchableOpacity>
           </View>
 
-          <ThemedText style={[styles.logo, { color: colors.primary }]}>BIKERHUB</ThemedText>
+          <ThemedText style={[styles.logo, { color: colors.text }]}>BIKERHUB</ThemedText>
 
           <View style={styles.headerSide}>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/chat/chats')}>
-              <MaterialIcons name="chat-bubble-outline" size={20} color={colors.primary} />
+              <MaterialIcons name="chat-bubble-outline" size={20} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/profile')}>
-              <MaterialIcons name="person-outline" size={22} color={colors.primary} />
+              <MaterialIcons name="person-outline" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -160,32 +150,32 @@ export default function SocialPostsScreen() {
                 activeOpacity={0.85}
                 onPress={() => router.push('/group/explore')}
               >
-                <MaterialIcons name="groups" size={22} color={colors.secondary} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Groups</ThemedText>
+                <MaterialIcons name="groups" size={22} color={colors.secondaryText} />
+                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Groups</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton]}
                 activeOpacity={0.85}
                 onPress={() => router.push('/challenge/current')}
               >
-                <MaterialIcons name="emoji-events" size={22} color={colors.secondary} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Challenge</ThemedText>
+                <MaterialIcons name="emoji-events" size={22} color={colors.secondaryText} />
+                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Challenge</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton]}
                 activeOpacity={0.85}
                 onPress={() => router.push('/marketplace')}
               >
-                <MaterialIcons name="storefront" size={22} color={colors.secondary} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Marketplace</ThemedText>
+                <MaterialIcons name="storefront" size={22} color={colors.secondaryText} />
+                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Marketplace</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.tabButton}
                 activeOpacity={0.85}
                 onPress={() => router.push('/directory/directory')}
               >
-                <MaterialIcons name="folder-open" size={22} color={colors.secondary} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondary }]}>Directory</ThemedText>
+                <MaterialIcons name="folder-open" size={22} color={colors.secondaryText} />
+                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Directory</ThemedText>
               </TouchableOpacity>
             </View>
 
@@ -201,19 +191,19 @@ export default function SocialPostsScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/social/create')}
             >
-              <MaterialIcons name="edit" size={20} color={colors.secondary} />
-              <ThemedText style={[styles.createPlaceholder, { color: colors.secondary }]}>Write your post ...</ThemedText>
+              <MaterialIcons name="edit" size={20} color={colors.secondaryText} />
+              <ThemedText style={[styles.createPlaceholder, { color: colors.secondaryText }]}>Write your post ...</ThemedText>
             </TouchableOpacity>
           </View>
         )}
         contentContainerStyle={[styles.list, { paddingBottom: ins.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
-        ListFooterComponent={loading && posts.length > 0 ? <View style={styles.loadingFooter}><MaterialIcons name="hourglass-empty" size={20} color={colors.secondary} /></View> : null}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
+        ListFooterComponent={loading && posts.length > 0 ? <View style={styles.loadingFooter}><MaterialIcons name="hourglass-empty" size={20} color={colors.secondaryText} /></View> : null}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>{'No posts yet. Pull down to refresh.'}</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{'No posts yet. Pull down to refresh.'}</ThemedText>
           </View>
         ) : null}
       />

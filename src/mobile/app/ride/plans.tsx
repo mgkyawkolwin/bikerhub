@@ -18,17 +18,10 @@ export default function RoutePlansScreen() {
   const authUser = getAuthUser();
   const currentUserId = authUser?.id;
   const isOwnPlans = !viewedUserId || viewedUserId === currentUserId;
-  const { isDark } = useThemeContext();
+  const { colors } = useThemeContext();
   const [plans, setPlans] = useState<any[]>([]);
 
-  const colors = {
-    background: isDark ? '#000000' : '#F7F7F7',
-    card: isDark ? '#121212' : '#FFFFFF',
-    border: isDark ? '#232323' : '#E0E0E0',
-    primary: isDark ? '#FFFFFF' : '#000000',
-    secondary: isDark ? '#B0B0B0' : '#666666',
-    accent: '#E85D04',
-  };
+  const { colors } = useThemeContext();
 
   const loadPlans = useCallback(async () => {
     console.log('Loading plans for userId:', viewedUserId);
@@ -76,17 +69,17 @@ export default function RoutePlansScreen() {
       <View style={styles.planTouchable}>
         {/* Header with Plan Name and Date */}
         <View style={styles.planHeader}>
-          <ThemedText style={[styles.planName, { color: colors.primary }]} numberOfLines={1}>
+          <ThemedText style={[styles.planName, { color: colors.text }]} numberOfLines={1}>
             {item.name ?? 'Unnamed Plan'}
           </ThemedText>
-          <ThemedText style={[styles.planDate, { color: colors.secondary }]} numberOfLines={1}>
+          <ThemedText style={[styles.planDate, { color: colors.secondaryText }]} numberOfLines={1}>
             {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown'}
           </ThemedText>
         </View>
         
         {/* Meta row with points, km, min AND trash icon */}
         <View style={styles.metaRow}>
-          <ThemedText style={[styles.planSummary, { color: colors.secondary }]} numberOfLines={1}>
+          <ThemedText style={[styles.planSummary, { color: colors.secondaryText }]} numberOfLines={1}>
             {item.waypoints?.length 
               ? `${item.waypoints.length} points · ${item.totalDistance?.toFixed(1) ?? 0} km · ${item.totalDuration?.toFixed(0) ?? 0} min` 
               : 'No waypoints'}
@@ -98,7 +91,7 @@ export default function RoutePlansScreen() {
         
         {/* Description row below meta */}
         {item.description ? (
-          <ThemedText style={[styles.planDescription, { color: colors.secondary }]} numberOfLines={2}>
+          <ThemedText style={[styles.planDescription, { color: colors.secondaryText }]} numberOfLines={2}>
             {item.description}
           </ThemedText>
         ) : null}
@@ -117,9 +110,9 @@ export default function RoutePlansScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.primary }]}>Plans</ThemedText>
+        <ThemedText style={[styles.title, { color: colors.text }]}>Plans</ThemedText>
         {isOwnPlans ? (
           <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/ride/plan')} activeOpacity={0.8}>
             <MaterialIcons name="add" size={18} color="#FFFFFF" />
@@ -135,7 +128,7 @@ export default function RoutePlansScreen() {
         ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondary }]}>No plans saved yet.</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No plans saved yet.</ThemedText>
           </View>
         }
       />

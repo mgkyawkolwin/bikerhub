@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:5264/api';
-export const API_BASE_URL = process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL;
+const DEFAULT_API_BASE_URL = 'http://192.168.51.3:5264/api';
+export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
 export type ApiResponse<T> = {
@@ -23,6 +23,7 @@ function unwrapApiResponse<T>(response: ApiResponse<T>, defaultError: string): T
 }
 
 export async function fetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+  console.log('API Request:', { API_BASE_URL, path, options });
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -33,7 +34,7 @@ export async function fetchJson<T>(path: string, options: RequestInit = {}): Pro
 
   const contentType = response.headers.get('Content-Type');
   const body = contentType?.includes('application/json') ? await response.json() : null;
-
+  console.log('API Response:', { path, status: response.status, body });
   if (!response.ok) {
     const message = body?.message || body?.Message || response.statusText || 'Request failed';
     throw new Error(message);
