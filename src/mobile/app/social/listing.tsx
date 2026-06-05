@@ -1,15 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, MarketplaceFilter } from '@/models/marketplace';
+import SnackBar from '@/components/snackbar';
 
 export default function SocialListingScreen() {
   const insets = useSafeAreaInsets();
@@ -36,8 +36,6 @@ export default function SocialListingScreen() {
     location: '',
   }), []);
 
-  const { colors } = useThemeContext();
-
   const loadListings = useCallback(
     async () => {
       if (!userId) {
@@ -47,8 +45,20 @@ export default function SocialListingScreen() {
 
       setLoading(true);
       try {
-        const result = await marketplaceService.getListings(filter, 1, 50);
+        const response = await marketplaceService.getListings(filter, 1, 10);
+        if (!response.ok) {
+          SnackBar.Error(
+            'Failed to load listings.'
+          );
+          return;
+        }
+        const result = await response.json() as { items: BikeListing[]; totalCount: number };
         setListings(result.items.filter((item) => item.sellerId === userId));
+      } catch (error) {
+        SnackBar.Error(
+          'Failed to load listings.'
+        );
+        console.error('Error loading listings:', error);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -93,7 +103,7 @@ export default function SocialListingScreen() {
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
         <View style={styles.cardHeader}>
-          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
           <View style={styles.favoriteWrapper}>
             <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
               <MaterialIcons
@@ -102,25 +112,25 @@ export default function SocialListingScreen() {
                 color={item.isFavorite ? '#E85D04' : colors.secondaryText}
               />
             </TouchableOpacity>
-            <ThemedText style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>
+            <Text style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>
               {item.favoritesCount ?? 0}
-            </ThemedText>
+            </Text>
           </View>
         </View>
         <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         <View style={styles.cardFooter}>
-          <ThemedText style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</ThemedText>
-          <ThemedText style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</ThemedText>
+          <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
+          <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>
         </View>
         <View style={[styles.cardLocationRow, { justifyContent: 'space-between' }]}>
           <View style={styles.locationRowLeft}>
             <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-            <ThemedText style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
+            <Text style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</Text>
           </View>
           <View style={styles.statsRow}>
             <View style={styles.viewsWrapper}>
               <MaterialIcons name="visibility" size={16} color={colors.secondaryText} />
-              <ThemedText style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</ThemedText>
+              <Text style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</Text>
             </View>
             <View style={styles.likeWrapper}> 
               <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
@@ -130,7 +140,7 @@ export default function SocialListingScreen() {
                   color={item.isLiked ? '#E85D04' : colors.secondaryText}
                 />
               </TouchableOpacity>
-              <ThemedText style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondaryText }]}>{item.likeCount ?? 0}</ThemedText>
+              <Text style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondaryText }]}>{item.likeCount ?? 0}</Text>
             </View>
           </View>
         </View>
@@ -144,14 +154,14 @@ export default function SocialListingScreen() {
         <View style={[styles.header, { borderBottomColor: colors.border }]}> 
           <View style={styles.headerTopRow}>
             <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-              <MaterialIcons name="arrow-back" size={22} color={colors.headerText} />
+              <MaterialIcons name="arrow-back" size={22} color={colors.text} />
             </TouchableOpacity>
-            <ThemedText style={[styles.title, { color: colors.headerText }]}>Listings</ThemedText>
+            <Text style={[styles.title, { color: colors.text }]}>Listings</Text>
             <View style={styles.headerRightRow} />
           </View>
         </View>
         <View style={styles.emptyState}>
-          <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No user selected.</ThemedText>
+          <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No user selected.</Text>
         </View>
       </View>
     );
@@ -162,9 +172,9 @@ export default function SocialListingScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerTopRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.headerText} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.headerText }]}>Listings</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>Listings</Text>
           <View style={styles.headerRightRow} />
         </View>
       </View>
@@ -177,7 +187,7 @@ export default function SocialListingScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No listings found for this user.</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No listings found for this user.</Text>
           </View>
         ) : null}
       />

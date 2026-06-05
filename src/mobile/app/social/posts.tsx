@@ -1,15 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { SocialPostServiceToken } from '@/services/socialPostService';
 import type { SocialPostService } from '@/services/socialPostService';
 import type SocialPost from '@/models/socialPost';
+import SnackBar from '@/components/snackbar';
 
 export default function SocialPostsScreen() {
   const ins = useSafeAreaInsets();
@@ -22,16 +22,30 @@ export default function SocialPostsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { colors } = useThemeContext();
-
   const loadPosts = useCallback(
     async (pageNumber: number, reset = false) => {
       setLoading(true);
       try {
-        const result = await socialPostService.getPosts(pageNumber, 4);
-        setPosts((prev) => (reset ? result.items : [...prev, ...result.items]));
-        setPage(result.page);
-        setTotal(result.total);
+        const response = await socialPostService.getPosts(pageNumber, 10);
+        if (!response.ok) {
+          SnackBar.Error(
+            'Failed to load posts.'
+          );
+          return;
+        }
+        const result = await response.json();
+        console.log('Loaded posts:', { pageNumber, result });
+        if(!result.success) {
+          SnackBar.Error(
+            result.message || 'Failed to load posts.'
+          );
+          return;
+        }
+        setPosts((prev) => (reset ? result.data.items : [...prev, ...result.data.items]));
+        setPage(result.data.page);
+        setTotal(result.data.total);
+      } catch (error) {
+        SnackBar.Error('Failed to load posts.');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -67,16 +81,16 @@ export default function SocialPostsScreen() {
         >
           <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.avatar} />
           <View style={styles.postMeta}>
-              <ThemedText style={[styles.authorName, { color: colors.text }]}>{item.authorName}</ThemedText>
+              <Text style={[styles.authorName, { color: colors.text }]}>{item.authorName}</Text>
               <View style={styles.metaRow}>
                 <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
-                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.createdAt ?? '').toLocaleDateString()}</ThemedText>
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.createdAt ?? '').toLocaleDateString()}</Text>
               </View>
             </View>
           </TouchableOpacity>
       </View>
 
-      <ThemedText style={[styles.postContent, { color: colors.text }]}>{item.content}</ThemedText>
+      <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
 
       {item.imageUrls?.length ? (
         <View style={styles.imageGrid}>
@@ -93,15 +107,15 @@ export default function SocialPostsScreen() {
       <View style={styles.postActions}>
         <View style={styles.actionBlock}>
           <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
-          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</ThemedText>
+          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</Text>
         </View>
         <View style={styles.actionBlock}>
           <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
-          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</ThemedText>
+          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</Text>
         </View>
         <TouchableOpacity style={[styles.shareButton]} activeOpacity={0.75}>
           <MaterialIcons name="share" size={18} color={colors.text} />
-          <ThemedText style={[styles.shareText, { color: colors.text }]}>Share</ThemedText>
+          <Text style={[styles.shareText, { color: colors.text }]}>Share</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -124,7 +138,7 @@ export default function SocialPostsScreen() {
             </TouchableOpacity>
           </View>
 
-          <ThemedText style={[styles.logo, { color: colors.text }]}>BIKERHUB</ThemedText>
+          <Text style={[styles.logo, { color: colors.text }]}>BIKERHUB</Text>
 
           <View style={styles.headerSide}>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/chat/chats')}>
@@ -151,7 +165,7 @@ export default function SocialPostsScreen() {
                 onPress={() => router.push('/group/explore')}
               >
                 <MaterialIcons name="groups" size={22} color={colors.secondaryText} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Groups</ThemedText>
+                <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Groups</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton]}
@@ -159,7 +173,7 @@ export default function SocialPostsScreen() {
                 onPress={() => router.push('/challenge/current')}
               >
                 <MaterialIcons name="emoji-events" size={22} color={colors.secondaryText} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Challenge</ThemedText>
+                <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Challenge</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabButton]}
@@ -167,7 +181,7 @@ export default function SocialPostsScreen() {
                 onPress={() => router.push('/marketplace')}
               >
                 <MaterialIcons name="storefront" size={22} color={colors.secondaryText} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Marketplace</ThemedText>
+                <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Marketplace</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.tabButton}
@@ -175,7 +189,7 @@ export default function SocialPostsScreen() {
                 onPress={() => router.push('/directory/directory')}
               >
                 <MaterialIcons name="folder-open" size={22} color={colors.secondaryText} />
-                <ThemedText style={[styles.tabLabel, { color: colors.secondaryText }]}>Directory</ThemedText>
+                <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Directory</Text>
               </TouchableOpacity>
             </View>
 
@@ -184,7 +198,7 @@ export default function SocialPostsScreen() {
               style={[
                 styles.createBox, 
                 { 
-                  backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+                  backgroundColor: colors.background,
                   borderColor: colors.border,
                 }
               ]} 
@@ -192,7 +206,7 @@ export default function SocialPostsScreen() {
               onPress={() => router.push('/social/create')}
             >
               <MaterialIcons name="edit" size={20} color={colors.secondaryText} />
-              <ThemedText style={[styles.createPlaceholder, { color: colors.secondaryText }]}>Write your post ...</ThemedText>
+              <Text style={[styles.createPlaceholder, { color: colors.secondaryText }]}>Write your post ...</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -203,7 +217,7 @@ export default function SocialPostsScreen() {
         ListFooterComponent={loading && posts.length > 0 ? <View style={styles.loadingFooter}><MaterialIcons name="hourglass-empty" size={20} color={colors.secondaryText} /></View> : null}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{'No posts yet. Pull down to refresh.'}</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{'No posts yet. Pull down to refresh.'}</Text>
           </View>
         ) : null}
       />

@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { StolenBikeServiceToken } from '@/services/stolenBikeService';
 import type { StolenBikeService } from '@/services/stolenBikeService';
@@ -22,8 +21,6 @@ export default function StolenListScreen() {
   );
   const [reports, setReports] = useState<StolenBikeReport[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const { colors } = useThemeContext();
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -55,10 +52,10 @@ export default function StolenListScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>{t.Title.stolenList}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.stolenList}</Text>
         <View style={styles.headerRightRow}>
           <TouchableOpacity style={styles.reportTopButton} onPress={openReportForm} hitSlop={12}>
-            <ThemedText style={[styles.reportTopButtonText, { color: colors.text }]}>Report</ThemedText>
+            <Text style={[styles.reportTopButtonText, { color: colors.text }]}>Report</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
             <MaterialIcons name="tune" size={22} color={colors.text} />
@@ -74,7 +71,7 @@ export default function StolenListScreen() {
           !loading ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="warning-amber" size={48} color={colors.secondaryText} />
-              <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No stolen reports yet.</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No stolen reports yet.</Text>
             </View>
           ) : null
         }
@@ -84,15 +81,15 @@ export default function StolenListScreen() {
               <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
             ) : null}
             <View style={styles.cardContent}>
-              <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
-              <ThemedText style={[styles.cardSubtitle, { color: colors.secondaryText }]}>{`${item.make} ${item.model} • ${item.year}`}</ThemedText>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.secondaryText }]}>{`${item.make} ${item.model} • ${item.year}`}</Text>
               <View style={styles.metaRow}>
                 <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.location}</Text>
               </View>
               <View style={styles.metaRow}>
                 <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.reportedAt ?? '').toLocaleDateString()}</ThemedText>
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.reportedAt ?? '').toLocaleDateString()}</Text>
               </View>
             </View>
           </View>

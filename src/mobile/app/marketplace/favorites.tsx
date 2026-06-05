@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity, Image } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity, Image, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import type { BikeListing } from '@/models/bikeListing';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
@@ -19,8 +18,6 @@ export default function FavoritesScreen() {
 
   const [favorites, setFavorites] = useState<BikeListing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-
-  const { colors } = useThemeContext();
 
   const marketplaceService = container.resolve<MarketplaceService>(MarketplaceServiceToken);
 
@@ -63,19 +60,19 @@ export default function FavoritesScreen() {
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHeader}>
-          <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
           <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
             <MaterialIcons name="favorite" size={22} color={colors.accent} />
           </TouchableOpacity>
         </View>
         <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         <View style={styles.cardFooter}>
-          <ThemedText style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</ThemedText>
-          <ThemedText style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</ThemedText>
+          <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
+          <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>
         </View>
         <View style={styles.cardLocationRow}>
           <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-          <ThemedText style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
+          <Text style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -87,7 +84,7 @@ export default function FavoritesScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: '#FFFFFF' }]}>{t.Title.favorite}</ThemedText>
+        <Text style={[styles.title, { color: '#FFFFFF' }]}>{t.Title.favorite}</Text>
         <View style={styles.filterButton} />
       </View>
 
@@ -100,7 +97,7 @@ export default function FavoritesScreen() {
         ListEmptyComponent={
           !refreshing ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noFavorites || 'No favorites yet.'}</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noFavorites || 'No favorites yet.'}</Text>
             </View>
           ) : null
         }

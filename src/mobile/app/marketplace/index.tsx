@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View, TouchableOpacity, RefreshControl, Image } from 'react-native';
+import { FlatList, StyleSheet, View, TouchableOpacity, RefreshControl, Image, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
@@ -50,8 +49,6 @@ export default function MarketplaceScreen() {
       params.location,
     ],
   );
-
-  const { colors } = useThemeContext();
 
   const loadListings = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -153,7 +150,7 @@ export default function MarketplaceScreen() {
       >
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <View style={styles.cardHeader}>
-            <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.title}</ThemedText>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
             <View style={styles.favoriteWrapper}>
               <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
                 <MaterialIcons
@@ -162,23 +159,23 @@ export default function MarketplaceScreen() {
                   color={item.isFavorite ? '#E85D04' : colors.secondaryText}
                 />
               </TouchableOpacity>
-              <ThemedText style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>{item.favoritesCount ?? 0}</ThemedText>
+              <Text style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>{item.favoritesCount ?? 0}</Text>
             </View>
           </View>
           <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
           <View style={styles.cardFooter}>
-            <ThemedText style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</ThemedText>
-            <ThemedText style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</ThemedText>
+            <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
+            <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>
           </View>
           <View style={[styles.cardLocationRow, { justifyContent: 'space-between' }]}>
             <View style={styles.locationRowLeft}>
               <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-              <ThemedText style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</ThemedText>
+              <Text style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</Text>
             </View>
             <View style={styles.statsRow}>
               <View style={styles.viewsWrapper}>
                 <MaterialIcons name="visibility" size={16} color={colors.secondaryText} />
-                <ThemedText style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</ThemedText>
+                <Text style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</Text>
               </View>
               <View style={styles.likeWrapper}> 
                 <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
@@ -188,7 +185,7 @@ export default function MarketplaceScreen() {
                     color={item.isLiked ? '#E85D04' : colors.secondaryText}
                   />
                 </TouchableOpacity>
-                <ThemedText style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondaryText }]}>{item.likeCount ?? 0}</ThemedText>
+                <Text style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondaryText }]}>{item.likeCount ?? 0}</Text>
               </View>
             </View>
           </View>
@@ -202,28 +199,28 @@ export default function MarketplaceScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerTopRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.headerText} />
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.headerText }]}>{t.Title.marketplace}</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>{t.Title.marketplace}</Text>
           <View style={styles.headerRightRow}>
             <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
-              <MaterialIcons name="tune" size={22} color={colors.headerText} />
+              <MaterialIcons name="tune" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.headerButtonRow}>
           <TouchableOpacity style={styles.secondaryButton} onPress={openSell} hitSlop={12}>
-            <MaterialIcons name="sell" size={22} color={colors.headerText} />
-            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Sell</ThemedText>
+            <MaterialIcons name="sell" size={22} color={colors.text} />
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Sell</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={openFavorites} hitSlop={12}>
-            <MaterialIcons name="favorite" size={22} color={colors.headerText} />
-            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Favorite</ThemedText>
+            <MaterialIcons name="favorite" size={22} color={colors.text} />
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Favorite</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={openStolenList} hitSlop={12}>
-            <MaterialIcons name="warning-amber" size={22} color={colors.headerText} />
-            <ThemedText style={[styles.secondaryButtonText, { color: colors.headerText }]}>Stolen</ThemedText>
+            <MaterialIcons name="warning-amber" size={22} color={colors.text} />
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Stolen</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -239,7 +236,7 @@ export default function MarketplaceScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
             </View>
           ) : null
         }

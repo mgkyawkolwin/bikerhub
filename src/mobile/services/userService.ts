@@ -5,11 +5,11 @@ import { authenticatedFetchApi } from './apiClient';
 export const UserServiceToken = Symbol('UserService');
 
 export interface UserService {
-  getFavoriteListings(page: number, pageSize: number): Promise<PaginatedResult<BikeListing>>;
+  getFavoriteListings(page: number, pageSize: number): Promise<Response>;
 }
 
 export class UserServiceClient implements UserService {
-  async getFavoriteListings(page: number, pageSize: number): Promise<PaginatedResult<BikeListing>> {
-    return authenticatedFetchApi<PaginatedResult<BikeListing>>(`/api/users/me/favorites?page=${page}&pageSize=${pageSize}`);
+  async getFavoriteListings(page: number, pageSize: number): Promise<Response> {
+    return authenticatedFetchApi(`/api/users/me/favorites?page=${page}&pageSize=${pageSize}`);
   }
 }

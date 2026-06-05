@@ -4,16 +4,16 @@ import { fetchApi } from './apiClient';
 export const ChallengeServiceToken = Symbol('ChallengeService');
 
 export interface ChallengeService {
-  getCurrentChallenges(): Promise<Challenge[]>;
-  getChallengeById(id: string): Promise<Challenge | undefined>;
+  getCurrentChallenges(): Promise<Response>;
+  getChallengeById(id: string): Promise<Response>;
 }
 
 export class ChallengeServiceClient implements ChallengeService {
-  async getCurrentChallenges(): Promise<Challenge[]> {
-    return fetchApi<Challenge[]>('/api/challenges/current');
+  async getCurrentChallenges(): Promise<Response> {
+    return fetchApi('/api/challenges/current');
   }
 
-  async getChallengeById(id: string): Promise<Challenge | undefined> {
-    return fetchApi<Challenge | undefined>(`/api/challenges/${id}`);
+  async getChallengeById(id: string): Promise<Response> {
+    return fetchApi(`/api/challenges/${id}`);
   }
 }

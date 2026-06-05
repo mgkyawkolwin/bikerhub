@@ -1,9 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl } from 'react-native';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { SocialProfileServiceToken } from '@/services/socialProfileService';
@@ -25,8 +24,6 @@ export default function SocialProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
-
-  const { colors } = useThemeContext();
 
   const loadProfile = useCallback(async () => {
     if (!userId) return;
@@ -60,18 +57,18 @@ export default function SocialProfileScreen() {
       <View style={styles.postHeader}>
         <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
         <View style={styles.postMeta}>
-          <ThemedText style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
+          <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
             {item.authorName}
-          </ThemedText>
+          </Text>
           <View style={styles.metaRow}>
             <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
-            <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}> 
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}> 
               {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recent'}
-            </ThemedText>
+            </Text>
           </View>
         </View>
       </View>
-      <ThemedText style={[styles.postContent, { color: colors.text }]}>{item.content}</ThemedText>
+      <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
 
       {item.imageUrls?.length ? (
         <View style={styles.imageGrid}>
@@ -88,15 +85,15 @@ export default function SocialProfileScreen() {
       <View style={styles.postActions}>
         <View style={styles.actionBlock}>
           <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
-          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</ThemedText>
+          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</Text>
         </View>
         <View style={styles.actionBlock}>
           <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
-          <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</ThemedText>
+          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</Text>
         </View>
         <TouchableOpacity style={styles.postShareButton} activeOpacity={0.75}>
           <MaterialIcons name="share" size={18} color={colors.text} />
-          <ThemedText style={[styles.shareText, { color: colors.text }]}>Share</ThemedText>
+          <Text style={[styles.shareText, { color: colors.text }]}>Share</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -109,14 +106,14 @@ export default function SocialProfileScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Profile</ThemedText>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.emptyState}>
           <MaterialIcons name="person-off" size={48} color={colors.secondaryText} />
-          <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>
+          <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>
             User not found
-          </ThemedText>
+          </Text>
         </View>
       </View>
     );
@@ -129,11 +126,11 @@ export default function SocialProfileScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Profile</ThemedText>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingState}>
-          <ThemedText style={{ color: colors.secondaryText }}>Loading...</ThemedText>
+          <Text style={{ color: colors.secondaryText }}>Loading...</Text>
         </View>
       </View>
     );
@@ -145,9 +142,9 @@ export default function SocialProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
           Profile
-        </ThemedText>
+        </Text>
         <TouchableOpacity hitSlop={14}>
           <MaterialIcons name="more-horiz" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -169,12 +166,12 @@ export default function SocialProfileScreen() {
                   <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
                   <View style={styles.nameAndSocial}>
                     <View style={styles.nameRow}>
-                      <ThemedText style={[styles.profileName, { color: colors.text }]}>
+                      <Text style={[styles.profileName, { color: colors.text }]}>
                       {profile.name}
-                    </ThemedText>
+                    </Text>
                     <TouchableOpacity style={styles.shareButton} activeOpacity={0.8} onPress={() => {}}>
                       <MaterialIcons name="share" size={18} color={colors.accent} />
-                      <ThemedText style={[styles.shareButtonText, { color: colors.accent }]}>Share</ThemedText>
+                      <Text style={[styles.shareButtonText, { color: colors.accent }]}>Share</Text>
                     </TouchableOpacity>
                     </View>
                     {profile.socialLinks.length > 0 && (
@@ -196,37 +193,37 @@ export default function SocialProfileScreen() {
 
                 {/* Row 2: Bio */}
                 {profile.bio ? (
-                  <ThemedText style={[styles.profileBio, { color: colors.secondaryText }]}>
+                  <Text style={[styles.profileBio, { color: colors.secondaryText }]}>
                     {profile.bio}
-                  </ThemedText>
+                  </Text>
                 ) : null}
 
                 {/* Row 3: Followers, Following, Follow Button */}
                 <View style={styles.statsAndFollowRow}>
                   <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
-                      <ThemedText style={[styles.statValue, { color: colors.text }]}>
+                      <Text style={[styles.statValue, { color: colors.text }]}>
                         {profile.followersCount}
-                      </ThemedText>
-                      <ThemedText style={[styles.statLabel, { color: colors.secondaryText }]}>
+                      </Text>
+                      <Text style={[styles.statLabel, { color: colors.secondaryText }]}>
                         Followers
-                      </ThemedText>
+                      </Text>
                     </View>
                     <View style={styles.statItem}>
-                      <ThemedText style={[styles.statValue, { color: colors.text }]}>
+                      <Text style={[styles.statValue, { color: colors.text }]}>
                         {profile.followingCount}
-                      </ThemedText>
-                      <ThemedText style={[styles.statLabel, { color: colors.secondaryText }]}>
+                      </Text>
+                      <Text style={[styles.statLabel, { color: colors.secondaryText }]}>
                         Following
-                      </ThemedText>
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.actionButtonsRow}>
                     <TouchableOpacity style={[styles.followButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-                      <ThemedText style={styles.followButtonText}>Follow</ThemedText>
+                      <Text style={styles.followButtonText}>Follow</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.messageButton, { borderColor: colors.accent }]} activeOpacity={0.85}>
-                      <ThemedText style={[styles.messageButtonText, { color: colors.accent }]}>Message</ThemedText>
+                      <Text style={[styles.messageButtonText, { color: colors.accent }]}>Message</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -236,56 +233,56 @@ export default function SocialProfileScreen() {
                   {/* Garages */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="garage" size={24} color={colors.accent} />
-                    <ThemedText style={[styles.fiveStatValue, { color: colors.text }]}>
+                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
                       {profile.garageCount}
-                    </ThemedText>
-                    <ThemedText style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                    </Text>
+                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Garages
-                    </ThemedText>
+                    </Text>
                   </View>
 
                   {/* Rides */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="pedal-bike" size={24} color={colors.accent} />
-                    <ThemedText style={[styles.fiveStatValue, { color: colors.text }]}>
+                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
                       {profile.ridesCount}
-                    </ThemedText>
-                    <ThemedText style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                    </Text>
+                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Rides
-                    </ThemedText>
+                    </Text>
                   </View>
 
                   {/* Distance */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="straighten" size={24} color={colors.accent} />
-                    <ThemedText style={[styles.fiveStatValue, { color: colors.text }]}>
+                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
                       {profile.rideDistance}
-                    </ThemedText>
-                    <ThemedText style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                    </Text>
+                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Distance
-                    </ThemedText>
+                    </Text>
                   </View>
 
                   {/* Duration */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="schedule" size={24} color={colors.accent} />
-                    <ThemedText style={[styles.fiveStatValue, { color: colors.text }]}>
+                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
                       {profile.rideDuration}
-                    </ThemedText>
-                    <ThemedText style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                    </Text>
+                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Duration
-                    </ThemedText>
+                    </Text>
                   </View>
 
                   {/* Elevation */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="terrain" size={24} color={colors.accent} />
-                    <ThemedText style={[styles.fiveStatValue, { color: colors.text }]}>
+                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
                       {profile.rideElevation}
-                    </ThemedText>
-                    <ThemedText style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                    </Text>
+                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Elevation
-                    </ThemedText>
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.profileActionRow}>
@@ -295,15 +292,15 @@ export default function SocialProfileScreen() {
                     onPress={() => router.push({ pathname: '/social/garage', params: { userId } })}
                   >
                     <MaterialIcons name="garage" size={20} color={colors.text} />
-                    <ThemedText style={[styles.profileActionLabel, { color: colors.text }]}>Garages</ThemedText>
+                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Garages</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/list', params: { userId } })}>
                     <MaterialIcons name="pedal-bike" size={20} color={colors.text} />
-                    <ThemedText style={[styles.profileActionLabel, { color: colors.text }]}>Rides</ThemedText>
+                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Rides</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/plans', params: { userId } })}>
                     <MaterialIcons name="playlist-add" size={20} color={colors.text} />
-                    <ThemedText style={[styles.profileActionLabel, { color: colors.text }]}>Plans</ThemedText>
+                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Plans</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.profileActionButton}
@@ -311,15 +308,15 @@ export default function SocialProfileScreen() {
                     onPress={() => router.push({ pathname: '/social/listing', params: { userId } })}
                   >
                     <MaterialIcons name="storefront" size={20} color={colors.text} />
-                    <ThemedText style={[styles.profileActionLabel, { color: colors.text }]}>Listing</ThemedText>
+                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Listing</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* Posts Header */}
               <View style={styles.postsHeader}>
-                <ThemedText style={[styles.postsTitle, { color: colors.text }]}>Posts</ThemedText>
-                <ThemedText style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</ThemedText>
+                <Text style={[styles.postsTitle, { color: colors.text }]}>Posts</Text>
+                <Text style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</Text>
               </View>
             </>
           ) : null
@@ -328,9 +325,9 @@ export default function SocialProfileScreen() {
           !loading && posts.length === 0 && profile ? (
             <View style={styles.emptyPosts}>
               <MaterialIcons name="post-add" size={48} color={colors.secondaryText} />
-              <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>
+              <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>
                 No posts yet
-              </ThemedText>
+              </Text>
             </View>
           ) : null
         }

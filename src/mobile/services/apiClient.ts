@@ -10,19 +10,7 @@ export type ApiResponse<T> = {
   Message?: string;
 };
 
-function unwrapApiResponse<T>(response: ApiResponse<T>, defaultError: string): T {
-  if (!response.Success) {
-    throw new Error(response.Message ?? defaultError);
-  }
-
-  if (response.Data === undefined || response.Data === null) {
-    throw new Error(response.Message ?? defaultError);
-  }
-
-  return response.Data;
-}
-
-export async function fetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function fetchJson(path: string, options: RequestInit = {}): Promise<Response> {
   console.log('API Request:', { API_BASE_URL, path, options });
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -32,18 +20,11 @@ export async function fetchJson<T>(path: string, options: RequestInit = {}): Pro
     ...options,
   });
 
-  const contentType = response.headers.get('Content-Type');
-  const body = contentType?.includes('application/json') ? await response.json() : null;
-  console.log('API Response:', { path, status: response.status, body });
-  if (!response.ok) {
-    const message = body?.message || body?.Message || response.statusText || 'Request failed';
-    throw new Error(message);
-  }
-
-  return body as T;
+  console.log('API Response:', { path, status: response.status });
+  return response;
 }
 
-export async function authenticatedFetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function authenticatedFetchJson(path: string, options: RequestInit = {}): Promise<Response> {
   const authUserJson = await SecureStore.getItemAsync(AUTH_USER_STORAGE_KEY);
   const token = authUserJson ? (JSON.parse(authUserJson)?.token as string | undefined) : undefined;
   const headers: Record<string, string> = {
@@ -55,15 +36,13 @@ export async function authenticatedFetchJson<T>(path: string, options: RequestIn
     headers.Authorization = `Bearer ${token}`;
   }
 
-  return fetchJson<T>(path, { ...options, headers });
+  return fetchJson(path, { ...options, headers });
 }
 
-export async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetchJson<ApiResponse<T>>(path, options);
-  return unwrapApiResponse(response, 'API request failed.');
+export async function fetchApi(path: string, options: RequestInit = {}): Promise<Response> {
+  return fetchJson(path, options);
 }
 
-export async function authenticatedFetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await authenticatedFetchJson<ApiResponse<T>>(path, options);
-  return unwrapApiResponse(response, 'Authenticated API request failed.');
+export async function authenticatedFetchApi(path: string, options: RequestInit = {}): Promise<Response> {
+  return authenticatedFetchJson(path, options);
 }

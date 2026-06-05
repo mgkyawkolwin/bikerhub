@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { NewsServiceToken } from '@/services/newsService';
 import type { NewsService } from '@/services/newsService';
@@ -23,8 +22,6 @@ export default function NewsScreen() {
   const [total, setTotal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const { colors } = useThemeContext();
 
   const loadArticles = useCallback(
     async (pageNumber: number, reset = false) => {
@@ -71,19 +68,19 @@ export default function NewsScreen() {
             <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
           ) : null}
           <View style={styles.cardBody}>
-            <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{item.headline}</ThemedText>
-            <ThemedText style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.headline}</Text>
+            <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
               {item.summary}
-            </ThemedText>
+            </Text>
           </View>
           <View style={styles.cardFooter}>
             <View style={styles.metaRow}>
               <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-              <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+              <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.dateTimeUTC ?? '').toLocaleDateString()}</Text>
             </View>
             <View style={styles.metaRow}>
               <MaterialIcons name="source" size={14} color={colors.secondaryText} />
-              <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.source}</ThemedText>
+              <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.source}</Text>
             </View>
           </View>
         </View>
@@ -97,7 +94,7 @@ export default function NewsScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.news}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.news}</Text>
       </View>
       <FlatList
         data={articles}
@@ -110,7 +107,7 @@ export default function NewsScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</ThemedText>
+              <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
             </View>
           ) : null
         }

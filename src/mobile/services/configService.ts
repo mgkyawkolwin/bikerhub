@@ -3,21 +3,21 @@ import { fetchApi } from './apiClient';
 export const ConfigServiceToken = Symbol('ConfigService');
 
 export interface ConfigService {
-  getBusinessTypes(): Promise<string[]>;
-  getCities(): Promise<string[]>;
-  getStateDivisions(): Promise<string[]>;
+  getBusinessTypes(): Promise<Response>;
+  getCities(): Promise<Response>;
+  getStateDivisions(): Promise<Response>;
 }
 
 export class ConfigServiceClient implements ConfigService {
-  async getBusinessTypes(): Promise<string[]> {
-    return fetchApi<string[]>('/api/config/business-types');
+  async getBusinessTypes(): Promise<Response> {
+    return fetchApi('/api/config/business-types');
   }
 
-  async getCities(): Promise<string[]> {
-    return fetchApi<string[]>('/api/config/cities');
+  async getCities(): Promise<Response> {
+    return fetchApi('/api/config/cities');
   }
 
-  async getStateDivisions(): Promise<string[]> {
-    return fetchApi<string[]>('/api/config/state-divisions');
+  async getStateDivisions(): Promise<Response> {
+    return fetchApi('/api/config/state-divisions');
   }
 }

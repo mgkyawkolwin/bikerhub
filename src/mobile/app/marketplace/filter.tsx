@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity, Modal, TouchableWithoutFeedback, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Modal, TouchableWithoutFeedback, TextInput, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import type { BikeType, MarketplaceFilter } from '@/models/marketplace';
 
 const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
@@ -49,8 +48,6 @@ export default function MarketplaceFilterScreen() {
   useEffect(() => {
     setDraftFilter(initialFilter);
   }, [initialFilter]);
-
-  const { colors } = useThemeContext();
 
   function handleSelectOption(value: string, field: DropdownField) {
     if (!field) return;
@@ -123,7 +120,7 @@ export default function MarketplaceFilterScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.filterTitle}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.filterTitle}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -137,20 +134,20 @@ export default function MarketplaceFilterScreen() {
           ] as const
         ).map(({ label, field }) => (
           <View key={field} style={styles.fieldGroup}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{label}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{label}</Text>
             <TouchableOpacity
               style={[styles.dropdown, { borderColor: colors.border, backgroundColor: colors.card }]}
               onPress={() => setActiveDropdown(field)}
               activeOpacity={0.8}
             >
-              <ThemedText style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText(field)}</ThemedText>
+              <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText(field)}</Text>
               <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
             </TouchableOpacity>
           </View>
         ))}
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={draftFilter.modelYear}
@@ -162,7 +159,7 @@ export default function MarketplaceFilterScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={draftFilter.cc}
@@ -174,7 +171,7 @@ export default function MarketplaceFilterScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.priceRange}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.priceRange}</Text>
           <View style={styles.priceRow}>
             <TextInput
               style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
@@ -203,10 +200,10 @@ export default function MarketplaceFilterScreen() {
 
         <View style={styles.footerActions}>
           <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border }]} onPress={clearFilter}>
-            <ThemedText style={[styles.clearText, { color: colors.text }]}>{t.Title.clear}</ThemedText>
+            <Text style={[styles.clearText, { color: colors.text }]}>{t.Title.clear}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.applyButton, { backgroundColor: colors.accent }]} onPress={applyFilter}>
-            <ThemedText style={styles.applyText}>{t.Title.apply}</ThemedText>
+            <Text style={styles.applyText}>{t.Title.apply}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -217,7 +214,7 @@ export default function MarketplaceFilterScreen() {
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}> 
           <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: colors.text }]}>{activeDropdown ? t.Title.selectOption : ''}</ThemedText>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{activeDropdown ? t.Title.selectOption : ''}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
               <MaterialIcons name="close" size={22} color={colors.secondaryText} />
             </TouchableOpacity>
@@ -230,7 +227,7 @@ export default function MarketplaceFilterScreen() {
                 onPress={() => activeDropdown && handleSelectOption(option, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <ThemedText style={[styles.sheetItemText, { color: colors.text }]}>{option}</ThemedText>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

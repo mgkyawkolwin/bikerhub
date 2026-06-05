@@ -1,9 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { GroupServiceToken } from '@/services/groupService';
@@ -25,8 +24,6 @@ export default function GroupPostsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const groupId = Array.isArray(params.groupId) ? params.groupId[0] : params.groupId;
-
-  const { colors } = useThemeContext();
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
@@ -67,12 +64,12 @@ export default function GroupPostsScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Group</ThemedText>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Group</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.emptyState}>
           <MaterialIcons name="group" size={44} color={colors.secondaryText} />
-          <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>Group not found.</ThemedText>
+          <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>Group not found.</Text>
         </View>
       </View>
     );
@@ -84,7 +81,7 @@ export default function GroupPostsScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Group</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Group</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -96,14 +93,14 @@ export default function GroupPostsScreen() {
             <View style={styles.postHeader}>
               <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
               <View style={styles.postMeta}>
-                <ThemedText style={[styles.authorName, { color: colors.text }]}>{item.authorName}</ThemedText>
+                <Text style={[styles.authorName, { color: colors.text }]}>{item.authorName}</Text>
                 <View style={styles.metaRow}>
                   <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
-                  <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</ThemedText>
+                  <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</Text>
                 </View>
               </View>
             </View>
-            <ThemedText style={[styles.postContent, { color: colors.text }]}>{item.content}</ThemedText>
+            <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
             {item.imageUrls?.length ? (
               <View style={styles.imageGrid}>
                 {item.imageUrls.map((uri, idx) => (
@@ -118,15 +115,15 @@ export default function GroupPostsScreen() {
             <View style={styles.postActions}>
               <View style={styles.actionBlock}>
                 <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
-                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount ?? 0}</ThemedText>
+                <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount ?? 0}</Text>
               </View>
               <View style={styles.actionBlock}>
                 <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
-                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount ?? 0}</ThemedText>
+                <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount ?? 0}</Text>
               </View>
               <View style={styles.actionBlock}>
                 <MaterialIcons name="share" size={18} color={colors.secondaryText} />
-                <ThemedText style={[styles.actionText, { color: colors.secondaryText }]}>{item.shareCount ?? 0}</ThemedText>
+                <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.shareCount ?? 0}</Text>
               </View>
             </View>
           </View>
@@ -141,26 +138,26 @@ export default function GroupPostsScreen() {
                     <MaterialIcons name={group.icon as any} size={24} color={colors.card} />
                   </View>
                   <View style={styles.groupHeaderInfo}>
-                    <ThemedText style={[styles.groupHeaderTitle, { color: colors.text }]}>{group.title}</ThemedText>
+                    <Text style={[styles.groupHeaderTitle, { color: colors.text }]}>{group.title}</Text>
                     <View style={styles.groupHeaderMetaRow}>
-                      <ThemedText style={[styles.groupMetaText, { color: group.isPrivate ? colors.accent : colors.secondaryText }]}>
+                      <Text style={[styles.groupMetaText, { color: group.isPrivate ? colors.accent : colors.secondaryText }]}>
                         {group.isPrivate ? 'Private' : 'Public'}
-                      </ThemedText>
-                      <ThemedText style={[styles.groupMetaText, { color: colors.secondaryText }]}>
+                      </Text>
+                      <Text style={[styles.groupMetaText, { color: colors.secondaryText }]}>
                         {group.membersCount ?? 0} members
-                      </ThemedText>
+                      </Text>
                     </View>
                   </View>
                   <TouchableOpacity style={[styles.joinButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-                    <ThemedText style={styles.joinButtonText}>Join</ThemedText>
+                    <Text style={styles.joinButtonText}>Join</Text>
                   </TouchableOpacity>
                 </View>
                 {group.description ? (
-                  <ThemedText style={[styles.groupDescription, { color: colors.secondaryText }]}>{group.description}</ThemedText>
+                  <Text style={[styles.groupDescription, { color: colors.secondaryText }]}>{group.description}</Text>
                 ) : null}
                 <View style={styles.postsHeader}>
-                  <ThemedText style={[styles.postsTitle, { color: colors.text }]}>Group Posts</ThemedText>
-                  <ThemedText style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</ThemedText>
+                  <Text style={[styles.postsTitle, { color: colors.text }]}>Group Posts</Text>
+                  <Text style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</Text>
                 </View>
               </View>
             </>
@@ -171,7 +168,7 @@ export default function GroupPostsScreen() {
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
             <MaterialIcons name="post-add" size={48} color={colors.secondaryText} />
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No posts in this group yet.</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>No posts in this group yet.</Text>
           </View>
         ) : null}
       />

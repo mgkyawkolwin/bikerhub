@@ -1,13 +1,20 @@
-import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
-import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { container } from '@/services';
+import { RouteServiceToken } from '@/services/routeService';
+import type { RouteService } from '@/services/routeService';
+import Route from '@/models/route';
+
+type RouteWithMeta = Route & {
+  createdAt?: string;
+  userId?: string;
+};
 
 export default function RoutePlansScreen() {
   const insets = useSafeAreaInsets();
@@ -19,21 +26,40 @@ export default function RoutePlansScreen() {
   const currentUserId = authUser?.id;
   const isOwnPlans = !viewedUserId || viewedUserId === currentUserId;
   const { colors } = useThemeContext();
-  const [plans, setPlans] = useState<any[]>([]);
+  const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
+  const [plans, setPlans] = useState<RouteWithMeta[]>([]);
 
-  const { colors } = useThemeContext();
+  const parseNumber = (value?: string | number): number => {
+    if (value === undefined || value === null) return 0;
+    if (typeof value === 'number') return value;
+    const parsed = parseFloat(value.replace(/,/g, '').replace(/[^0-9.\-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
 
   const loadPlans = useCallback(async () => {
     console.log('Loading plans for userId:', viewedUserId);
-    const db = await getDatabase();
-    const allPlans = db.collections.plans ?? [];
-    console.log('All plans loaded:', allPlans);
-    const filteredPlans = viewedUserId
-      ? allPlans.filter((plan: any) => plan.createdById === viewedUserId || plan.userId === viewedUserId)
-      : allPlans;
-    console.log('Filtered plans:', filteredPlans);
-    setPlans(filteredPlans);
-  }, [viewedUserId]);
+    try {
+      const response = await routeService.getRoutes(1, 10);
+      if (!response.ok) {
+        console.error('Route service response error', response.status, response.statusText);
+        setPlans([]);
+        return;
+      }
+
+      const body = await response.json();
+      const data = body?.Data?.items ?? body?.data?.items ?? [];
+      const routes = Array.isArray(data) ? (data as RouteWithMeta[]) : [];
+      const filteredPlans = viewedUserId
+        ? routes.filter((plan) => plan.createdById === viewedUserId || plan.userId === viewedUserId)
+        : routes;
+
+      console.log('Loaded backend plans:', filteredPlans);
+      setPlans(filteredPlans);
+    } catch (error) {
+      console.error('Failed to load plans from backend', error);
+      setPlans([]);
+    }
+  }, [routeService, viewedUserId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,66 +67,52 @@ export default function RoutePlansScreen() {
     }, [loadPlans]),
   );
 
-  const confirmDeletePlan = (id: string) => {
-    Alert.alert(
-      'Delete Plan',
-      'Are you sure you want to delete this plan?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => void deletePlan(id) },
-      ],
-    );
-  };
 
-  const deletePlan = async (id: string) => {
-    const db = await getDatabase();
-    const collections = db.collections as any;
-    collections.plans = (collections.plans ?? []).filter((plan: any) => plan.id !== id);
-    await saveDatabase(db);
-    setPlans(collections.plans);
-  };
-
-  const renderPlan = ({ item }: { item: any }) => (
+  const renderPlan = ({ item }: { item: RouteWithMeta }) => (
     <TouchableOpacity
       style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       activeOpacity={0.8}
-      onPress={() => router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`)}
+      onPress={() => {
+        if (item.id) {
+          router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`);
+        }
+      }}
     >
       <View style={styles.planTouchable}>
         {/* Header with Plan Name and Date */}
         <View style={styles.planHeader}>
-          <ThemedText style={[styles.planName, { color: colors.text }]} numberOfLines={1}>
+          <Text style={[styles.planName, { color: colors.text }]} numberOfLines={1}>
             {item.name ?? 'Unnamed Plan'}
-          </ThemedText>
-          <ThemedText style={[styles.planDate, { color: colors.secondaryText }]} numberOfLines={1}>
+          </Text>
+          <Text style={[styles.planDate, { color: colors.secondaryText }]} numberOfLines={1}>
             {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown'}
-          </ThemedText>
+          </Text>
         </View>
         
-        {/* Meta row with points, km, min AND trash icon */}
         <View style={styles.metaRow}>
-          <ThemedText style={[styles.planSummary, { color: colors.secondaryText }]} numberOfLines={1}>
-            {item.waypoints?.length 
-              ? `${item.waypoints.length} points · ${item.totalDistance?.toFixed(1) ?? 0} km · ${item.totalDuration?.toFixed(0) ?? 0} min` 
-              : 'No waypoints'}
-          </ThemedText>
-          <TouchableOpacity onPress={() => confirmDeletePlan(item.id)} style={styles.deleteButton}>
-            <MaterialIcons name="delete" size={20} color={colors.accent} />
-          </TouchableOpacity>
+          <Text style={[styles.planSummary, { color: colors.secondaryText }]} numberOfLines={1}>
+            {item.routePath?.length || item.locations?.length
+              ? `${Math.max(item.routePath?.length ?? item.locations?.length ?? 0, 0)} points · ${parseNumber(item.distance).toFixed(1)} km · ${parseNumber(item.duration).toFixed(0)} min`
+              : 'No route data'}
+          </Text>
         </View>
         
         {/* Description row below meta */}
         {item.description ? (
-          <ThemedText style={[styles.planDescription, { color: colors.secondaryText }]} numberOfLines={2}>
+          <Text style={[styles.planDescription, { color: colors.secondaryText }]} numberOfLines={2}>
             {item.description}
-          </ThemedText>
+          </Text>
         ) : null}
         <TouchableOpacity
           style={[styles.viewButton, { backgroundColor: colors.accent }]}
           activeOpacity={0.8}
-          onPress={() => router.push(`/ride/planGoogle?id=${encodeURIComponent(item.id)}`)}
+          onPress={() => {
+            if (item.id) {
+              router.push(`/ride/planGoogle?id=${encodeURIComponent(item.id)}`);
+            }
+          }}
         >
-          <ThemedText style={styles.viewButtonText}>View</ThemedText>
+          <Text style={styles.viewButtonText}>View</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -112,11 +124,11 @@ export default function RoutePlansScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.text }]}>Plans</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>Plans</Text>
         {isOwnPlans ? (
           <TouchableOpacity style={[styles.newPlanButton, { backgroundColor: colors.accent }]} onPress={() => router.push('/ride/plan')} activeOpacity={0.8}>
             <MaterialIcons name="add" size={18} color="#FFFFFF" />
-            <ThemedText style={styles.newPlanText}>New Plan</ThemedText>
+            <Text style={styles.newPlanText}>New Plan</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -128,7 +140,7 @@ export default function RoutePlansScreen() {
         ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No plans saved yet.</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No plans saved yet.</Text>
           </View>
         }
       />

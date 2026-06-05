@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { RouteServiceToken } from '@/services/routeService';
 import type { RouteService } from '@/services/routeService';
@@ -30,8 +29,6 @@ export default function RouteCreateScreen() {
   const [gpxFileName, setGpxFileName] = useState('');
   const [formErrors, setFormErrors] = useState<Partial<Record<'name' | 'description' | 'distance' | 'duration' | 'type' | 'createdByName' | 'gpxUri', string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { colors } = useThemeContext();
 
   function getGpxExtension(uri: string, name?: string) {
     const extract = (value: string | undefined) => {
@@ -103,11 +100,11 @@ export default function RouteCreateScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.title, { color: colors.text }]}>{t.Title.uploadRoute}</ThemedText>
+        <Text style={[styles.title, { color: colors.text }]}>{t.Title.uploadRoute}</Text>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.routeName}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.routeName}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: formErrors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={name}
@@ -120,7 +117,7 @@ export default function RouteCreateScreen() {
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.description}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.description}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: formErrors.description ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text, minHeight: 100, textAlignVertical: 'top' }]}
             value={description}
@@ -135,7 +132,7 @@ export default function RouteCreateScreen() {
         </View>
         <View style={styles.splitRow}>
           <View style={styles.splitItem}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.distance}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.distance}</Text>
             <TextInput
               style={[styles.textInput, { borderColor: formErrors.distance ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={distance}
@@ -148,7 +145,7 @@ export default function RouteCreateScreen() {
             />
           </View>
           <View style={styles.splitItem}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.duration}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.duration}</Text>
             <TextInput
               style={[styles.textInput, { borderColor: formErrors.duration ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
               value={duration}
@@ -162,7 +159,7 @@ export default function RouteCreateScreen() {
           </View>
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: formErrors.type ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={type}
@@ -175,7 +172,7 @@ export default function RouteCreateScreen() {
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.createdBy}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.createdBy}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: formErrors.createdByName ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={createdByName}
@@ -188,13 +185,13 @@ export default function RouteCreateScreen() {
           />
         </View>
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.gpxFile}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.gpxFile}</Text>
           <TouchableOpacity style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]} onPress={pickGpx} activeOpacity={0.8}>
-            <ThemedText style={[styles.uploadText, { color: colors.text }]}>{gpxUri ? t.Title.changeGpx : t.Title.selectGpx}</ThemedText>
+            <Text style={[styles.uploadText, { color: colors.text }]}>{gpxUri ? t.Title.changeGpx : t.Title.selectGpx}</Text>
             <MaterialIcons name="upload-file" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
-          <ThemedText style={[styles.fileName, { color: colors.secondaryText }]} numberOfLines={1}>{gpxFileName || (gpxUri ? gpxUri.split('/').pop() : t.Title.noFileSelected)}</ThemedText>
-          {formErrors.gpxUri ? <ThemedText style={styles.errorText}>{formErrors.gpxUri}</ThemedText> : null}
+          <Text style={[styles.fileName, { color: colors.secondaryText }]} numberOfLines={1}>{gpxFileName || (gpxUri ? gpxUri.split('/').pop() : t.Title.noFileSelected)}</Text>
+          {formErrors.gpxUri ? <Text style={styles.errorText}>{formErrors.gpxUri}</Text> : null}
         </View>
         <TouchableOpacity
           style={[styles.submitButton, { backgroundColor: colors.accent }]}
@@ -202,7 +199,7 @@ export default function RouteCreateScreen() {
           activeOpacity={0.8}
           disabled={isSubmitting}
         >
-          <ThemedText style={styles.submitText}>{t.Title.submitRoute}</ThemedText>
+          <Text style={styles.submitText}>{t.Title.submitRoute}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

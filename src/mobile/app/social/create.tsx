@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
@@ -15,8 +14,6 @@ export default function SocialCreateScreen() {
   const [visibility, setVisibility] = useState<'Public' | 'Friends Only'>('Public');
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
-
-  const { colors } = useThemeContext();
 
   const requestCamera = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -89,10 +86,10 @@ export default function SocialCreateScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>Create Post</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Post</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity style={[styles.postButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-            <ThemedText style={styles.postButtonText}>Post</ThemedText>
+            <Text style={styles.postButtonText}>Post</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -105,7 +102,7 @@ export default function SocialCreateScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.dropdownValueRow}>
-              <ThemedText style={[styles.dropdownValue, { color: colors.secondaryText }]}>{visibility}</ThemedText>
+              <Text style={[styles.dropdownValue, { color: colors.secondaryText }]}>{visibility}</Text>
               <MaterialIcons name="keyboard-arrow-down" size={20} color={colors.secondaryText} />
             </View>
           </TouchableOpacity>
@@ -158,7 +155,7 @@ export default function SocialCreateScreen() {
                 activeOpacity={0.7}
                 onPress={() => selectVisibility(option)}
               >
-                <ThemedText style={[styles.optionText, { color: colors.text }]}>{option}</ThemedText>
+                <Text style={[styles.optionText, { color: colors.text }]}>{option}</Text>
                 {visibility === option ? <MaterialIcons name="check" size={20} color={colors.accent} /> : null}
               </TouchableOpacity>
             ))}

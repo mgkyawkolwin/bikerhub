@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { container } from '@/services';
 import { NewsServiceToken } from '@/services/newsService';
 import type { NewsService } from '@/services/newsService';
@@ -37,36 +36,34 @@ export default function NewsDetailScreen() {
     };
   }, [id, newsService]);
 
-  const { colors } = useThemeContext();
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={styles.header}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.text }]}>News</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>News</Text>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {article ? (
           <View style={styles.page}>
             {article.imageUrl ? <Image source={{ uri: article.imageUrl }} style={styles.image} /> : null}
             <View style={styles.textBlock}>
-              <ThemedText style={[styles.headline, { color: colors.text }]}>{article.headline}</ThemedText>
+              <Text style={[styles.headline, { color: colors.text }]}>{article.headline}</Text>
               <View style={styles.metaRow}>
                 <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(article.dateTimeUTC ?? '').toLocaleDateString()}</ThemedText>
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(article.dateTimeUTC ?? '').toLocaleDateString()}</Text>
               </View>
               <View style={styles.metaRow}>
                 <MaterialIcons name="source" size={14} color={colors.secondaryText} />
-                <ThemedText style={[styles.metaText, { color: colors.secondaryText }]}>{article.source}</ThemedText>
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{article.source}</Text>
               </View>
-              <ThemedText style={[styles.bodyText, { color: colors.secondaryText }]}>{article.content ?? article.summary}</ThemedText>
+              <Text style={[styles.bodyText, { color: colors.secondaryText }]}>{article.content ?? article.summary}</Text>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>{t.Text.noListings}</Text>
           </View>
         )}
       </ScrollView>

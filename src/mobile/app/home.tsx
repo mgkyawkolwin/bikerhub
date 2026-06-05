@@ -1,8 +1,7 @@
-import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, type Href } from 'expo-router';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { useI18n } from '@/i18n';
@@ -14,12 +13,12 @@ function useSections() {
       title: t.Title.marketplace,
       icon: 'two-wheeler',
       items: [
-        { label: t.Title.listing,     icon: 'two-wheeler',  link: '/marketplace' },
-        { label: t.Title.sell,        icon: 'sell',         link: '/marketplace/create' },
-        { label: t.Title.favorite,    icon: 'favorite',     link: '/marketplace/favorites' },
-        { label: t.Title.buyHistory,  icon: 'receipt-long', link: '/marketplace/buy-history' },
-        { label: t.Title.sellHistory, icon: 'history',      link: '/marketplace/sell-history' },
-        { label: t.Title.myItems,     icon: 'garage',       link: '/marketplace/my-items' },
+        { label: t.Title.listing, icon: 'two-wheeler', link: '/marketplace' },
+        { label: t.Title.sell, icon: 'sell', link: '/marketplace/create' },
+        { label: t.Title.favorite, icon: 'favorite', link: '/marketplace/favorites' },
+        { label: t.Title.buyHistory, icon: 'receipt-long', link: '/marketplace/buy-history' },
+        { label: t.Title.sellHistory, icon: 'history', link: '/marketplace/sell-history' },
+        { label: t.Title.myItems, icon: 'garage', link: '/marketplace/my-items' },
       ],
     },
     {
@@ -36,7 +35,7 @@ function useSections() {
       title: t.Title.newsUpdates,
       icon: 'feed',
       items: [
-        { label: t.Title.news,     icon: 'feed',         link: '/news' },
+        { label: t.Title.news, icon: 'feed', link: '/news' },
         { label: t.Title.articles, icon: 'auto-stories', link: '/articles' },
       ],
     },
@@ -44,9 +43,9 @@ function useSections() {
       title: t.Title.community,
       icon: 'groups',
       items: [
-        { label: t.Title.blogs,   icon: 'forum',              link: '/blog' },
-        { label: t.Title.forums,  icon: 'forum',              link: '/forum' },
-        { label: t.Title.chats,   icon: 'chat-bubble-outline', link: '/chat/chats' },
+        { label: t.Title.blogs, icon: 'forum', link: '/blog' },
+        { label: t.Title.forums, icon: 'forum', link: '/forum' },
+        { label: t.Title.chats, icon: 'chat-bubble-outline', link: '/chat/chats' },
       ],
     },
     {
@@ -54,8 +53,8 @@ function useSections() {
       icon: 'build',
       items: [
         { label: t.Title.reportStolen, icon: 'report-problem', link: '/blank' },
-        { label: t.Title.vinSearch,    icon: 'manage-search',  link: '/blank' },
-        { label: t.Title.stolenList,   icon: 'warning-amber',  link: '/blank' },
+        { label: t.Title.vinSearch, icon: 'manage-search', link: '/blank' },
+        { label: t.Title.stolenList, icon: 'warning-amber', link: '/blank' },
       ],
     }
   ];
@@ -66,9 +65,7 @@ export default function HomeScreen() {
   const { colors } = useThemeContext();
   const { getAuthUser } = useAuthContext();
   const sections = useSections();
-    const authUser = getAuthUser();
-
-  const { colors } = useThemeContext();
+  const authUser = getAuthUser();
 
   return (
     <View style={[$.root, { backgroundColor: colors.background }]}>
@@ -92,7 +89,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </Link>
           </View>
-          <ThemedText style={[$.logo, { color: colors.text }]}>BIKERHUB</ThemedText>
+          <Text style={[$.logo, { color: colors.text }]}>BIKERHUB</Text>
           <View style={$.headerSide}>
             <Link href="/chat/chats" asChild>
               <TouchableOpacity hitSlop={12}>
@@ -109,10 +106,10 @@ export default function HomeScreen() {
 
         {/* info row — welcome + weather */}
         <View style={$.infoRow}>
-          <ThemedText style={[$.welcome, { color: colors.text }]}>Welcome, {authUser?.name ?? 'MM Biker'}</ThemedText>
+          <Text style={[$.welcome, { color: colors.text }]}>Welcome, {authUser?.name ?? 'MM Biker'}</Text>
           <View style={$.weatherRow}>
             <MaterialIcons name="wb-sunny" size={14} color="#FFC107" />
-            <ThemedText style={$.weatherText}>34°C · Yangon</ThemedText>
+            <Text style={$.weatherText}>34°C · Yangon</Text>
           </View>
         </View>
 
@@ -120,22 +117,22 @@ export default function HomeScreen() {
         <View style={$.statsRow}>
           <View style={$.statItem}>
             <MaterialIcons name="two-wheeler" size={20} color={colors.text} />
-            <ThemedText style={[$.statValue, { color: colors.text }]}>3</ThemedText>
+            <Text style={[$.statValue, { color: colors.text }]}>3</Text>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
             <MaterialIcons name="water-drop" size={20} color={colors.text} />
-            <ThemedText style={[$.statValue, { color: colors.text }]}>3,000 Km</ThemedText>
+            <Text style={[$.statValue, { color: colors.text }]}>3,000 Km</Text>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
             <MaterialIcons name="settings" size={20} color={colors.text} />
-            <ThemedText style={[$.statValue, { color: colors.text }]}>5,000 Km</ThemedText>
+            <Text style={[$.statValue, { color: colors.text }]}>5,000 Km</Text>
           </View>
           <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
             <MaterialIcons name="trip-origin" size={20} color={colors.text} />
-            <ThemedText style={[$.statValue, { color: colors.text }]}>9,100 Km</ThemedText>
+            <Text style={[$.statValue, { color: colors.text }]}>9,100 Km</Text>
           </View>
         </View>
       </View>
@@ -145,27 +142,27 @@ export default function HomeScreen() {
         contentContainerStyle={[$.scroll, { paddingBottom: ins.bottom + 20 }]}
         showsVerticalScrollIndicator={false}>
         {sections.map((sec) => (
-          <View key={sec.title} style={[$.group, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View key={sec.title} style={[$.group, { backgroundColor: colors.card, borderColor: colors.border }]}>
 
             {/* group header */}
             <View style={$.groupHead}>
               <MaterialIcons name={sec.icon as any} size={18} color={colors.secondaryText} />
-              <ThemedText style={[$.groupTitle, { color: colors.text }]}>{sec.title}</ThemedText>
+              <Text style={[$.groupTitle, { color: colors.text }]}>{sec.title}</Text>
             </View>
 
-            <View style={[$.divider, { backgroundColor: c.border }]} />
+            <View style={[$.divider, { backgroundColor: colors.border }]} />
 
             {/* items grid — 3 columns */}
             <View style={$.grid}>
               {sec.items.map((item) => (
                 <Link key={item.label} href={item.link as Href} asChild>
                   <TouchableOpacity style={$.tile} activeOpacity={0.5}>
-                    <View style={[$.tileIcon, { backgroundColor: c.iconBg }]}>
-                      <MaterialIcons name={item.icon as any} size={22} color={c.iconFg} />
+                    <View style={[$.tileIcon, { backgroundColor: colors.icon }]}>
+                      <MaterialIcons name={item.icon as any} size={22} color={colors.icon} />
                     </View>
-                    <ThemedText style={[$.tileLabel, { color: colors.text }]} numberOfLines={2}>
+                    <Text style={[$.tileLabel, { color: colors.text }]} numberOfLines={2}>
                       {item.label}
-                    </ThemedText>
+                    </Text>
                   </TouchableOpacity>
                 </Link>
               ))}

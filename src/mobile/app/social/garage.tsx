@@ -1,10 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
@@ -35,8 +34,6 @@ export default function SocialGarageScreen() {
     type: undefined,
     location: '',
   }), []);
-
-  const { colors } = useThemeContext();
 
   const loadGarage = useCallback(async () => {
     setLoading(true);
@@ -69,9 +66,9 @@ export default function SocialGarageScreen() {
     >
       <Image source={{ uri: item.imageUrl }} style={styles.bikeImage} />
       <View style={styles.bikeInfo}>
-        <ThemedText style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
+        <Text style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
           {item.title}
-        </ThemedText>
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -83,7 +80,7 @@ export default function SocialGarageScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.text }]}>Garage</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>Garage</Text>
           <View style={styles.headerSpacer} />
         </View>
       </View>
@@ -96,7 +93,7 @@ export default function SocialGarageScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.secondaryText }]}>No bikes in garage.</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No bikes in garage.</Text>
           </View>
         ) : null}
       />

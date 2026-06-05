@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Text
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +17,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import SnackBar from '@/components/snackbar';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
@@ -193,7 +193,7 @@ export default function MarketplaceCreateScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.white} />
         </TouchableOpacity>
-        <ThemedText style={[styles.headerTitle, { color: colors.white }]}>{t.Title.sellBike}</ThemedText>
+        <Text style={[styles.headerTitle, { color: colors.white }]}>{t.Title.sellBike}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -204,7 +204,7 @@ export default function MarketplaceCreateScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.bikeTitle || 'Title'}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.bikeTitle || 'Title'}</Text>
           <TextInput
             style={[
               styles.textInput,
@@ -218,11 +218,11 @@ export default function MarketplaceCreateScreen() {
             placeholder={t.Title.bikeTitle || 'Title'}
             placeholderTextColor={colors.placeholder}
           />
-          {errors.title ? <ThemedText style={styles.errorText}>{errors.title}</ThemedText> : null}
+          {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
           <TouchableOpacity
             style={[
               styles.dropdown,
@@ -231,13 +231,13 @@ export default function MarketplaceCreateScreen() {
             onPress={() => setActiveDropdown('make')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.text }]}> 
+            <Text style={[styles.dropdownText, { color: colors.text }]}> 
               {make || t.Title.selectOption}
-            </ThemedText>
+            </Text>
             <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
-          {errors.make ? <ThemedText style={styles.errorText}>{errors.make}</ThemedText> : null}
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</ThemedText>
+          {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
           <TouchableOpacity
             style={[
               styles.dropdown,
@@ -246,14 +246,14 @@ export default function MarketplaceCreateScreen() {
             onPress={() => setActiveDropdown('model')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.text }]}> 
+            <Text style={[styles.dropdownText, { color: colors.text }]}> 
               {model || t.Title.selectOption}
-            </ThemedText>
+            </Text>
             <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
-          {errors.model ? <ThemedText style={styles.errorText}>{errors.model}</ThemedText> : null}
+          {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
           <View style={styles.fieldHalf}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -268,10 +268,10 @@ export default function MarketplaceCreateScreen() {
               placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
-            {errors.year ? <ThemedText style={styles.errorText}>{errors.year}</ThemedText> : null}
+            {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
           </View>
           <View style={styles.fieldHalf}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -286,12 +286,12 @@ export default function MarketplaceCreateScreen() {
               placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
-            {errors.cc ? <ThemedText style={styles.errorText}>{errors.cc}</ThemedText> : null}
+            {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
           </View>
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.price}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.price}</Text>
           <TextInput
             style={[
               styles.textInput,
@@ -306,11 +306,11 @@ export default function MarketplaceCreateScreen() {
             placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
           />
-          {errors.price ? <ThemedText style={styles.errorText}>{errors.price}</ThemedText> : null}
+          {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={km}
@@ -322,7 +322,7 @@ export default function MarketplaceCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
           <TextInput
             style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={vin}
@@ -333,7 +333,7 @@ export default function MarketplaceCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</ThemedText>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
           <TouchableOpacity
             style={[
               styles.dropdown,
@@ -342,28 +342,28 @@ export default function MarketplaceCreateScreen() {
             onPress={() => setActiveDropdown('type')}
             activeOpacity={0.8}
           >
-            <ThemedText style={[styles.dropdownText, { color: colors.text }]}> 
+            <Text style={[styles.dropdownText, { color: colors.text }]}> 
               {type || t.Title.selectOption}
-            </ThemedText>
+            </Text>
             <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
-          {errors.type ? <ThemedText style={styles.errorText}>{errors.type}</ThemedText> : null}
+          {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
           <View style={styles.photoHeader}>
-            <ThemedText style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</ThemedText>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
             <View style={styles.photoActions}>
               <TouchableOpacity
                 style={[styles.photoActionButton, { borderColor: colors.border }]}
                 onPress={() => void handleImagePick(true)}
               >
                 <MaterialIcons name="photo-camera" size={20} color={colors.text} />
-                <ThemedText style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</ThemedText>
+                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.photoActionButton, { borderColor: colors.border }]}
                 onPress={() => void handleImagePick(false)}
               >
                 <MaterialIcons name="photo-library" size={20} color={colors.text} />
-                <ThemedText style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</ThemedText>
+                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -388,7 +388,7 @@ export default function MarketplaceCreateScreen() {
             </View>
           ) : (
             <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}> 
-              <ThemedText style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</ThemedText>
+              <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
             </View>
           )}
         </View>
@@ -400,7 +400,7 @@ export default function MarketplaceCreateScreen() {
             onPress={handlePost}
             disabled={isSubmitting}
           >
-            <ThemedText style={[styles.postButtonText, { color: colors.buttonText }]}>{t.Title.post}</ThemedText>
+            <Text style={[styles.postButtonText, { color: colors.buttonText }]}>{t.Title.post}</Text>
           </TouchableOpacity>
         </View>
 
@@ -410,7 +410,7 @@ export default function MarketplaceCreateScreen() {
         <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} onPress={() => setActiveDropdown(null)} />
         <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}> 
           <View style={styles.sheetHeader}>
-            <ThemedText style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</ThemedText>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
               <MaterialIcons name="close" size={22} color={colors.secondaryText} />
             </TouchableOpacity>
@@ -428,7 +428,7 @@ export default function MarketplaceCreateScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <ThemedText style={[styles.sheetItemText, { color: colors.text }]}>{option}</ThemedText>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, View, TouchableOpacity, Image, Linking } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, View, TouchableOpacity, Image, Linking, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { ThemedText } from '@/components/themedText';
 import { Rating } from '@/components/rating';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
@@ -42,8 +41,6 @@ export default function BikeDetailScreen() {
     };
   }, [id, marketplaceService]);
 
-  const { colors } = useThemeContext();
-
   const images = listing?.images?.length ? listing.images : listing?.imageUrl ? [listing.imageUrl] : [];
 
   function handleCall() {
@@ -79,33 +76,33 @@ export default function BikeDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { backgroundColor: colors.header }]}> 
+      <View style={[styles.header, { backgroundColor: colors.text }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <ThemedText style={[styles.headerTitle, { color: '#FFFFFF' }]}>{t.Title.bikeDetail}</ThemedText>
+          <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>{t.Title.bikeDetail}</Text>
         </View>
         <View style={styles.headerActions}>
           <View style={styles.statAction}>
-            <MaterialIcons name="visibility" size={20} color={colors.headerText} />
-            <ThemedText style={[styles.countText, { color: colors.headerText }]}>{listing?.viewCount ?? 0}</ThemedText>
+            <MaterialIcons name="visibility" size={20} color={colors.text} />
+            <Text style={[styles.countText, { color: colors.text }]}>{listing?.viewCount ?? 0}</Text>
           </View>
           <TouchableOpacity style={styles.statAction} onPress={toggleFavorite} hitSlop={10}>
             <MaterialIcons
               name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
               size={20}
-              color={listing?.isFavorite ? '#E85D04' : colors.headerText}
+              color={listing?.isFavorite ? '#E85D04' : colors.text}
             />
-            <ThemedText style={[styles.countText, { color: listing?.isFavorite ? '#E85D04' : colors.headerText }]}>{listing?.favoritesCount ?? 0}</ThemedText>
+            <Text style={[styles.countText, { color: listing?.isFavorite ? '#E85D04' : colors.text }]}>{listing?.favoritesCount ?? 0}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.statAction} onPress={toggleLike} hitSlop={10}>
             <MaterialIcons
               name={listing?.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
               size={20}
-              color={listing?.isLiked ? '#E85D04' : colors.headerText}
+              color={listing?.isLiked ? '#E85D04' : colors.text}
             />
-            <ThemedText style={[styles.countText, { color: listing?.isLiked ? '#E85D04' : colors.headerText }]}>{listing?.likeCount ?? 0}</ThemedText>
+            <Text style={[styles.countText, { color: listing?.isLiked ? '#E85D04' : colors.text }]}>{listing?.likeCount ?? 0}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -131,74 +128,74 @@ export default function BikeDetailScreen() {
             </View>
 
             <View style={styles.photoText}>
-              <ThemedText style={[styles.title, { color: colors.text }]}>{listing.title}</ThemedText>
-              <ThemedText style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</ThemedText>
+              <Text style={[styles.title, { color: colors.text }]}>{listing.title}</Text>
+              <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.specs}</ThemedText>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.specs}</Text>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.make}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.make}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.make}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.make}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.model}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.model}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.model}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.model}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.modelYear}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.year}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.year}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.cc}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.cc}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.cc}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.type}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.type}</Text>
               </View>
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
               <View style={styles.sectionHeader}>
-                <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.sellerInfo}</ThemedText>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.sellerInfo}</Text>
                 <Rating value={listing.rating ?? 0} onRate={handleRate} />
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerInfo}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.sellerName}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerInfo}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.sellerName}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.location}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.location}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.location}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.location}</Text>
               </View>
               <View style={styles.row}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</ThemedText>
-                <ThemedText style={[styles.value, { color: colors.text }]}>{listing.phone ?? '-'}</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.phone ?? '-'}</Text>
               </View>
               <View style={styles.ratingRow}>
-                <ThemedText style={[styles.label, { color: colors.secondaryText }]}>Rating</ThemedText>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>Rating</Text>
                 <View style={styles.ratingValue}>
                   <Rating value={listing.rating ?? 0} />
-                  <ThemedText style={[styles.ratingCount, { color: colors.secondaryText }]}>({listing.ratingCount ?? 0})</ThemedText>
+                  <Text style={[styles.ratingCount, { color: colors.secondaryText }]}>({listing.ratingCount ?? 0})</Text>
                 </View>
               </View>
 
               <View style={styles.buttonRow}>
                 <TouchableOpacity style={[styles.actionButton, { borderColor: colors.border }]} onPress={handleCall}>
                   <MaterialIcons name="call" size={16} color={colors.accent} />
-                  <ThemedText style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.call}</ThemedText>
+                  <Text style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.call}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionButton, { borderColor: colors.border }]} onPress={handleChat}>
                   <MaterialIcons name="chat" size={16} color={colors.accent} />
-                  <ThemedText style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.chat}</ThemedText>
+                  <Text style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.chat}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.text }]}>{t.Text.noListings}</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.text }]}>{t.Text.noListings}</Text>
           </View>
         )}
       </ScrollView>

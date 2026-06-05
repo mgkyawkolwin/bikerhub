@@ -11,9 +11,9 @@ export type DirectoryFilter = {
 };
 
 export interface DirectoryService {
-  getDirectories(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): Promise<PaginatedResult<Directory>>;
-  getDirectoryById(id: string): Promise<Directory | undefined>;
-  createDirectory(directory: Directory): Promise<Directory>;
+  getDirectories(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): Promise<Response>;
+  getDirectoryById(id: string): Promise<Response>;
+  createDirectory(directory: Directory): Promise<Response>;
 }
 
 function buildDirectoryQuery(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): string {
@@ -28,16 +28,16 @@ function buildDirectoryQuery(page: number, pageSize: number, query?: string, fil
 }
 
 export class DirectoryServiceClient implements DirectoryService {
-  async getDirectories(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): Promise<PaginatedResult<Directory>> {
-    return fetchApi<PaginatedResult<Directory>>(`/api/directories?${buildDirectoryQuery(page, pageSize, query, filters)}`);
+  async getDirectories(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): Promise<Response> {
+    return fetchApi(`/api/directories?${buildDirectoryQuery(page, pageSize, query, filters)}`);
   }
 
-  async getDirectoryById(id: string): Promise<Directory | undefined> {
-    return fetchApi<Directory | undefined>(`/api/directories/${encodeURIComponent(id)}`);
+  async getDirectoryById(id: string): Promise<Response> {
+    return fetchApi(`/api/directories/${encodeURIComponent(id)}`);
   }
 
-  async createDirectory(directory: Directory): Promise<Directory> {
-    return authenticatedFetchApi<Directory>('/api/directories', {
+  async createDirectory(directory: Directory): Promise<Response> {
+    return authenticatedFetchApi('/api/directories', {
       method: 'POST',
       body: JSON.stringify(directory),
     });

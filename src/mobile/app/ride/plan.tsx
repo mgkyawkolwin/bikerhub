@@ -14,7 +14,7 @@ import MapView, { Polyline, Marker, Callout, Region, LatLng } from 'react-native
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { container, RouteServiceToken, type RouteService } from '@/services';
 import { setRouteDraft } from '@/services/routeTransfer';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMRoute } from '@/models/route';
@@ -67,6 +67,51 @@ const RoutePlanner: React.FC = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors } = useThemeContext();
+
+  const routeService = useMemo<RouteService>(() => container.resolve<RouteService>(RouteServiceToken), []);
+
+  const parseApiResult = async (response: Response) => {
+    try {
+      const body = await response.json();
+      return body?.Data ?? body?.data ?? null;
+    } catch (error) {
+      console.error('Error parsing API response:', error);
+      return null;
+    }
+  };
+
+  const mapRouteToSavedRoute = (route: any) => {
+    const locations = Array.isArray(route.locations) ? route.locations : [];
+    const waypointList: Waypoint[] = locations.map((location: any, index: number) => {
+      const isLast = index === locations.length - 1;
+      const title = index === 0 ? 'Start Point' : isLast ? 'End Point' : `Stop ${index}`;
+      const type: Waypoint['type'] = index === 0 ? 'start' : isLast ? 'end' : 'stop';
+
+      return {
+        id: String(location.id ?? location.timestamp ?? index),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        title,
+        type,
+        order: index,
+      };
+    });
+
+    return {
+      ...route,
+      id: String(route.id ?? ''),
+      waypoints: route.waypoints ?? waypointList,
+      totalDistance:
+        typeof route.totalDistance === 'number'
+          ? route.totalDistance
+          : parseFloat(String(route.totalDistance ?? route.distance ?? '0')) || 0,
+      totalDuration:
+        typeof route.totalDuration === 'number'
+          ? route.totalDuration
+          : parseFloat(String(route.totalDuration ?? route.duration ?? '0')) || 0,
+      createdAt: route.createdAt ? new Date(route.createdAt).toISOString() : undefined,
+    };
+  };
 
   const mapRef = useRef<MapView>(null);
 
@@ -325,17 +370,29 @@ const RoutePlanner: React.FC = () => {
     if (!planId) return;
 
     const loadPlanById = async () => {
-      const db = await getDatabase();
-      const plan = (db.collections.plans ?? []).find((item: any) => item.id === planId);
-      if (plan) {
-        const normalizedWaypoints = normalizeWaypoints(plan.waypoints || []);
-        setCurrentPlanId(plan.id);
-        setSaveTitle(plan.name ?? '');
-        setSaveDescription(plan.description ?? '');
+      try {
+        const response = await routeService.getRouteById(planId);
+        if (!response.ok) {
+          console.error('Failed to load route by id', response.status);
+          return;
+        }
+
+        const route = await parseApiResult(response);
+        if (!route) {
+          console.error('No route data returned from API');
+          return;
+        }
+
+        const savedRoute = mapRouteToSavedRoute(route);
+        const normalizedWaypoints = normalizeWaypoints(savedRoute.waypoints || []);
+
+        setCurrentPlanId(savedRoute.id);
+        setSaveTitle(savedRoute.name ?? '');
+        setSaveDescription(savedRoute.description ?? '');
         setWaypoints(normalizedWaypoints);
-        setSegments(plan.segments ?? []);
-        setTotalDistance(plan.totalDistance || 0);
-        setTotalDuration(plan.totalDuration || 0);
+        setSegments(savedRoute.segments ?? []);
+        setTotalDistance(savedRoute.totalDistance ?? 0);
+        setTotalDuration(savedRoute.totalDuration ?? 0);
         setShowSavedModal(false);
 
         if (mapRef.current && normalizedWaypoints.length > 0) {
@@ -351,19 +408,21 @@ const RoutePlanner: React.FC = () => {
           });
         }
 
-        const ownerId = plan.createdById ?? plan.userId ?? null;
+        const ownerId = savedRoute.createdById ?? null;
         if (ownerId) {
           setPlanOwnerId(ownerId);
         }
 
-        if ((!plan.segments || plan.segments.length === 0) && normalizedWaypoints.length >= 2) {
+        if ((!savedRoute.segments || savedRoute.segments.length === 0) && normalizedWaypoints.length >= 2) {
           await calculateAllRoutes(normalizedWaypoints);
         }
+      } catch (error) {
+        console.error('Error loading plan by id:', error);
       }
     };
 
     void loadPlanById();
-  }, [planId, calculateAllRoutes]);
+  }, [planId, calculateAllRoutes, routeService]);
 
   // Clear all waypoints
   const clearAllWaypoints = () => {
@@ -425,34 +484,41 @@ const RoutePlanner: React.FC = () => {
 
   const saveCurrentRoute = async (title: string, description: string) => {
     const routeData = {
-      id: currentPlanId ?? Date.now().toString(),
       name: title,
       description,
-      waypoints,
-      segments,
-      osrmResponses: segments.map((segment) => segment.osrmRoute).filter(Boolean),
-      totalDistance,
-      totalDuration,
-      createdAt: currentPlanId ? undefined : new Date().toISOString(),
+      distance: `${totalDistance.toFixed(1)} km`,
+      duration: `${Math.round(totalDuration)}m`,
+      type: 'ride',
+      createdById: currentUserId,
+      createdByName: authUser?.name ?? '',
+      locations: waypoints.map((waypoint) => ({
+        latitude: waypoint.latitude,
+        longitude: waypoint.longitude,
+      })),
+      routePath: segments.flatMap((segment) => segment.polyline.map((point) => ({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      }))),
+      osrmResponseJson: JSON.stringify(segments.map((segment) => segment.osrmRoute).filter(Boolean)),
     } as any;
 
     try {
-      const db = await getDatabase();
-      const collections = db.collections as any;
-      const existingIndex = (collections.plans ?? []).findIndex((plan: any) => plan.id === routeData.id);
-      if (existingIndex !== -1) {
-        const existing = collections.plans[existingIndex];
-        collections.plans[existingIndex] = {
-          ...existing,
-          ...routeData,
-          createdAt: existing.createdAt ?? new Date().toISOString(),
-        };
-      } else {
-        collections.plans = [...(collections.plans ?? []), { ...routeData, createdAt: new Date().toISOString() }];
+      const response = await routeService.createRoute(routeData);
+      if (!response.ok) {
+        console.error('Failed to save route to API', response.status);
+        Alert.alert('Error', 'Failed to save route');
+        return;
       }
-      await saveDatabase(db);
-      setSavedRoutes(collections.plans);
-      setCurrentPlanId(routeData.id);
+
+      const createdRoute = await parseApiResult(response);
+      if (!createdRoute) {
+        Alert.alert('Error', 'Failed to save route');
+        return;
+      }
+
+      const savedRoute = mapRouteToSavedRoute(createdRoute);
+      setSavedRoutes((prev) => [savedRoute, ...prev]);
+      setCurrentPlanId(savedRoute.id);
       setSaveModalVisible(false);
       Alert.alert('Success', 'Route saved successfully!');
     } catch (error) {
@@ -483,23 +549,37 @@ const RoutePlanner: React.FC = () => {
 
   const loadSavedRoutes = async () => {
     try {
-      const db = await getDatabase();
-      const collections = db.collections as any;
-      setSavedRoutes(collections.plans ?? []);
+      const response = await routeService.getRoutes(1, 100);
+      if (!response.ok) {
+        console.error('Failed to load routes from API', response.status);
+        return;
+      }
+
+      const data = await parseApiResult(response);
+      const items: any[] = Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.Items)
+        ? data.Items
+        : [];
+      const routes = items.map((item: any) => mapRouteToSavedRoute(item));
+      const filteredRoutes = effectiveOwnerId
+        ? routes.filter((route: any) => String(route.createdById) === effectiveOwnerId)
+        : routes;
+      setSavedRoutes(filteredRoutes);
     } catch (error) {
       console.error('Error loading routes:', error);
     }
   };
 
   const loadRoute = async (route: any) => {
-    const normalizedWaypoints = normalizeWaypoints(route.waypoints || []);
+    const normalizedWaypoints = normalizeWaypoints(route.waypoints || route.locations || []);
     setCurrentPlanId(route.id);
     setSaveTitle(route.name ?? '');
     setSaveDescription(route.description ?? '');
     setWaypoints(normalizedWaypoints);
     setSegments(route.segments ?? []);
-    setTotalDistance(route.totalDistance);
-    setTotalDuration(route.totalDuration);
+    setTotalDistance(route.totalDistance ?? 0);
+    setTotalDuration(route.totalDuration ?? 0);
     setShowSavedModal(false);
 
     if (mapRef.current && normalizedWaypoints.length > 0) {
@@ -523,15 +603,7 @@ const RoutePlanner: React.FC = () => {
   };
 
   const deleteSavedRoute = async (routeId: string) => {
-    try {
-      const db = await getDatabase();
-      const collections = db.collections as any;
-      collections.plans = (collections.plans ?? []).filter((r: any) => r.id !== routeId);
-      await saveDatabase(db);
-      setSavedRoutes(collections.plans);
-    } catch (error) {
-      console.error('Error deleting route:', error);
-    }
+    setSavedRoutes((prev) => prev.filter((route) => route.id !== routeId));
   };
 
   // Edit waypoint title

@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/themedText';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, MessageServiceToken } from '@/services';
@@ -20,8 +19,6 @@ export default function MessageDetailScreen() {
   const [message, setMessage] = useState<Message | null>(null);
 
   const messageId = typeof params.messageId === 'string' ? params.messageId : '';
-
-  const { colors } = useThemeContext();
 
   useEffect(() => {
     if (!messageId) return;
@@ -46,7 +43,7 @@ export default function MessageDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <ThemedText style={[styles.title, { color: colors.text }]}>Message</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>Message</Text>
           <View style={styles.placeholder} />
         </View>
       </View>
@@ -55,24 +52,24 @@ export default function MessageDetailScreen() {
         {message ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.cardHeader}>
-              <ThemedText style={[styles.cardTitle, { color: colors.text }]}>{message.title}</ThemedText>
-              <ThemedText style={[styles.cardTime, { color: colors.secondaryText }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{message.title}</Text>
+              <Text style={[styles.cardTime, { color: colors.secondaryText }]}>
                 {message.dateTimeUTC ? new Date(message.dateTimeUTC).toLocaleString() : ''}
-              </ThemedText>
+              </Text>
             </View>
-            <ThemedText style={[styles.cardBody, { color: colors.text }]}>{message.body}</ThemedText>
+            <Text style={[styles.cardBody, { color: colors.text }]}>{message.body}</Text>
             <View style={styles.messageStatus}>
               <MaterialIcons
                 name={message.read ? 'visibility' : 'arrow-forward'}
                 size={18}
                 color={colors.accent}
               />
-              <ThemedText style={[styles.statusText, { color: colors.secondaryText }]}> {message.read ? 'Read' : 'Unread'}</ThemedText>
+              <Text style={[styles.statusText, { color: colors.secondaryText }]}> {message.read ? 'Read' : 'Unread'}</Text>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: colors.text }]}>Loading message...</ThemedText>
+            <Text style={[styles.emptyText, { color: colors.text }]}>Loading message...</Text>
           </View>
         )}
       </ScrollView>

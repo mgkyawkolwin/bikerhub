@@ -4,11 +4,11 @@ import { fetchApi } from './apiClient';
 export const SocialProfileServiceToken = Symbol('SocialProfileService');
 
 export interface SocialProfileService {
-  getProfileById(profileId: string): Promise<SocialProfile | undefined>;
+  getProfileById(profileId: string): Promise<Response>;
 }
 
 export class SocialProfileServiceClient implements SocialProfileService {
-  async getProfileById(profileId: string): Promise<SocialProfile | undefined> {
-    return fetchApi<SocialProfile | undefined>(`/api/social/profiles/${encodeURIComponent(profileId)}`);
+  async getProfileById(profileId: string): Promise<Response> {
+    return fetchApi(`/api/social/profiles/${encodeURIComponent(profileId)}`);
   }
 }

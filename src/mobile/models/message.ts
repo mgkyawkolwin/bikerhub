@@ -1,5 +1,5 @@
 export default class Message {
-    id?: string;
+    id!: string;
     title?: string;
     body?: string;
     dateTimeUTC?: string;
