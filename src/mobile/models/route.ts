@@ -75,14 +75,8 @@ export default class Route {
   id?: string;
   name?: string;
   description?: string;
-  distance?: string;
-  duration?: string;
-  type?: string;
+  distance?: number;
+  duration?: number;
   createdById?: string;
-  createdByName?: string;
-  gpxUrl?: string;
-  locations?: RouteLocation[];
-  routePath?: RouteLocation[];
-  osrmResponse?: OSRMResponse;
-  osrmResponses?: OSRMRoute[];
+  osrmResponseJson?: string;
 }

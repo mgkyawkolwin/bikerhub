@@ -31,12 +31,15 @@ export class MockRouteService implements RouteService {
     return paginate(sorted, page, pageSize);
   }
 
-  async getRouteById(id: string): Promise<Route | undefined> {
+  async getRouteById(id: string): Promise<Response> {
     const db = await this.getDb();
-    return (db.collections.routes as Route[] | undefined)?.find((item) => item.id === id);
+    const route = (db.collections.routes as Route[] | undefined)?.find((item) => item.id === id);
+    const status = route ? 200 : 404;
+    const body = JSON.stringify({ Success: true, Data: route ?? null });
+    return new Response(body, { status, headers: { 'Content-Type': 'application/json' } });
   }
 
-  async createRoute(route: Route): Promise<Route> {
+  async createRoute(route: Route): Promise<Response> {
     const db = await this.getDb();
     const newRoute: Route = {
       ...route,
@@ -44,6 +47,30 @@ export class MockRouteService implements RouteService {
     };
     db.collections.routes.push(newRoute);
     await saveDatabase(db);
-    return newRoute;
+    const body = JSON.stringify({ Success: true, Data: newRoute });
+    return new Response(body, { status: 201, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  async updateRoute(id: string, route: Route): Promise<Response> {
+    const db = await this.getDb();
+    const routes = (db.collections.routes as Route[] | undefined) ?? [];
+    const index = routes.findIndex((item) => item.id === id);
+    if (index === -1) {
+      const body = JSON.stringify({ Success: false, Message: 'Route not found.' });
+      return new Response(body, { status: 404, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const existing = routes[index];
+    const updatedRoute: Route = {
+      ...existing,
+      ...route,
+      id,
+    };
+
+    routes[index] = updatedRoute;
+    await saveDatabase(db);
+
+    const body = JSON.stringify({ Success: true, Data: updatedRoute });
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 }

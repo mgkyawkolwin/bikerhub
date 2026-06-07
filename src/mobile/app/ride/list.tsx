@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Linking, RefreshControl, StyleSheet, TouchableOpacity, View, Alert, Text } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View, Alert, Text, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,13 +8,12 @@ import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
-import { RouteServiceToken } from '@/services/routeService';
-import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { RideServiceToken } from '@/services/rideService';
 import { setRouteDraft } from '@/services/routeTransfer';
-import type { RouteService } from '@/services/routeService';
-import Route from '@/models/route';
+import type { RideService } from '@/services/rideService';
+import Ride from '@/models/ride';
 
-export default function RouteListScreen() {
+export default function RideListScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const { t } = useI18n();
@@ -22,62 +21,70 @@ export default function RouteListScreen() {
   const { getAuthUser } = useAuthContext();
   const authUser = getAuthUser();
   const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
-  const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
+  const rideService = useMemo(() => container.resolve<RideService>(RideServiceToken), []);
 
-  const [routes, setRoutes] = useState<Route[]>([]);
+  const [rides, setRides] = useState<Ride[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const loadRoutes = useCallback(
+  const loadRides = useCallback(
     async (pageNumber: number, reset = false) => {
       setLoading(true);
       try {
-        console.log('Loading routes for userId:', viewedUserId);
-        if (viewedUserId) {
-          const db = await getDatabase();
-          const allRoutes = (db.collections.routes as Route[] | undefined) ?? [];
-          console.log('All routes loaded:', allRoutes);
-          const filteredRoutes = allRoutes.filter(
-            (route) => route.createdById === viewedUserId,
-          );
-          console.log('Filtered routes:', filteredRoutes);
-          setRoutes(filteredRoutes);
-          setPage(1);
-          setTotal(filteredRoutes.length);
-        } else {
-          // const result = await routeService.getRoutes(pageNumber, 10);
-          setRoutes([]);
-          setPage(0);
-          setTotal(0);
+        const response = await rideService.getRides(pageNumber, 10);
+        const responseJson = await response.json().catch(() => null);
+        const success = responseJson?.success ?? responseJson?.Success;
+        const data = responseJson?.data;
+
+        if (!response.ok || !success || !data) {
+          const message = responseJson?.message ?? responseJson?.Message ?? 'Failed to load rides.';
+          throw new Error(message);
         }
+
+        const items: Ride[] = Array.isArray(data.items) ? data.items : [];
+        const filteredItems = viewedUserId
+          ? items.filter((ride) => ride.createdById === viewedUserId)
+          : items;
+
+        setRides((prev) => (reset ? filteredItems : [...prev, ...filteredItems]));
+        setPage(data.page ?? pageNumber);
+        setTotal(data.total ?? filteredItems.length);
+        setTotalPages(data.totalPages ?? 1);
+      } catch (error) {
+        console.error('Failed to load rides:', error);
+        Alert.alert('Error', error instanceof Error ? error.message : 'Unable to load rides.');
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [routeService, viewedUserId],
+    [rideService, viewedUserId],
   );
 
   useFocusEffect(
     useCallback(() => {
-      void loadRoutes(1, true);
-    }, [loadRoutes]),
+      void loadRides(1, true);
+    }, [loadRides]),
   );
 
   const handleRefresh = () => {
     setRefreshing(true);
-    void loadRoutes(1, true);
+    void loadRides(1, true);
   };
 
   const handleEndReached = () => {
-    if (!loading && routes.length < total) {
-      void loadRoutes(page + 1);
+    if (!loading && page < totalPages) {
+      void loadRides(page + 1);
     }
   };
 
-  const renderRoute = ({ item }: { item: Route }) => (
+  const currentUserId = authUser?.id;
+  const isOwnRides = !viewedUserId || viewedUserId === currentUserId;
+
+  const renderRide = ({ item }: { item: Ride }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => loadRide(item)}
@@ -86,40 +93,25 @@ export default function RouteListScreen() {
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
-          {isOwnRoutes ? (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => confirmDeleteRoute(item.id ?? '')}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="delete" size={20} color={colors.accent} />
-            </TouchableOpacity>
-          ) : null}
         </View>
-        <View style={styles.metaRow}> 
+        <View style={styles.metaRow}>
           <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {item.duration}</Text>
+          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {item.duration ?? 0}</Text>
         </View>
-        <View style={styles.metaRow}> 
+        <View style={styles.metaRow}>
           <MaterialIcons name="straighten" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {item.distance}</Text>
+          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {item.distance ?? 0}</Text>
         </View>
-        {item.createdByName ? (
+        {item.createdById ? (
           <View style={styles.metaRow}>
             <MaterialIcons name="person" size={14} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.createdBy}: {item.createdByName}</Text>
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.createdBy}: {item.createdById}</Text>
           </View>
         ) : null}
         <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>{item.description}</Text>
       </View>
       <TouchableOpacity
-        onPress={() => {
-          if (item.gpxUrl) {
-            void Linking.openURL(item.gpxUrl);
-          } else {
-            loadRide(item);
-          }
-        }}
+        onPress={() => loadRide(item)}
         style={[styles.downloadButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
         activeOpacity={0.8}
       >
@@ -128,53 +120,20 @@ export default function RouteListScreen() {
     </TouchableOpacity>
   );
 
-  const currentUserId = authUser?.id;
-  const isOwnRoutes = !viewedUserId || viewedUserId === currentUserId;
-
-  const parseDistance = (distanceText?: string): number => {
-    if (!distanceText) return 0;
-    const match = distanceText.match(/([0-9.]+)/);
-    return match ? Number(match[1]) : 0;
-  };
-
-  const loadRide = (item: Route) => {
-    const ride = item as any;
+  const loadRide = (item: Ride) => {
     const draft = {
-      locations: ride.locations ?? ride.routePath ?? [],
-      routePath: ride.routePath ?? ride.locations ?? [],
-      totalDistance: parseDistance(ride.distance),
-      totalDuration: 0,
-      osrmResponse: ride.osrmResponse,
-    };
+      locations: item.locations ?? [],
+      routePath: item.locations ?? [],
+      totalDistance: item.distance ?? 0,
+      totalDuration: item.duration ?? 0,
+    } as any;
+
     setRouteDraft(draft);
-    router.push('/ride/rides');
-  };
 
-  const confirmDeleteRoute = (routeId: string) => {
-    Alert.alert(
-      'Delete Ride',
-      'Are you sure you want to delete this ride?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => void deleteRoute(routeId),
-        },
-      ],
-    );
-  };
-
-  const deleteRoute = async (routeId: string) => {
-    try {
-      const db = await getDatabase();
-      const collections = db.collections as any;
-      collections.routes = (collections.routes ?? []).filter((route: any) => route.id !== routeId);
-      await saveDatabase(db);
-      setRoutes((prev) => prev.filter((route) => route.id !== routeId));
-    } catch (error) {
-      console.error('Error deleting route:', error);
-      Alert.alert('Error', 'Unable to delete ride.');
+    if (item.id) {
+      router.push({ pathname: '/ride/rides', params: { rideId: item.id } });
+    } else {
+      router.push('/ride/rides');
     }
   };
 
@@ -186,7 +145,7 @@ export default function RouteListScreen() {
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Rides</Text>
         <View style={styles.actionsRow}>
-          {isOwnRoutes ? (
+          {isOwnRides ? (
             <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/ride/rides')}>
               <MaterialIcons name="directions-bike" size={18} color="#FFFFFF" />
               <Text style={styles.recordActionText}>Ride</Text>
@@ -195,9 +154,9 @@ export default function RouteListScreen() {
         </View>
       </View>
       <FlatList
-        data={routes}
-        keyExtractor={(item) => item.id ?? ''}
-        renderItem={renderRoute}
+        data={rides}
+        keyExtractor={(item) => item.id ?? Math.random().toString()}
+        renderItem={renderRide}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

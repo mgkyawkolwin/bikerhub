@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace BikerHub.Dtos;
 
-public sealed record CreateRouteDto(
+public sealed record CreateRideDto(
     [property: JsonPropertyName("name")]
     string? Name,
     [property: JsonPropertyName("description")]
@@ -13,6 +13,6 @@ public sealed record CreateRouteDto(
     decimal Duration,
     [property: JsonPropertyName("createdById")]
     string? CreatedById,
-    [property: JsonPropertyName("osrmResponseJson")]
-    string? OsrmResponseJson
+    [property: JsonPropertyName("locations")]
+    IEnumerable<RideLocationDto>? Locations
 );

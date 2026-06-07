@@ -16,6 +16,8 @@ export type { DirectoryService } from './directoryService';
 export { DirectoryServiceToken } from './directoryService';
 export type { RouteService } from './routeService';
 export { RouteServiceToken } from './routeService';
+export type { RideService } from './rideService';
+export { RideServiceToken } from './rideService';
 export type { ConfigService } from './configService';
 export { ConfigServiceToken } from './configService';
 export type { IChatService as ChatService } from './chatService';

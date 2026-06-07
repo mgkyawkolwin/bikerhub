@@ -19,7 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<BikeListing> BikeListings => Set<BikeListing>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<News> News => Set<News>();
-    public DbSet<BikerHub.Entities.Route> Routes => Set<BikerHub.Entities.Route>();
+    public DbSet<BikerHub.Entities.RouteEntity> Routes => Set<BikerHub.Entities.RouteEntity>();
+    public DbSet<RideEntity> Rides => Set<RideEntity>();
     public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
     public DbSet<SocialProfile> SocialProfiles => Set<SocialProfile>();
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();

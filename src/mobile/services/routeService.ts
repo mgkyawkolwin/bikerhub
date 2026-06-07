@@ -8,6 +8,7 @@ export interface RouteService {
   getRoutes(page: number, pageSize: number): Promise<Response>;
   getRouteById(id: string): Promise<Response>;
   createRoute(route: Route): Promise<Response>;
+  updateRoute(id: string, route: Route): Promise<Response>;
 }
 
 export class RouteServiceClient implements RouteService {
@@ -22,6 +23,13 @@ export class RouteServiceClient implements RouteService {
   async createRoute(route: Route): Promise<Response> {
     return authenticatedFetchApi('/routes', {
       method: 'POST',
+      body: JSON.stringify(route),
+    });
+  }
+
+  async updateRoute(id: string, route: Route): Promise<Response> {
+    return authenticatedFetchApi(`/routes/${encodeURIComponent(id)}`, {
+      method: 'PUT',
       body: JSON.stringify(route),
     });
   }

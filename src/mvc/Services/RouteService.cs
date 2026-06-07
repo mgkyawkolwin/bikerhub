@@ -4,15 +4,16 @@ using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
-using RouteEntity = BikerHub.Entities.Route;
+using RouteEntity = BikerHub.Entities.RouteEntity;
 
 namespace BikerHub.Services;
 
 public interface IRouteService
 {
     Task<PaginatedResultDto<RouteDto>> GetRoutesAsync(int page, int pageSize);
-    Task<RouteDto?> GetRouteByIdAsync(int id);
+    Task<RouteDto?> GetRouteByIdAsync(Guid id);
     Task<RouteDto> CreateRouteAsync(CreateRouteDto dto);
+    Task<RouteDto> UpdateRouteAsync(Guid id, CreateRouteDto dto);
 }
 
 public class RouteService : IRouteService
@@ -33,7 +34,7 @@ public class RouteService : IRouteService
         return new PaginatedResultDto<RouteDto>(items.Select(MapRoute).ToList(), page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
-    public async Task<RouteDto?> GetRouteByIdAsync(int id)
+    public async Task<RouteDto?> GetRouteByIdAsync(Guid id)
     {
         var route = await _dbContext.Routes.FindAsync(id);
         return route is null ? null : MapRoute(route);
@@ -45,16 +46,11 @@ public class RouteService : IRouteService
 
         var entity = new RouteEntity
         {
-            Name = dto.Name,
+            Name = dto.Name ?? string.Empty,
             Description = dto.Description,
             Distance = dto.Distance,
             Duration = dto.Duration,
-            Type = dto.Type,
             CreatedById = dto.CreatedById,
-            CreatedByName = dto.CreatedByName,
-            GpxUrl = dto.GpxUrl,
-            LocationsJson = dto.Locations is null ? null : JsonSerializer.Serialize(dto.Locations),
-            RoutePathJson = dto.RoutePath is null ? null : JsonSerializer.Serialize(dto.RoutePath),
             OsrmResponseJson = dto.OsrmResponseJson,
             CreatedAt = DateTime.UtcNow,
         };
@@ -64,30 +60,38 @@ public class RouteService : IRouteService
         return MapRoute(entity);
     }
 
+    public async Task<RouteDto> UpdateRouteAsync(Guid id, CreateRouteDto dto)
+    {
+        DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+
+        var entity = await _dbContext.Routes.FindAsync(id);
+        if (entity is null)
+        {
+            throw new CustomException("Route not found.");
+        }
+
+        entity.Name = dto.Name ?? entity.Name;
+        entity.Description = dto.Description;
+        entity.Distance = dto.Distance;
+        entity.Duration = dto.Duration;
+        entity.CreatedById = dto.CreatedById;
+        entity.OsrmResponseJson = dto.OsrmResponseJson;
+
+        await _dbContext.SaveChangesAsync();
+        return MapRoute(entity);
+    }
+
     private static RouteDto MapRoute(RouteEntity route)
     {
-        var locations = string.IsNullOrWhiteSpace(route.LocationsJson)
-            ? Enumerable.Empty<RouteLocationDto>()
-            : JsonSerializer.Deserialize<IEnumerable<RouteLocationDto>>(route.LocationsJson) ?? Enumerable.Empty<RouteLocationDto>();
-
-        var routePath = string.IsNullOrWhiteSpace(route.RoutePathJson)
-            ? Enumerable.Empty<RouteLocationDto>()
-            : JsonSerializer.Deserialize<IEnumerable<RouteLocationDto>>(route.RoutePathJson) ?? Enumerable.Empty<RouteLocationDto>();
-
-        return new RouteDto(
-            route.Id,
-            route.Name,
-            route.Description,
-            route.Distance,
-            route.Duration,
-            route.Type,
-            route.CreatedById,
-            route.CreatedByName,
-            route.GpxUrl,
-            locations,
-            routePath,
-            route.OsrmResponseJson,
-            route.CreatedAt
-        );
+        return new RouteDto{
+            Id = route.Id,
+            Name = route.Name,
+            Description = route.Description,
+            Distance = route.Distance,
+            Duration = route.Duration,
+            OsrmResponseJson = route.OsrmResponseJson,
+            CreatedById = route.CreatedById,
+            CreatedAt = route.CreatedAt
+        };
     }
 }

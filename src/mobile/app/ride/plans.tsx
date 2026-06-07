@@ -47,10 +47,16 @@ export default function RoutePlansScreen() {
       }
 
       const body = await response.json();
-      const data = body?.Data?.items ?? body?.data?.items ?? [];
-      const routes = Array.isArray(data) ? (data as RouteWithMeta[]) : [];
+      const data = body?.Data?.items ?? body?.Data?.Items ?? body?.data?.items ?? body?.data?.Items ?? [];
+      const routes = Array.isArray(data)
+        ? (data as RouteWithMeta[]).map((route) => ({
+            ...route,
+            id: route.id ? String(route.id) : undefined,
+            createdAt: route.createdAt ? String(route.createdAt) : undefined,
+          }))
+        : [];
       const filteredPlans = viewedUserId
-        ? routes.filter((plan) => plan.createdById === viewedUserId || plan.userId === viewedUserId)
+        ? routes.filter((plan) => plan.createdById === viewedUserId)
         : routes;
 
       console.log('Loaded backend plans:', filteredPlans);
@@ -91,8 +97,8 @@ export default function RoutePlansScreen() {
         
         <View style={styles.metaRow}>
           <Text style={[styles.planSummary, { color: colors.secondaryText }]} numberOfLines={1}>
-            {item.routePath?.length || item.locations?.length
-              ? `${Math.max(item.routePath?.length ?? item.locations?.length ?? 0, 0)} points · ${parseNumber(item.distance).toFixed(1)} km · ${parseNumber(item.duration).toFixed(0)} min`
+            {item.distance || item.duration
+              ? `${(parseNumber(item.distance)/1000).toFixed(1)} km · ${(parseNumber(item.duration)/60).toFixed(0)} min`
               : 'No route data'}
           </Text>
         </View>
@@ -108,7 +114,7 @@ export default function RoutePlansScreen() {
           activeOpacity={0.8}
           onPress={() => {
             if (item.id) {
-              router.push(`/ride/planGoogle?id=${encodeURIComponent(item.id)}`);
+              router.push(`/ride/plan?id=${encodeURIComponent(item.id)}`);
             }
           }}
         >

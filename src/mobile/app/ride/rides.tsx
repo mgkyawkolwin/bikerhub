@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
     StyleSheet,
     View,
@@ -15,10 +15,14 @@ import * as Location from 'expo-location';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
-import { getDatabase, saveDatabase } from '@/services/localDatabase';
+import { container } from '@/services/diContainer';
+import { RideServiceToken } from '@/services/rideService';
+import type { RideService } from '@/services/rideService';
+import Ride from '@/models/ride';
 import { getRouteDraft, clearRouteDraft } from '@/services/routeTransfer';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import type { OSRMResponse } from '@/models/route';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -67,10 +71,12 @@ interface RouteSegment {
 const RideRecorder: React.FC = () => {
     const params = useLocalSearchParams();
     const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+    const rideId = Array.isArray(params.rideId) ? params.rideId[0] : params.rideId;
     const { getAuthUser } = useAuthContext();
     const authUser = getAuthUser();
     const currentUserId = authUser?.id;
     const isOwnData = !viewedUserId || viewedUserId === currentUserId;
+    const rideService = useMemo(() => container.resolve<RideService>(RideServiceToken), []);
 
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -136,6 +142,47 @@ const RideRecorder: React.FC = () => {
         const loadDraftRoute = async () => {
             const draft = getRouteDraft();
             if (!draft) {
+                if (rideId) {
+                    setPlanningMode(false);
+
+                    try {
+                        const response = await rideService.getRideById(rideId);
+                        if (!response.ok) {
+                            throw new Error('Failed to load ride.');
+                        }
+
+                        const responseJson = await response.json().catch(() => null);
+                        const rideData = responseJson?.data;
+                        if (!rideData) {
+                            throw new Error('Ride data is missing.');
+                        }
+
+                        const savedLocations: LatLng[] = Array.isArray(rideData.locations) ? rideData.locations : [];
+                        setLocations(savedLocations);
+                        setRoutePath(savedLocations);
+                        setTotalDistance(rideData.distance ?? 0);
+                        setElapsedTime(rideData.duration ?? 0);
+                        setCurrentInstruction('');
+                        setCurrentStreetName('');
+                        setTurnInstructions([]);
+
+                        if (savedLocations.length > 0) {
+                            setTimeout(() => {
+                                mapRef.current?.fitToCoordinates(savedLocations, {
+                                    edgePadding: { top: 80, right: 40, bottom: 120, left: 40 },
+                                    animated: true,
+                                });
+                            }, 500);
+                        }
+                    } catch (error) {
+                        console.error('Failed to load ride by ID:', error);
+                        setPlanningMode(true);
+                    }
+
+                    requestLocationPermission();
+                    return;
+                }
+
                 setPlanningMode(true);
                 requestLocationPermission();
                 return;
@@ -382,20 +429,20 @@ const RideRecorder: React.FC = () => {
 
     const updateNavigationProgress = useCallback((currentPos: LatLng) => {
         if (turnInstructions.length === 0 || nextTurnIndex >= turnInstructions.length) return;
-        
+
         const nextTurn = turnInstructions[nextTurnIndex];
         const distanceToTurn = calculateDistance(
             currentPos.latitude, currentPos.longitude,
             nextTurn.location.latitude, nextTurn.location.longitude
         );
-        
+
         setDistanceToNextTurn(distanceToTurn);
         updateTurnArrow(distanceToTurn, nextTurn);
-        
+
         if (distanceToTurn < 0.03) {
             const newIndex = nextTurnIndex + 1;
             setNextTurnIndex(newIndex);
-            
+
             if (newIndex < turnInstructions.length) {
                 setCurrentInstruction(turnInstructions[newIndex].instruction);
                 setCurrentStreetName(turnInstructions[newIndex].streetName);
@@ -407,7 +454,7 @@ const RideRecorder: React.FC = () => {
             } else {
                 setCurrentInstruction('Destination reached!');
                 setCurrentStreetName('');
-                
+
                 if (isSimulating) {
                     stopSimulation();
                 }
@@ -417,31 +464,31 @@ const RideRecorder: React.FC = () => {
 
     const zoomToRouteAndRotate = useCallback(async () => {
         if (!mapRef.current || turnInstructions.length === 0) return;
-        
+
         const nextTurn = turnInstructions[0];
         if (!nextTurn) return;
-        
+
         try {
             const userLoc = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.BestForNavigation,
             });
-            
+
             const currentPos = {
                 latitude: userLoc.coords.latitude,
                 longitude: userLoc.coords.longitude,
             };
-            
+
             const bearing = calculateBearing(currentPos, nextTurn.location);
-            
+
             const region: Region = {
                 latitude: currentPos.latitude,
                 longitude: currentPos.longitude,
                 latitudeDelta: 0.009,
                 longitudeDelta: 0.009,
             };
-            
+
             mapRef.current.animateToRegion(region, 1000);
-            
+
             setTimeout(() => {
                 mapRef.current?.animateCamera({
                     center: region,
@@ -475,7 +522,7 @@ const RideRecorder: React.FC = () => {
         setSessionActive(false);
         setSimulatedPosition(null);
         setStraightDistanceMeters(0);
-        
+
         // Hide turn arrow
         setTurnArrow(prev => ({ ...prev, visible: false }));
     }, []);
@@ -500,7 +547,7 @@ const RideRecorder: React.FC = () => {
         const startPoint = routePath[0];
         setSimulatedPosition(startPoint);
         setCurrentUserLocation(startPoint);
-        
+
         if (turnInstructions.length > 0) {
             setCurrentInstruction(turnInstructions[0].instruction);
             setCurrentStreetName(turnInstructions[0].streetName);
@@ -541,12 +588,12 @@ const RideRecorder: React.FC = () => {
                     routePath[i - 1].latitude, routePath[i - 1].longitude,
                     routePath[i].latitude, routePath[i].longitude
                 );
-                
+
                 if (accumulatedDistance + segmentDistance >= distanceTraveled) {
                     // Interpolate between points
                     const remaining = distanceTraveled - accumulatedDistance;
                     const fraction = remaining / segmentDistance;
-                    
+
                     currentLatLng = {
                         latitude: routePath[i - 1].latitude + (routePath[i].latitude - routePath[i - 1].latitude) * fraction,
                         longitude: routePath[i - 1].longitude + (routePath[i].longitude - routePath[i - 1].longitude) * fraction,
@@ -568,10 +615,10 @@ const RideRecorder: React.FC = () => {
             // Update position
             setSimulatedPosition(currentLatLng);
             setCurrentUserLocation(currentLatLng);
-            
+
             // Add to recorded locations
             setLocations(prev => [...prev, currentLatLng]);
-            
+
             // Update total distance
             if (lastIndex < currentPointIndex) {
                 let newDistance = lastDistance;
@@ -601,10 +648,10 @@ const RideRecorder: React.FC = () => {
                 lastDistance = newDistance;
                 lastIndex = currentPointIndex;
             }
-            
+
             // Update elapsed time
             setElapsedTime(elapsed);
-            
+
             // Update navigation progress using ref to avoid stale closure
             if (turnInstructions.length > 0) {
                 const currentTurnIdx = simTurnIndexRef.current;
@@ -647,7 +694,7 @@ const RideRecorder: React.FC = () => {
                     }
                 }
             }
-            
+
             // Animate map camera to follow simulated position with rotation.
             // Offset the camera center forward (in bearing direction) so that
             // the vehicle marker appears in the lower portion of the viewport.
@@ -682,7 +729,7 @@ const RideRecorder: React.FC = () => {
                     }, { duration: 500 });
                 }
             }
-            
+
             // Check if destination reached
             if (distanceTraveled >= totalRouteDistance) {
                 stopSimulation();
@@ -691,15 +738,14 @@ const RideRecorder: React.FC = () => {
     }, [routePath, turnInstructions, totalRouteDistance, calculateBearing, calculateDistance, stopSimulation]);
 
     const startRecording = async () => {
-        setSessionActive(true);
         setIsPaused(false);
         setIsRecording(true);
         setNextTurnIndex(0);
-        
+
         if (turnInstructions.length > 0) {
             setCurrentInstruction(turnInstructions[0].instruction);
             setCurrentStreetName(turnInstructions[0].streetName);
-            
+
             // Get current location and show initial arrow if within range
             try {
                 const location = await Location.getCurrentPositionAsync({
@@ -714,39 +760,39 @@ const RideRecorder: React.FC = () => {
                 console.error('Error getting initial location:', error);
             }
         }
-        
+
         await zoomToRouteAndRotate();
         await subscribeLocationUpdates(false);
     };
 
     const calculateFullRouteWithInstructions = async (waypoints: LatLng[]) => {
         if (waypoints.length < 2) return null;
-        
+
         try {
             const coordinates = waypoints.map(wp => `${wp.longitude},${wp.latitude}`).join(';');
             const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`;
-            
+
             const response = await fetch(url);
             const data = await response.json();
-            
+
             if (data.code === 'Ok' && data.routes[0]) {
                 const route = data.routes[0];
                 const allSteps: TurnInstruction[] = [];
                 let cumulativeDistance = 0;
-                
+
                 for (const leg of route.legs) {
                     for (const step of leg.steps) {
                         const stepDistance = step.distance / 1000;
                         cumulativeDistance += stepDistance;
-                        
+
                         const maneuver = step.maneuver;
-                        
+
                         if (maneuver.type === 'depart') continue;
-                        
+
                         let instruction = '';
                         let action: TurnInstruction['action'] = 'straight';
                         let bearing = maneuver.bearing_after || 0;
-                        
+
                         if (maneuver.type === 'arrive') {
                             instruction = 'Arrive at destination';
                             action = 'destination';
@@ -755,7 +801,7 @@ const RideRecorder: React.FC = () => {
                             action = mapModifierToAction(maneuver.modifier);
                             bearing = maneuver.bearing_after;
                         }
-                        
+
                         allSteps.push({
                             id: `step_${allSteps.length}`,
                             instruction: instruction,
@@ -770,12 +816,12 @@ const RideRecorder: React.FC = () => {
                         });
                     }
                 }
-                
+
                 const geometry = route.geometry.coordinates.map((coord: number[]) => ({
                     latitude: coord[1],
                     longitude: coord[0],
                 }));
-                
+
                 return {
                     turnInstructions: allSteps,
                     geometry: geometry,
@@ -788,7 +834,7 @@ const RideRecorder: React.FC = () => {
             console.error('Error calculating route:', error);
             Alert.alert('Route Error', 'Failed to calculate route.');
         }
-        
+
         return null;
     };
 
@@ -816,6 +862,25 @@ const RideRecorder: React.FC = () => {
             default: return 'straight';
         }
     };
+
+    const buildRecordedOsrmResponse = (recordedLocations: LatLng[], distanceKm: number, durationSeconds: number): OSRMResponse => ({
+        code: 'Ok',
+        waypoints: [],
+        routes: [
+            {
+                legs: [],
+                weight: distanceKm * 1000,
+                summary: '',
+                duration: durationSeconds,
+                distance: distanceKm * 1000,
+                geometry: {
+                    type: 'LineString',
+                    coordinates: recordedLocations.map((loc) => [loc.longitude, loc.latitude]),
+                },
+                weight_name: 'distance',
+            },
+        ],
+    });
 
     // ─── Planning mode functions ─────────────────────────────────────────────
 
@@ -907,6 +972,7 @@ const RideRecorder: React.FC = () => {
             setPlanSegments([]);
             setPlanTotalDistance(0);
             setPlanTotalDuration(0);
+            setRoutePath([]);
         }
     };
 
@@ -915,6 +981,7 @@ const RideRecorder: React.FC = () => {
         setPlanSegments([]);
         setPlanTotalDistance(0);
         setPlanTotalDuration(0);
+        setRoutePath([]);
     };
 
     /** Convert the planned segments into a navigation-ready route, then exit planning mode. */
@@ -989,7 +1056,7 @@ const RideRecorder: React.FC = () => {
                 const location = await Location.getCurrentPositionAsync({
                     accuracy: Location.Accuracy.BestForNavigation,
                 });
-                
+
                 mapRef.current?.animateToRegion({
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -1021,7 +1088,7 @@ const RideRecorder: React.FC = () => {
             setElapsedTime(0);
             setNextTurnIndex(0);
             setDistanceToNextTurn(0);
-            
+
             if (turnInstructions.length > 0) {
                 setCurrentInstruction(turnInstructions[0].instruction);
                 setCurrentStreetName(turnInstructions[0].streetName);
@@ -1040,10 +1107,10 @@ const RideRecorder: React.FC = () => {
                     longitude: newLocation.coords.longitude,
                     timestamp: newLocation.timestamp,
                 };
-                
+
                 setCurrentUserLocation(newPoint);
                 setLocations((prev) => [...prev, newPoint]);
-                
+
                 if (locations.length > 0) {
                     const lastPoint = locations[locations.length - 1];
                     const distance = calculateDistance(
@@ -1052,11 +1119,11 @@ const RideRecorder: React.FC = () => {
                     );
                     setTotalDistance((prev) => prev + distance);
                 }
-                
+
                 if (turnInstructions.length > 0 && !isPaused) {
                     updateNavigationProgress(newPoint);
                 }
-                
+
                 if (mapRef.current && !isPaused) {
                     const gpsBearing = newLocation.coords.heading ?? currentBearingRef.current;
                     currentBearingRef.current = gpsBearing;
@@ -1127,13 +1194,20 @@ const RideRecorder: React.FC = () => {
         }
         setIsRecording(false);
         setIsPaused(false);
-        setSessionActive(false);
         setNextTurnIndex(0);
         setStraightDistanceMeters(0);
-        
+
         // Hide turn arrow
         setTurnArrow(prev => ({ ...prev, visible: false }));
-        
+
+        if (locations.length > 0) {
+            const recordedResponse = buildRecordedOsrmResponse(locations, totalDistance, elapsedTime);
+            setOsrmResponse(recordedResponse);
+            if (routePath.length < 2) {
+                setRoutePath(locations);
+            }
+        }
+
         if (locations.length > 0 && isOwnData) {
             setSaveModalVisible(true);
         }
@@ -1144,30 +1218,30 @@ const RideRecorder: React.FC = () => {
             Alert.alert('Error', 'Please enter a title and description.');
             return;
         }
-        
+
+        const payload: Ride = {
+            name: rideTitle.trim(),
+            description: rideDescription.trim(),
+            distance: totalDistance,
+            duration: elapsedTime,
+            createdById: String(currentUserId),
+            locations,
+        };
+
         try {
-            const db = await getDatabase();
-            const collections = db.collections as any;
-            collections.routes = collections.routes ?? [];
-            collections.routes.push({
-                id: Date.now().toString(),
-                name: rideTitle.trim(),
-                description: rideDescription.trim(),
-                distance: formatDistance(totalDistance),
-                duration: formatTime(elapsedTime),
-                type: 'recorded',
-                locations,
-                routePath,
-                osrmResponse,
-                createdAt: new Date().toISOString(),
-            });
-            await saveDatabase(db);
+            const response = await rideService.createRide(payload);
+            if (!response.ok) {
+                const errorJson = await response.json().catch(() => null);
+                const message = typeof errorJson === 'object' && errorJson?.message ? errorJson.message : 'Failed to save ride.';
+                throw new Error(message);
+            }
+
             setSaveModalVisible(false);
             setRideTitle('');
             setRideDescription('');
             Alert.alert('Saved', 'Ride saved successfully.');
         } catch (error) {
-            Alert.alert('Error', 'Failed to save ride.');
+            Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save ride.');
         }
     };
 
@@ -1211,10 +1285,10 @@ const RideRecorder: React.FC = () => {
 
     const exportGPX = async () => {
         if (locations.length === 0) return;
-        
+
         const gpxData = generateGPX(locations);
         const fileName = `ride_${new Date().toISOString().replace(/[:.]/g, '-')}.gpx`;
-        
+
         try {
             const gpxFile = new File(Paths.document, fileName);
             gpxFile.write(gpxData);
@@ -1235,18 +1309,18 @@ const RideRecorder: React.FC = () => {
   <trk>
     <name>Motorbike Ride</name>
     <trkseg>`;
-        
+
         const waypoints = points.map(point => {
             const time = point.timestamp ? new Date(point.timestamp).toISOString() : new Date().toISOString();
             return `      <trkpt lat="${point.latitude}" lon="${point.longitude}">
             <time>${time}</time>
           </trkpt>`;
         }).join('\n');
-        
+
         const footer = `    </trkseg>
   </trk>
 </gpx>`;
-        
+
         return header + '\n' + waypoints + '\n' + footer;
     };
 
@@ -1270,309 +1344,305 @@ const RideRecorder: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Planning stats bar — shown while planning a new route */}
-            {planningMode && !sessionActive && planSegments.length > 0 && (
-                <View style={styles.planningStatsBar}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Points</Text>
-                        <Text style={styles.statValue}>{planWaypoints.length}</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Distance</Text>
-                        <Text style={styles.statValue}>{planTotalDistance.toFixed(1)} km</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Est. Time</Text>
-                        <Text style={styles.statValue}>{formatEtaDuration(planTotalDuration * 60)}</Text>
-                    </View>
-                </View>
-            )}
-
-            {routePath.length > 0 && !sessionActive && (
-                <View style={styles.routeStats}>
-                    <View style={styles.routeStatItem}>
-                        <Text style={styles.routeStatLabel}>Distance</Text>
-                        <Text style={styles.routeStatValue}>{formatDistance(totalRouteDistance)}</Text>
-                    </View>
-                    <View style={styles.routeStatDivider} />
-                    <View style={styles.routeStatItem}>
-                        <Text style={styles.routeStatLabel}>Est. Time</Text>
-                        <Text style={styles.routeStatValue}>{formatEtaDuration(totalRouteDuration)}</Text>
-                    </View>
-                    <View style={styles.routeStatDivider} />
-                    <View style={styles.routeStatItem}>
-                        <Text style={styles.routeStatLabel}>Turns</Text>
-                        <Text style={styles.routeStatValue}>{turnInstructions.length}</Text>
-                    </View>
-                </View>
-            )}
-
-            {sessionActive && (
-                <View style={styles.statsBar}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Distance</Text>
-                        <Text style={styles.statValue}>{formatDistance(totalDistance)}</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Time</Text>
-                        <Text style={styles.statValue}>{formatTime(elapsedTime)}</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statLabel}>Next</Text>
-                        <Text style={styles.statValue}>{distanceToNextTurn > 0 ? `${distanceToNextTurn.toFixed(1)} km` : '--'}</Text>
-                    </View>
-                </View>
-            )}
-
-            <View style={styles.mapContainer}>
-                <MapView
-                    ref={mapRef}
-                    style={styles.map}
-                    initialRegion={initialRegion}
-                    showsUserLocation={!isSimulating}
-                    showsMyLocationButton={!isSimulating}
-                    followsUserLocation={false}
-                    showsCompass={true}
-                    showsScale={true}
-                    rotateEnabled={true}
-                    onLongPress={planningMode && !sessionActive ? handlePlanLongPress : undefined}
-                >
-                    {routePath.length > 1 && (
-                        <Polyline coordinates={routePath} strokeColor="#2196F3" strokeWidth={5} />
-                    )}
-                    
-                    {locations.length > 1 && (
-                        <Polyline coordinates={locations} strokeColor="#FF4444" strokeWidth={4} />
-                    )}
-                    
-                    {routePath.length > 0 && (
-                        <Marker coordinate={routePath[0]} title="Start" pinColor="#4CAF50" />
-                    )}
-                    
-                    {routePath.length > 1 && (
-                        <Marker coordinate={routePath[routePath.length - 1]} title="Destination" pinColor="#f44336" />
-                    )}
-                    
-                    {/* Simulated position marker */}
-                    {isSimulating && simulatedPosition && (
-                        <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
-                            <View style={styles.vehicleMarker}>
-                                <View style={styles.vehicleArrow} />
-                            </View>
-                        </Marker>
-                    )}
-
-                    {/* Planning: route segments */}
-                    {planningMode && planSegments.map((seg) => (
-                        <Polyline
-                            key={`${seg.from.id}-${seg.to.id}`}
-                            coordinates={seg.polyline}
-                            strokeColor="#FF9800"
-                            strokeWidth={4}
-                        />
-                    ))}
-
-                    {/* Planning: waypoint markers — tap to remove, drag to reposition */}
-                    {planningMode && planWaypoints.map((wp) => (
-                        <Marker
-                            key={wp.id}
-                            coordinate={{ latitude: wp.latitude, longitude: wp.longitude }}
-                            pinColor={wp.type === 'start' ? '#4CAF50' : wp.type === 'end' ? '#f44336' : '#FFD700'}
-                            draggable
-                            title={wp.title}
-                            description="Tap to remove · drag to move"
-                            onDragEnd={(e) => void handlePlanMarkerDragEnd(wp.id, e.nativeEvent.coordinate)}
-                            onPress={() => handlePlanMarkerPress(wp.id)}
-                        />
-                    ))}
-                </MapView>
-
-                {/* Planning: instruction prompts */}
-                {planningMode && !sessionActive && planWaypoints.length === 0 && (
-                    <View style={styles.planningInstructions}>
-                        <Text style={styles.planningInstructionsText}>Long press on map to set start point</Text>
-                    </View>
-                )}
-                {planningMode && !sessionActive && planWaypoints.length === 1 && (
-                    <View style={styles.planningInstructions}>
-                        <Text style={styles.planningInstructionsText}>Long press again to set destination</Text>
-                    </View>
-                )}
-                {/* Planning: route calculation loading overlay */}
-                {planIsLoading && (
-                    <View style={styles.planningLoading}>
-                        <ActivityIndicator size="large" color="#FF9800" />
-                        <Text style={styles.planningLoadingText}>Calculating route…</Text>
-                    </View>
-                )}
-
-                {sessionActive && turnArrow.visible && (
-                    <View style={getArrowContainerStyle(turnArrow.position)}>
-                        <Text style={styles.arrowLabel}>{turnArrow.label}</Text>
-                        <TurnArrowDisplay action={turnArrow.action} />
-                        <Text style={styles.arrowDistance}>
-                            {turnArrow.distanceMeters >= 1000
-                                ? `${(turnArrow.distanceMeters / 1000).toFixed(1)} km`
-                                : `${turnArrow.distanceMeters} m`}
-                        </Text>
-                    </View>
-                )}
-
-                {/* Straight-ahead indicator — always visible during session */}
-                {sessionActive && straightDistanceMeters > 0 && (
-                    <View style={styles.straightIndicator}>
-                        <Text style={styles.straightArrow}>↑</Text>
-                        <Text style={styles.straightDistance}>
-                            {straightDistanceMeters >= 1000
-                                ? `${(straightDistanceMeters / 1000).toFixed(1)} km`
-                                : `${straightDistanceMeters} m`}
-                        </Text>
-                    </View>
-                )}
-
-                {/* Mini-map thumbnail — bottom left, 5km range */}
-                {sessionActive && (simulatedPosition || currentUserLocation) && (
-                    <View style={styles.miniMapContainer} pointerEvents="none">
-                        <MapView
-                            ref={miniMapRef}
-                            style={styles.miniMap}
-                            scrollEnabled={false}
-                            zoomEnabled={true}
-                            rotateEnabled={false}
-                            pitchEnabled={false}
-                            showsUserLocation={!isSimulating}
-                            showsCompass={false}
-                            showsScale={false}
-                            showsMyLocationButton={false}
-                            initialRegion={{
-                                latitude: (simulatedPosition || currentUserLocation)!.latitude,
-                                longitude: (simulatedPosition || currentUserLocation)!.longitude,
-                                latitudeDelta: 0.888,
-                                longitudeDelta: 0.888,
-                            }}
-                            pointerEvents="none"
-                        >
-                            {routePath.length > 1 && (
-                                <Polyline coordinates={routePath} strokeColor="#2196F3" strokeWidth={2} />
-                            )}
-                            {simulatedPosition && (
-                                <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
-                                    <View style={styles.miniMapMarker}>
-                                        <View style={styles.miniMapArrow} />
-                                    </View>
-                                </Marker>
-                            )}
-                        </MapView>
-                    </View>
-                )}
-
-
-
-                <View style={styles.controlBar}>
-                    {planningMode && !sessionActive ? (
-                        <>
-                            {isOwnData ? (
-                                <TouchableOpacity
-                                    style={[styles.controlButton, styles.clearButton]}
-                                    onPress={clearPlanWaypoints}
-                                    disabled={planWaypoints.length === 0}
-                                >
-                                    <Text style={styles.controlButtonText}>Clear</Text>
-                                </TouchableOpacity>
-                            ) : null}
-                            <TouchableOpacity
-                                style={[styles.controlButton, styles.startButton]}
-                                onPress={startNavigating}
-                                disabled={planSegments.length === 0 || planIsLoading}
-                            >
-                                <Text style={styles.controlButtonText}>Start Navigating</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : !sessionActive ? (
-                        <>
-                            {/* Simulate Start Button */}
-                            <TouchableOpacity 
-                                style={[styles.controlButton, styles.simulateButton]} 
-                                onPress={startSimulation}
-                                disabled={routePath.length === 0 || isSimulating}
-                            >
-                                <Text style={styles.controlButtonText}>🎬 Simulate</Text>
-                            </TouchableOpacity>
-                            
-                            {/* Start Navigation Button */}
-                            <TouchableOpacity 
-                                style={[styles.controlButton, styles.startButton]} 
-                                onPress={startRecording}
-                                disabled={routePath.length === 0}
-                            >
-                                <Text style={styles.controlButtonText}>Start Navigation</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : isPaused ? (
-                        <>
-                            <TouchableOpacity style={[styles.controlButton, styles.resumeButton]} onPress={resumeRecording}>
-                                <Text style={styles.controlButtonText}>Resume</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.controlButton, styles.stopButton]} onPress={stopRecording}>
-                                <Text style={styles.controlButtonText}>Stop</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <>
-                            <TouchableOpacity style={[styles.controlButton, styles.pauseButton]} onPress={pauseRecording}>
-                                <Text style={styles.controlButtonText}>Pause</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.controlButton, styles.stopButton]} onPress={stopRecording}>
-                                <Text style={styles.controlButtonText}>Stop</Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
-                    
-                    {/* Stop Simulation Button */}
-                    {isSimulating && (
-                        <TouchableOpacity style={[styles.controlButton, styles.stopSimulateButton]} onPress={stopSimulation}>
-                            <Text style={styles.controlButtonText}>Stop Sim</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <Modal visible={saveModalVisible} transparent animationType="slide">
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Save Ride</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Title"
-                                value={rideTitle}
-                                onChangeText={setRideTitle}
-                            />
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="Description"
-                                value={rideDescription}
-                                onChangeText={setRideDescription}
-                                multiline
-                            />
-                            <View style={styles.modalButtons}>
-                                <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={() => setSaveModalVisible(false)}>
-                                    <Text style={styles.cancelModalText}>Cancel</Text>
-                                </TouchableOpacity>
-                                {isOwnData ? (
-                                    <TouchableOpacity style={[styles.modalButton, styles.saveModalButton]} onPress={handleSaveRide}>
-                                        <Text style={styles.saveModalText}>Save</Text>
-                                    </TouchableOpacity>
-                                ) : null}
-                            </View>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={styles.container}>
+                {/* Planning stats bar — shown while planning a new route */}
+                {planningMode && !sessionActive && planSegments.length > 0 && (
+                    <View style={styles.planningStatsBar}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Points</Text>
+                            <Text style={styles.statValue}>{planWaypoints.length}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Distance</Text>
+                            <Text style={styles.statValue}>{planTotalDistance.toFixed(1)} km</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Est. Time</Text>
+                            <Text style={styles.statValue}>{formatEtaDuration(planTotalDuration * 60)}</Text>
                         </View>
                     </View>
-                </Modal>
+                )}
+
+                {routePath.length > 0 && !sessionActive && (
+                    <View style={styles.routeStats}>
+                        <View style={styles.routeStatItem}>
+                            <Text style={styles.routeStatLabel}>Distance</Text>
+                            <Text style={styles.routeStatValue}>{formatDistance(totalRouteDistance)}</Text>
+                        </View>
+                        <View style={styles.routeStatDivider} />
+                        <View style={styles.routeStatItem}>
+                            <Text style={styles.routeStatLabel}>Est. Time</Text>
+                            <Text style={styles.routeStatValue}>{formatEtaDuration(totalRouteDuration)}</Text>
+                        </View>
+                        <View style={styles.routeStatDivider} />
+                        <View style={styles.routeStatItem}>
+                            <Text style={styles.routeStatLabel}>Turns</Text>
+                            <Text style={styles.routeStatValue}>{turnInstructions.length}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {sessionActive && (
+                    <View style={styles.statsBar}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Distance</Text>
+                            <Text style={styles.statValue}>{formatDistance(totalDistance)}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Time</Text>
+                            <Text style={styles.statValue}>{formatTime(elapsedTime)}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabel}>Next</Text>
+                            <Text style={styles.statValue}>{distanceToNextTurn > 0 ? `${distanceToNextTurn.toFixed(1)} km` : '--'}</Text>
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.mapContainer}>
+                    <MapView
+                        ref={mapRef}
+                        style={styles.map}
+                        initialRegion={initialRegion}
+                        showsUserLocation={!isSimulating}
+                        showsMyLocationButton={!isSimulating}
+                        followsUserLocation={false}
+                        showsCompass={true}
+                        showsScale={true}
+                        rotateEnabled={true}
+                        onLongPress={planningMode && !sessionActive ? handlePlanLongPress : undefined}
+                        onPress={planningMode && !sessionActive ? handlePlanLongPress : undefined}
+                    >
+                        {routePath.length > 1 && (
+                            <Polyline coordinates={routePath} strokeColor="#2196F3" strokeWidth={5} />
+                        )}
+
+                        {locations.length > 1 && (
+                            <Polyline coordinates={locations} strokeColor="#FF4444" strokeWidth={4} />
+                        )}
+
+                        {routePath.length > 0 && (
+                            <Marker coordinate={routePath[0]} title="Start" pinColor="#4CAF50" />
+                        )}
+
+                        {routePath.length > 1 && (
+                            <Marker coordinate={routePath[routePath.length - 1]} title="Destination" pinColor="#f44336" />
+                        )}
+
+                        {/* Simulated position marker */}
+                        {isSimulating && simulatedPosition && (
+                            <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
+                                <View style={styles.vehicleMarker}>
+                                    <View style={styles.vehicleArrow} />
+                                </View>
+                            </Marker>
+                        )}
+
+                        {/* Planning: route segments */}
+                        {planningMode && planSegments.map((seg) => (
+                            <Polyline
+                                key={`${seg.from.id}-${seg.to.id}`}
+                                coordinates={seg.polyline}
+                                strokeColor="#FF9800"
+                                strokeWidth={4}
+                            />
+                        ))}
+
+                        {/* Planning: waypoint markers — tap to remove, drag to reposition */}
+                        {planningMode && planWaypoints.map((wp) => (
+                            <Marker
+                                key={wp.id}
+                                coordinate={{ latitude: wp.latitude, longitude: wp.longitude }}
+                                pinColor={wp.type === 'start' ? '#4CAF50' : wp.type === 'end' ? '#f44336' : '#FFD700'}
+                                draggable
+                                title={wp.title}
+                                description="Tap to remove · drag to move"
+                                onDragEnd={(e) => void handlePlanMarkerDragEnd(wp.id, e.nativeEvent.coordinate)}
+                                onPress={() => handlePlanMarkerPress(wp.id)}
+                            />
+                        ))}
+                    </MapView>
+
+                    <View style={styles.recordControlOverlay} pointerEvents="box-none">
+                        {!isRecording ? (
+                            <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
+                                <Text style={styles.recordButtonText}>REC</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={styles.recordControlRow}>
+                                <TouchableOpacity
+                                    style={[styles.recordCircleButton, isPaused ? styles.resumeButton : styles.pauseButton]}
+                                    onPress={isPaused ? resumeRecording : pauseRecording}
+                                >
+                                    <Text style={styles.recordIconText}>⏸</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.recordCircleButton, styles.stopButton]} onPress={stopRecording}>
+                                    <Text style={styles.recordIconText}>⏹</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Planning: instruction prompts */}
+                    {planningMode && !sessionActive && planWaypoints.length === 0 && (
+                        <View style={styles.planningInstructions}>
+                            <Text style={styles.planningInstructionsText}>Long press on map to set start point</Text>
+                        </View>
+                    )}
+                    {planningMode && !sessionActive && planWaypoints.length === 1 && (
+                        <View style={styles.planningInstructions}>
+                            <Text style={styles.planningInstructionsText}>Long press again to set destination</Text>
+                        </View>
+                    )}
+                    {/* Planning: route calculation loading overlay */}
+                    {planIsLoading && (
+                        <View style={styles.planningLoading}>
+                            <ActivityIndicator size="large" color="#FF9800" />
+                            <Text style={styles.planningLoadingText}>Calculating route…</Text>
+                        </View>
+                    )}
+
+                    {sessionActive && turnArrow.visible && (
+                        <View style={getArrowContainerStyle(turnArrow.position)}>
+                            <Text style={styles.arrowLabel}>{turnArrow.label}</Text>
+                            <TurnArrowDisplay action={turnArrow.action} />
+                            <Text style={styles.arrowDistance}>
+                                {turnArrow.distanceMeters >= 1000
+                                    ? `${(turnArrow.distanceMeters / 1000).toFixed(1)} km`
+                                    : `${turnArrow.distanceMeters} m`}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Straight-ahead indicator — always visible during session */}
+                    {sessionActive && straightDistanceMeters > 0 && (
+                        <View style={styles.straightIndicator}>
+                            <Text style={styles.straightArrow}>↑</Text>
+                            <Text style={styles.straightDistance}>
+                                {straightDistanceMeters >= 1000
+                                    ? `${(straightDistanceMeters / 1000).toFixed(1)} km`
+                                    : `${straightDistanceMeters} m`}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Mini-map thumbnail — bottom left, 5km range */}
+                    {sessionActive && (simulatedPosition || currentUserLocation) && (
+                        <View style={styles.miniMapContainer} pointerEvents="none">
+                            <MapView
+                                ref={miniMapRef}
+                                style={styles.miniMap}
+                                scrollEnabled={false}
+                                zoomEnabled={true}
+                                rotateEnabled={false}
+                                pitchEnabled={false}
+                                showsUserLocation={!isSimulating}
+                                showsCompass={false}
+                                showsScale={false}
+                                showsMyLocationButton={false}
+                                initialRegion={{
+                                    latitude: (simulatedPosition || currentUserLocation)!.latitude,
+                                    longitude: (simulatedPosition || currentUserLocation)!.longitude,
+                                    latitudeDelta: 0.888,
+                                    longitudeDelta: 0.888,
+                                }}
+                                pointerEvents="none"
+                            >
+                                {routePath.length > 1 && (
+                                    <Polyline coordinates={routePath} strokeColor="#2196F3" strokeWidth={2} />
+                                )}
+                                {simulatedPosition && (
+                                    <Marker coordinate={simulatedPosition} anchor={{ x: 0.5, y: 0.5 }}>
+                                        <View style={styles.miniMapMarker}>
+                                            <View style={styles.miniMapArrow} />
+                                        </View>
+                                    </Marker>
+                                )}
+                            </MapView>
+                        </View>
+                    )}
+
+
+
+                    <View style={styles.controlBar}>
+                        {planningMode && !sessionActive ? (
+                            <>
+                                {isOwnData ? (
+                                    <TouchableOpacity
+                                        style={[styles.controlButton, styles.clearButton]}
+                                        onPress={clearPlanWaypoints}
+                                        disabled={planWaypoints.length === 0}
+                                    >
+                                        <Text style={styles.controlButtonText}>Clear</Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                                <TouchableOpacity
+                                    style={[styles.controlButton, styles.startButton]}
+                                    onPress={startNavigating}
+                                    disabled={planSegments.length === 0 || planIsLoading}
+                                >
+                                    <Text style={styles.controlButtonText}>Start Navigating</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : !sessionActive ? (
+                            <>
+                                {routePath.length > 1 && (
+                                    <TouchableOpacity
+                                        style={[styles.controlButton, styles.startButton]}
+                                        onPress={startNavigating}
+                                    >
+                                        <Text style={styles.controlButtonText}>Start Navigation</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </>
+                        ) : null}
+
+                        {/* Stop Simulation Button */}
+                        {isSimulating && (
+                            <TouchableOpacity style={[styles.controlButton, styles.stopSimulateButton]} onPress={stopSimulation}>
+                                <Text style={styles.controlButtonText}>Stop Sim</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <Modal visible={saveModalVisible} transparent animationType="slide">
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Save Ride</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Title"
+                                    value={rideTitle}
+                                    onChangeText={setRideTitle}
+                                />
+                                <TextInput
+                                    style={[styles.input, styles.textArea]}
+                                    placeholder="Description"
+                                    value={rideDescription}
+                                    onChangeText={setRideDescription}
+                                    multiline
+                                />
+                                <View style={styles.modalButtons}>
+                                    <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={() => setSaveModalVisible(false)}>
+                                        <Text style={styles.cancelModalText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    {isOwnData ? (
+                                        <TouchableOpacity style={[styles.modalButton, styles.saveModalButton]} onPress={handleSaveRide}>
+                                            <Text style={styles.saveModalText}>Save</Text>
+                                        </TouchableOpacity>
+                                    ) : null}
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+                </View>
             </View>
-        </View>
+        </GestureHandlerRootView>
     );
 };
 
@@ -1610,7 +1680,7 @@ const styles = StyleSheet.create({
     statDivider: { width: 1, height: 30, backgroundColor: '#444' },
     mapContainer: { flex: 1, position: 'relative' },
     map: { flex: 1 },
-    
+
     arrowTopLeft: {
         position: 'absolute',
         top: 80,
@@ -1770,7 +1840,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 28,
     },
-    
+
     navigationCard: {
         position: 'absolute',
         bottom: 100,
@@ -1819,6 +1889,46 @@ const styles = StyleSheet.create({
     resumeButton: { backgroundColor: '#4CAF50' },
     stopButton: { backgroundColor: '#f44336' },
     stopSimulateButton: { backgroundColor: '#f44336', flex: 0.5 },
+    recordControlOverlay: {
+        position: 'absolute',
+        top: 24,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 30,
+    },
+    recordButton: {
+        width: 66,
+        height: 66,
+        borderRadius: 33,
+        backgroundColor: '#d32f2f',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+    },
+    recordButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    recordControlRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    recordCircleButton: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 6,
+    },
+    recordIconText: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
     modalContainer: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
     modalContent: { backgroundColor: '#fff', margin: 20, borderRadius: 16, padding: 20 },
     modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },

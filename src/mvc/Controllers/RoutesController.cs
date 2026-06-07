@@ -44,7 +44,7 @@ public class RoutesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetRouteById(int id)
+    public async Task<IActionResult> GetRouteById(Guid id)
     {
         try
         {
@@ -73,10 +73,18 @@ public class RoutesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateRoute(CreateRouteDto dto)
+    public async Task<IActionResult> CreateRoute([FromBody]CreateRouteDto? dto)
     {
         try
         {
+            if (dto is null)
+            {
+                _logger.LogWarning("CreateRoute called with null body");
+                return BadRequest(new { Success = false, Message = "CreateRouteDto cannot be null." });
+            }
+
+            var rawBody = await new StreamReader(Request.Body).ReadToEndAsync();
+            _logger.LogError("RAW REQUEST BODY: {RawBody}", rawBody);
             _logger.LogInformation("Creating route {Name}", dto.Name);
             _logger.LogDebug("CreateRouteDto: {Dto}", JsonSerializer.Serialize(dto));
 
@@ -88,13 +96,45 @@ public class RoutesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to create route {Name}", dto.Name);
+            _logger.LogWarning(ex, "Failed to create route {Name}", dto?.Name);
             return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while creating route {Name}", dto.Name);
+            _logger.LogError(ex, "Unexpected error while creating route {Name}", dto?.Name);
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while creating the route." });
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateRoute(Guid id, [FromBody]CreateRouteDto? dto)
+    {
+        try
+        {
+            if (dto is null)
+            {
+                _logger.LogWarning("UpdateRoute called with null body for id {RouteId}", id);
+                return BadRequest(new { Success = false, Message = "CreateRouteDto cannot be null." });
+            }
+
+            _logger.LogInformation("Updating route {RouteId} {Name}", id, dto.Name);
+            _logger.LogDebug("UpdateRouteDto: {Dto}", JsonSerializer.Serialize(dto));
+
+            var route = await _routeService.UpdateRouteAsync(id, dto);
+
+            _logger.LogInformation("Route updated successfully: {RouteId}", id);
+            _logger.LogDebug("Updated route result: {Route}", JsonSerializer.Serialize(route));
+            return Ok(new { Success = true, Data = route });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Failed to update route {RouteId} {Name}", id, dto?.Name);
+            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while updating route {RouteId} {Name}", id, dto?.Name);
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating the route." });
         }
     }
 }
