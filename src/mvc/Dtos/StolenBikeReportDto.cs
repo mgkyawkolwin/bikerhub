@@ -14,5 +14,9 @@ public sealed record StolenBikeReportDto(
     string? Description = null,
     IEnumerable<string>? Images = null,
     DateTime? ReportedAt = null,
-    string? Location = null
+    string? Location = null,
+    int? CreatedById = null,
+    DateTime? CreatedAtUTC = null,
+    DateTime? UpdatedAtUTC = null,
+    int? UpdatedById = null
 );

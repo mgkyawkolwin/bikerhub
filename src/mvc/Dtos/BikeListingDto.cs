@@ -26,5 +26,8 @@ public sealed record BikeListingDto(
     bool IsLiked = false,
     int LikeCount = 0,
     int ViewCount = 0,
-    DateTime? CreatedAt = null
+    DateTime? CreatedAtUTC = null,
+    int? CreatedById = null,
+    DateTime? UpdatedAtUTC = null,
+    int? UpdatedById = null
 );

@@ -2,21 +2,22 @@ namespace BikerHub.Dtos;
 
 public sealed record SocialLinkDto(string Platform, string Url);
 
-public sealed record SocialProfileDto(
-    int? Id = null,
-    string? Name = null,
-    string? CoverPhotoUrl = null,
-    string? AvatarUrl = null,
-    string? Bio = null,
-    int FollowersCount = 0,
-    int FollowingCount = 0,
-    int GarageCount = 0,
-    int RidesCount = 0,
-    string? GarageDistance = null,
-    string? GarageDuration = null,
-    string? GarageElevation = null,
-    string? RideDistance = null,
-    string? RideDuration = null,
-    string? RideElevation = null,
-    IEnumerable<SocialLinkDto>? SocialLinks = null
-);
+public sealed record SocialProfileDto
+{
+    public Guid Id { get; set; }
+    public required Guid CreatedById { get; set; }
+    public required string CreatedByName { get; set; }
+    public string? CoverPhotoUrl { get; set; } = null;
+    public string? Bio { get; set; } = null;
+    public int FollowersCount { get; set; } = 0;
+    public int FollowingCount { get; set; } = 0;
+    public int GarageCount { get; set; } = 0;
+    public int RidesCount { get; set; } = 0;
+    public string? GarageDistance { get; set; } = null;
+    public string? GarageDuration { get; set; } = null;
+    public string? GarageElevation { get; set; } = null;
+    public string? RideDistance { get; set; } = null;
+    public string? RideDuration { get; set; } = null;
+    public string? RideElevation { get; set; } = null;
+    public IEnumerable<SocialLinkDto>? SocialLinks { get; set; } = null;
+}

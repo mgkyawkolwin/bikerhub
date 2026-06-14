@@ -24,3 +24,5 @@ export type { IChatService as ChatService } from './chatService';
 export { ChatServiceToken } from './chatService';
 export type { AuthService } from './authService';
 export { AuthServiceToken } from './authService';
+export type { SocialCommentService } from './socialCommentService';
+export { SocialCommentServiceToken } from './socialCommentService';

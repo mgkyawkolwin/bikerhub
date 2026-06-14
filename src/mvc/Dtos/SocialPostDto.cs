@@ -1,15 +1,15 @@
 namespace BikerHub.Dtos;
 
-public sealed record SocialPostDto(
-    int? Id = null,
-    string? AuthorId = null,
-    string? AuthorName = null,
-    string? AuthorAvatarUrl = null,
-    string? GroupId = null,
-    string? Content = null,
-    IEnumerable<string>? ImageUrls = null,
-    int LoveCount = 0,
-    int CommentCount = 0,
-    int ShareCount = 0,
-    DateTime? CreatedAt = null
-);
+public sealed record SocialPostDto
+{
+    public Guid Id { get; set; }
+    public bool IsLikedByCurrentUser { get; set; } = false;
+    public int LoveCount { get; set; }
+    public int CommentCount { get; set; }
+    public int ShareCount { get; set; }
+    public DateTime CreatedAtUTC { get; set; }
+    public required Guid CreatedById { get; set; }
+    public required string CreatedByName { get; set; }
+    public string? Content { get; set; } = null;
+    public IEnumerable<string>? ImageUrls { get; set; } = null;
+}

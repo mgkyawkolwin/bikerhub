@@ -36,6 +36,12 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
 
@@ -101,6 +107,12 @@ namespace BikerHub.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.Property<int>("ViewCount")
                         .HasColumnType("int");
 
@@ -133,6 +145,12 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
@@ -145,6 +163,12 @@ namespace BikerHub.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -166,6 +190,12 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
 
@@ -182,6 +212,12 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Challenges");
@@ -194,6 +230,12 @@ namespace BikerHub.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<bool>("Delivered")
                         .HasColumnType("tinyint(1)");
@@ -230,18 +272,22 @@ namespace BikerHub.Migrations
                     b.Property<string>("TextMessage")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.Directory", b =>
+            modelBuilder.Entity("BikerHub.Entities.DirectoryEntity", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Address")
                         .HasMaxLength(300)
@@ -259,8 +305,11 @@ namespace BikerHub.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("longtext");
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<bool>("IsLiked")
                         .HasColumnType("tinyint(1)");
@@ -294,6 +343,12 @@ namespace BikerHub.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Directories");
@@ -312,6 +367,12 @@ namespace BikerHub.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -334,6 +395,12 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Groups");
@@ -350,6 +417,12 @@ namespace BikerHub.Migrations
                     b.Property<string>("Body")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("DateTimeUTC")
                         .HasColumnType("datetime(6)");
 
@@ -359,6 +432,12 @@ namespace BikerHub.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .HasColumnType("longtext");
@@ -378,6 +457,12 @@ namespace BikerHub.Migrations
 
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("DateTimeUTC")
                         .HasColumnType("datetime(6)");
@@ -399,6 +484,12 @@ namespace BikerHub.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("News");
@@ -413,8 +504,11 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("longtext");
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -433,6 +527,12 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Rides");
@@ -444,11 +544,11 @@ namespace BikerHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -467,27 +567,64 @@ namespace BikerHub.Migrations
                     b.Property<string>("OsrmResponseJson")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Routes");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.SocialPost", b =>
+            modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("char(36)");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AuthorAvatarUrl")
+                    b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("AuthorId")
-                        .HasColumnType("longtext");
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<string>("AuthorName")
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CreatedByProfileId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByProfileId");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("SocialPostComments");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
 
                     b.Property<int>("CommentCount")
                         .HasColumnType("int");
@@ -495,11 +632,11 @@ namespace BikerHub.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("GroupId")
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("ImageUrlsJson")
                         .HasColumnType("longtext");
@@ -510,23 +647,63 @@ namespace BikerHub.Migrations
                     b.Property<int>("ShareCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("SocialProfileId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
-                    b.ToTable("SocialPosts");
+                    b.HasIndex("SocialProfileId");
+
+                    b.ToTable("Posts");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.SocialProfile", b =>
+            modelBuilder.Entity("BikerHub.Entities.SocialPostLikeEntity", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("char(36)");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<string>("AvatarUrl")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("LikedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("LikedByProfileId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LikedByProfileId");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("SocialPostLikes");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Bio")
                         .HasColumnType("longtext");
@@ -535,6 +712,12 @@ namespace BikerHub.Migrations
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<int>("FollowersCount")
                         .HasColumnType("int");
@@ -554,11 +737,6 @@ namespace BikerHub.Migrations
                     b.Property<string>("GarageElevation")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
-
                     b.Property<string>("RideDistance")
                         .HasColumnType("longtext");
 
@@ -575,7 +753,18 @@ namespace BikerHub.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("SocialProfiles");
                 });
@@ -590,6 +779,12 @@ namespace BikerHub.Migrations
 
                     b.Property<string>("Cc")
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -625,6 +820,12 @@ namespace BikerHub.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
+
                     b.Property<string>("Vin")
                         .HasColumnType("longtext");
 
@@ -636,13 +837,11 @@ namespace BikerHub.Migrations
                     b.ToTable("StolenBikeReports");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.User", b =>
+            modelBuilder.Entity("BikerHub.Entities.UserEntity", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Address")
                         .HasMaxLength(200)
@@ -652,8 +851,11 @@ namespace BikerHub.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -679,9 +881,93 @@ namespace BikerHub.Migrations
                     b.Property<int?>("RatingCount")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "CreatedByProfile")
+                        .WithMany()
+                        .HasForeignKey("CreatedByProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BikerHub.Entities.SocialPostCommentEntity", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId");
+
+                    b.HasOne("BikerHub.Entities.SocialPostEntity", "Post")
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByProfile");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "SocialProfile")
+                        .WithMany()
+                        .HasForeignKey("SocialProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SocialProfile");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostLikeEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "LikedByProfile")
+                        .WithMany()
+                        .HasForeignKey("LikedByProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BikerHub.Entities.SocialPostEntity", "Post")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LikedByProfile");
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.SocialPostEntity", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("Likes");
                 });
 #pragma warning restore 612, 618
         }

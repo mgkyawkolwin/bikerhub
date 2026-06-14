@@ -8,7 +8,7 @@ import Message from '@/models/message';
 import type News from '../models/news';
 import type Blog from '../models/blog';
 import type ForumPost from '../models/forumPost';
-import type SocialPost from '../models/socialPost';
+import type Post from '../models/post';
 import type Directory from '../models/directory';
 import type Route from '../models/route';
 import type Group from '../models/group';
@@ -28,7 +28,7 @@ export type DatabaseCollections = {
   directories: Directory[];
   routes: Route[];
   plans: any[];
-  socialPosts: SocialPost[];
+  socialPosts: Post[];
   socialProfiles: SocialProfile[];
   groups: Group[];
   challenges: Challenge[];

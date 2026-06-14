@@ -10,7 +10,7 @@ import { SocialPostServiceToken } from '@/services/socialPostService';
 import type { SocialProfileService } from '@/services/socialProfileService';
 import type { SocialPostService } from '@/services/socialPostService';
 import type SocialProfile from '@/models/socialProfile';
-import type SocialPost from '@/models/socialPost';
+import type Post from '@/models/post';
 
 export default function SocialProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -19,7 +19,7 @@ export default function SocialProfileScreen() {
   const profileService = useMemo(() => container.resolve<SocialProfileService>(SocialProfileServiceToken), []);
   const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
-  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -52,13 +52,13 @@ export default function SocialProfileScreen() {
     loadProfile();
   }, [loadProfile]);
 
-  const renderPost = ({ item }: { item: SocialPost }) => (
+  const renderPost = ({ item }: { item: Post }) => (
     <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      
       <View style={styles.postHeader}>
         <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
         <View style={styles.postMeta}>
           <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
-            {item.authorName}
+            {item.createdByName}
           </Text>
           <View style={styles.metaRow}>
             <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />

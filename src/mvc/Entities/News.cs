@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class News
+public class News : EntityBase<int>
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(200)]
     public string Headline { get; set; } = string.Empty;

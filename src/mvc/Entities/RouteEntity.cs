@@ -2,10 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class RouteEntity
+public class RouteEntity : EntityBase<Guid>
 {
-    [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public RouteEntity() => Id = Guid.NewGuid();
 
     [Required]
     [MaxLength(200)]
@@ -13,7 +12,5 @@ public class RouteEntity
     public string? Description { get; set; }
     public decimal Distance { get; set; }
     public decimal Duration { get; set; }
-    public string? CreatedById { get; set; }
     public string? OsrmResponseJson { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

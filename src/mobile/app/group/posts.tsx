@@ -10,7 +10,7 @@ import { SocialPostServiceToken } from '@/services/socialPostService';
 import type { GroupService } from '@/services/groupService';
 import type { SocialPostService } from '@/services/socialPostService';
 import type Group from '@/models/group';
-import type SocialPost from '@/models/socialPost';
+import type Post from '@/models/post';
 
 export default function GroupPostsScreen() {
   const insets = useSafeAreaInsets();
@@ -19,7 +19,7 @@ export default function GroupPostsScreen() {
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
   const postService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
   const [group, setGroup] = useState<Group | null>(null);
-  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -87,13 +87,13 @@ export default function GroupPostsScreen() {
 
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id ?? `${item.authorId}-${item.createdAt}`}
+        keyExtractor={(item) => item.id ?? `${item.createdById}-${item.createdAt}`}
         renderItem={({ item }) => (
           <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.postHeader}>
               <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
               <View style={styles.postMeta}>
-                <Text style={[styles.authorName, { color: colors.text }]}>{item.authorName}</Text>
+                <Text style={[styles.authorName, { color: colors.text }]}>{item.createdByName}</Text>
                 <View style={styles.metaRow}>
                   <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
                   <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</Text>

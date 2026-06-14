@@ -1,7 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 
-// const DEFAULT_API_BASE_URL = 'http://192.168.51.3:5264/api';
-const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
+const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
+// const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
 export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
@@ -37,7 +38,17 @@ export async function authenticatedFetchJson(path: string, options: RequestInit 
     headers.Authorization = `Bearer ${token}`;
   }
 
-  return fetchJson(path, { ...options, headers });
+  const response = await fetchJson(path, { ...options, headers });
+
+  // Handle 401 Unauthorized response - token is invalid/expired
+  if (response.status === 401) {
+    // Clear stored auth user
+    await SecureStore.deleteItemAsync(AUTH_USER_STORAGE_KEY);
+    // Redirect to sign in page
+    router.replace('/auth/signIn');
+  }
+
+  return response;
 }
 
 export async function fetchApi(path: string, options: RequestInit = {}): Promise<Response> {

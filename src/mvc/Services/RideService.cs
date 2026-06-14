@@ -4,7 +4,6 @@ using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
-using RideEntity = BikerHub.Entities.RideEntity;
 
 namespace BikerHub.Services;
 
@@ -105,7 +104,9 @@ public class RideService : IRideService
             ride.Duration,
             ride.CreatedById,
             locations,
-            ride.CreatedAt
+            ride.CreatedAt,
+            ride.UpdatedAtUTC,
+            ride.UpdatedById
         );
     }
 }

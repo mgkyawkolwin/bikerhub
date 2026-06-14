@@ -10,6 +10,7 @@ using BikerHub.Models;
 using BikerHub.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,7 +74,7 @@ builder.Services.AddScoped<IRideService, RideService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
 builder.Services.AddScoped<IStolenBikeService, StolenBikeService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -83,6 +84,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
 var app = builder.Build();

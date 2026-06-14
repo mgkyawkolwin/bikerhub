@@ -12,7 +12,7 @@ public sealed record CreateRouteDto(
     [property: JsonPropertyName("duration")]
     decimal Duration,
     [property: JsonPropertyName("createdById")]
-    string? CreatedById,
+    Guid CreatedById,
     [property: JsonPropertyName("osrmResponseJson")]
     string? OsrmResponseJson
 );

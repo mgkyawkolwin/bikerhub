@@ -12,5 +12,9 @@ public sealed record ChallengeDto(
     string? Description = null,
     string? CoverImageUrl = null,
     string? ImageUrl = null,
-    IEnumerable<ChallengeLeaderboardEntryDto>? Leaderboard = null
+    IEnumerable<ChallengeLeaderboardEntryDto>? Leaderboard = null,
+    int? CreatedById = null,
+    DateTime? CreatedAtUTC = null,
+    DateTime? UpdatedAtUTC = null,
+    int? UpdatedById = null
 );

@@ -17,12 +17,12 @@ namespace BikerHub.Services;
 public class AuthService : IAuthService
 {
     private readonly AppDbContext _dbContext;
-    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<UserEntity> _passwordHasher;
     private readonly ILogger<AuthService> _logger;
     private readonly JwtSettings _jwtSettings;
     private readonly GoogleAuthSettings _googleAuthSettings;
 
-    public AuthService(AppDbContext dbContext, IPasswordHasher<User> passwordHasher, ILogger<AuthService> logger, JwtSettings jwtSettings, GoogleAuthSettings googleAuthSettings)
+    public AuthService(AppDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, ILogger<AuthService> logger, JwtSettings jwtSettings, GoogleAuthSettings googleAuthSettings)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         _googleAuthSettings = googleAuthSettings;
     }
 
-    private string CreateJwtToken(User user)
+    private string CreateJwtToken(UserEntity user)
     {
         var claims = new List<Claim>
         {
@@ -77,16 +77,24 @@ public class AuthService : IAuthService
             throw new CustomException("A user with this username or email already exists.");
         }
 
-        var user = new User
+        var user = new UserEntity
         {
             Name = normalizedName,
             Email = normalizedEmail,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUTC = DateTime.UtcNow,
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
         _dbContext.Users.Add(user);
+
+        // Add Social Profile
+        var socialProfile = new SocialProfileEntity
+        {
+            UserId = user.Id
+        };
+        _dbContext.SocialProfiles.Add(socialProfile);
+        
         await _dbContext.SaveChangesAsync();
 
         _logger.LogDebug("User entity persisted with id {UserId}", user.Id);
@@ -94,17 +102,18 @@ public class AuthService : IAuthService
         var token = CreateJwtToken(user);
         var response = new AuthResponseDto(
             token,
-            new UserDto(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.Address,
-                user.City,
-                user.Rating,
-                user.RatingCount,
-                user.ProfilePictureUrl,
-                token
-            )
+            new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Address = user.Address,
+                City = user.City,
+                Rating = user.Rating,
+                RatingCount = user.RatingCount,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Token = token
+            }
         );
 
         _logger.LogInformation("Registration completed for user {UserId}", user.Id);
@@ -143,17 +152,18 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
         var token = CreateJwtToken(user);
         var response = new AuthResponseDto(
             token,
-            new UserDto(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.Address,
-                user.City,
-                user.Rating,
-                user.RatingCount,
-                user.ProfilePictureUrl,
-                token
-            )
+            new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Address = user.Address,
+                City = user.City,
+                Rating = user.Rating,
+                RatingCount = user.RatingCount,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Token = token
+            }
         );
 
         _logger.LogTrace("AuthResponseDto: {@Response}", response);
@@ -194,12 +204,12 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
 
         if (user == null)
         {
-            user = new User
+            user = new UserEntity
             {
                 Name = tokenInfo.Name ?? tokenInfo.Email,
                 Email = normalizedEmail,
                 ProfilePictureUrl = tokenInfo.Picture,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUTC = DateTime.UtcNow,
             };
             user.PasswordHash = _passwordHasher.HashPassword(user, Guid.NewGuid().ToString("N"));
 
@@ -232,17 +242,18 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
         var token = CreateJwtToken(user);
         var response = new AuthResponseDto(
             token,
-            new UserDto(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.Address,
-                user.City,
-                user.Rating,
-                user.RatingCount,
-                user.ProfilePictureUrl,
-                token
-            )
+            new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Address = user.Address,
+                City = user.City,
+                Rating = user.Rating,
+                RatingCount = user.RatingCount,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Token = token
+            }
         );
 
         _logger.LogTrace("Google auth response created for {Email}", tokenInfo.Email);

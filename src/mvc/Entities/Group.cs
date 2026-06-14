@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Group
+public class Group : EntityBase<int>
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(200)]
     public string Title { get; set; } = string.Empty;

@@ -8,5 +8,9 @@ public sealed record GroupDto(
     string? LogoUrl = null,
     string? CoverPhotoUrl = null,
     bool IsPrivate = false,
-    int MembersCount = 0
+    int MembersCount = 0,
+    int? CreatedById = null,
+    DateTime? CreatedAtUTC = null,
+    DateTime? UpdatedAtUTC = null,
+    int? UpdatedById = null
 );

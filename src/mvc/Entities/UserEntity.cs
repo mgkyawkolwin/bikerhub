@@ -1,12 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BikerHub.Entities;
 
-public class User
+[Table("Users")]
+public class UserEntity : EntityBase<Guid>
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
@@ -32,5 +31,4 @@ public class User
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

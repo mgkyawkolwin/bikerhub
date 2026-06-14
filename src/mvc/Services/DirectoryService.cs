@@ -3,7 +3,6 @@ using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
-using DirectoryEntity = BikerHub.Entities.Directory;
 
 namespace BikerHub.Services;
 
@@ -82,7 +81,7 @@ public class DirectoryService : IDirectoryService
             LogoUrl = dto.LogoUrl,
             CoverImageUrl = dto.CoverImageUrl,
             BusinessType = dto.BusinessType,
-            CreatedById = null,
+            CreatedById = dto.UserId,
         };
 
         _dbContext.Directories.Add(entity);
@@ -92,22 +91,23 @@ public class DirectoryService : IDirectoryService
 
     private static DirectoryDto MapDirectory(DirectoryEntity directory)
     {
-        return new DirectoryDto(
-            directory.Id,
-            directory.Name,
-            directory.Address,
-            directory.City,
-            directory.State,
-            directory.Phone,
-            directory.LogoUrl,
-            directory.CoverImageUrl,
-            directory.BusinessType,
-            directory.CreatedById,
-            directory.IsLiked,
-            directory.LikesCount,
-            directory.Rating,
-            directory.RatingCount,
-            directory.MyRating
-        );
+        return new DirectoryDto
+        {
+            Id = directory.Id,
+            Name = directory.Name,
+            Address = directory.Address,
+            City = directory.City,
+            State = directory.State,
+            Phone = directory.Phone,
+            LogoUrl = directory.LogoUrl,
+            CoverImageUrl = directory.CoverImageUrl,
+            BusinessType = directory.BusinessType,
+            CreatedById = directory.CreatedById,
+            IsLiked = directory.IsLiked,
+            LikesCount = directory.LikesCount,
+            Rating = directory.Rating,
+            RatingCount = directory.RatingCount,
+            MyRating = directory.MyRating
+        };
     }
 }

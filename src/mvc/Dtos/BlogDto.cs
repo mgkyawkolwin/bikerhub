@@ -7,5 +7,8 @@ public sealed record BlogDto(
     string? Content = null,
     string? ImageUrl = null,
     string? Author = null,
-    DateTime? CreatedAt = null
+    DateTime? CreatedAtUTC = null,
+    int? CreatedById = null,
+    DateTime? UpdatedAtUTC = null,
+    int? UpdatedById = null
 );

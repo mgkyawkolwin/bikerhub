@@ -1,7 +1,7 @@
-export default class SocialPost {
+export default class Post {
   id?: string;
-  authorId?: string;
-  authorName?: string;
+  createdById?: string;
+  createdByName?: string;
   authorAvatarUrl?: string;
   groupId?: string;
   content?: string;
@@ -9,5 +9,6 @@ export default class SocialPost {
   loveCount?: number;
   commentCount?: number;
   shareCount?: number;
-  createdAt?: string;
+  createdAtUTC?: string;
+  isLikedByCurrentUser?: boolean;
 }

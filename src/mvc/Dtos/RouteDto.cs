@@ -11,7 +11,9 @@ public sealed record RouteDto(
     decimal? Distance = null,
     decimal? Duration = null,
     string? Type = null,
-    string? CreatedById = null,
+    Guid? CreatedById = null,
     string? OsrmResponseJson = null,
-    DateTime? CreatedAt = null
+    DateTime? CreatedAtUTC = null,
+    DateTime? UpdatedAtUTC = null,
+    Guid? UpdatedById = null
 );

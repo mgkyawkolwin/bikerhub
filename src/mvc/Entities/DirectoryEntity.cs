@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Directory
+public class DirectoryEntity : EntityBase<Guid>
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
@@ -32,7 +29,6 @@ public class Directory
     [MaxLength(100)]
     public string? BusinessType { get; set; }
 
-    public string? CreatedById { get; set; }
     public bool IsLiked { get; set; }
     public int LikesCount { get; set; }
     public double? Rating { get; set; }

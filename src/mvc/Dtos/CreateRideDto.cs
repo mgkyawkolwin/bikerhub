@@ -12,7 +12,7 @@ public sealed record CreateRideDto(
     [property: JsonPropertyName("duration")]
     decimal Duration,
     [property: JsonPropertyName("createdById")]
-    string? CreatedById,
+    Guid CreatedById,
     [property: JsonPropertyName("locations")]
     IEnumerable<RideLocationDto>? Locations
 );

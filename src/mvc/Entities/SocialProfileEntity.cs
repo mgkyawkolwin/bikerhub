@@ -1,21 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BikerHub.Entities;
 
-public class SocialProfile
+public class SocialProfileEntity : EntityBase<Guid>
 {
-    [Key]
-    public int Id { get; set; }
+    public Guid UserId { get; set; }
 
-    [Required]
-    [MaxLength(150)]
-    public string Name { get; set; } = string.Empty;
+    [ForeignKey("UserId")]
+    public virtual UserEntity User { get; set; } = null!;
 
     [MaxLength(512)]
     public string CoverPhotoUrl { get; set; } = string.Empty;
-
-    [MaxLength(512)]
-    public string AvatarUrl { get; set; } = string.Empty;
 
     public string? Bio { get; set; }
     public int FollowersCount { get; set; }

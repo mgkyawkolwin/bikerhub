@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class ChatMessage
+public class ChatMessage : EntityBase<int>
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     public string SenderId { get; set; } = string.Empty;
 

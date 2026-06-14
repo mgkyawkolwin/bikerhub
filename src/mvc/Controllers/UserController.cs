@@ -43,17 +43,18 @@ public class UserController : ControllerBase
         return Ok(new
         {
             Success = true,
-            Data = new UserDto(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.Address,
-                user.City,
-                user.Rating,
-                user.RatingCount,
-                user.ProfilePictureUrl,
-                null
-            )
+            Data = new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Address = user.Address,
+                City = user.City,
+                Rating = user.Rating,
+                RatingCount = user.RatingCount,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Token = null
+            }
         });
     }
 

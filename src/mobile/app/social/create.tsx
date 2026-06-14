@@ -5,6 +5,11 @@ import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { container } from '@/services';
+import { SocialPostServiceToken, type SocialPostService, type CreatePostPayload } from '@/services/socialPostService';
+import SnackBar from '@/components/snackbar';
+import Logger from '@/logging/logger';
+import { useAuthContext } from '@/hooks/use-auth-context';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
@@ -14,6 +19,9 @@ export default function SocialCreateScreen() {
   const [visibility, setVisibility] = useState<'Public' | 'Friends Only'>('Public');
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const { authUser } = useAuthContext();
 
   const requestCamera = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -76,6 +84,42 @@ export default function SocialCreateScreen() {
     setVisibilityModalVisible(false);
   }, []);
 
+  const handlePost = useCallback(async () => {
+    if (!content.trim() && photos.length === 0) {
+      SnackBar.Error('Please add text or images before posting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload: CreatePostPayload = {
+        createdById: authUser?.id ?? '', // Replace with actual user ID from auth context
+        content: content.trim() || undefined,
+        imageUrls: photos.length > 0 ? photos : undefined,
+        visibility,
+      };
+
+      console.info('Submitting post with payload:', payload);
+      const response = await socialPostService.createPost(payload);
+      console.info('Received response:', response);
+      const result = await response.json();
+      Logger.debug('Create post response XXXXXXXXX:', result);
+      console.debug('Create post response:', result);
+
+      if (!response.ok || !result.success) {
+        SnackBar.Error(result.message || 'Unable to post. Please try again.');
+        return;
+      }
+
+      SnackBar.Success('Post submitted successfully.');
+      router.back();
+    } catch (error) {
+      SnackBar.Error('Unable to submit post. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [content, photos, socialPostService, visibility, router]);
+
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
   }, []);
@@ -88,8 +132,13 @@ export default function SocialCreateScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Create Post</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={[styles.postButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-            <Text style={styles.postButtonText}>Post</Text>
+          <TouchableOpacity
+            style={[styles.postButton, { backgroundColor: colors.accent, opacity: isSubmitting ? 0.6 : 1 }]}
+            activeOpacity={0.85}
+            onPress={handlePost}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.postButtonText}>{isSubmitting ? 'Posting...' : 'Post'}</Text>
           </TouchableOpacity>
         </View>
       </View>

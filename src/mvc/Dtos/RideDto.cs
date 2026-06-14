@@ -17,7 +17,9 @@ public sealed record RideDto(
     string? Description = null,
     decimal? Distance = null,
     decimal? Duration = null,
-    string? CreatedById = null,
+    Guid? CreatedById = null,
     IEnumerable<RideLocationDto>? Locations = null,
-    DateTime? CreatedAt = null
+    DateTime? CreatedAtUTC = null,
+    DateTime? UpdatedAtUTC = null,
+    Guid? UpdatedById = null
 );

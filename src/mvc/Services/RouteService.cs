@@ -4,7 +4,6 @@ using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
-using RouteEntity = BikerHub.Entities.RouteEntity;
 
 namespace BikerHub.Services;
 
@@ -27,7 +26,7 @@ public class RouteService : IRouteService
 
     public async Task<PaginatedResultDto<RouteDto>> GetRoutesAsync(int page, int pageSize)
     {
-        var query = _dbContext.Routes.OrderByDescending(r => r.CreatedAt);
+        var query = _dbContext.Routes.OrderByDescending(r => r.CreatedAtUTC);
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
@@ -52,7 +51,7 @@ public class RouteService : IRouteService
             Duration = dto.Duration,
             CreatedById = dto.CreatedById,
             OsrmResponseJson = dto.OsrmResponseJson,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUTC = DateTime.UtcNow,
         };
 
         _dbContext.Routes.Add(entity);
@@ -91,7 +90,7 @@ public class RouteService : IRouteService
             Duration = route.Duration,
             OsrmResponseJson = route.OsrmResponseJson,
             CreatedById = route.CreatedById,
-            CreatedAt = route.CreatedAt
+            CreatedAtUTC = route.CreatedAtUTC
         };
     }
 }
