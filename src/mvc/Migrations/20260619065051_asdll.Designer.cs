@@ -4,6 +4,7 @@ using BikerHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619065051_asdll")]
+    partial class asdll
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,45 +355,6 @@ namespace BikerHub.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Directories");
-                });
-
-            modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("CreatedById")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("FromProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime?>("RespondedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ToProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("UpdatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("UpdatedById")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FromProfileId");
-
-                    b.HasIndex("ToProfileId");
-
-                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Group", b =>
@@ -964,25 +928,6 @@ namespace BikerHub.Migrations
                     b.HasIndex("FriendId");
 
                     b.ToTable("SocialProfileFriends", (string)null);
-                });
-
-            modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
-                {
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "FromProfile")
-                        .WithMany()
-                        .HasForeignKey("FromProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "ToProfile")
-                        .WithMany()
-                        .HasForeignKey("ToProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FromProfile");
-
-                    b.Navigation("ToProfile");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>

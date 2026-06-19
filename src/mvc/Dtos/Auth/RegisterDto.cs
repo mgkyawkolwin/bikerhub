@@ -1,8 +1,9 @@
 namespace BikerHub.Dtos.Auth;
 
 public sealed record RegisterDto(
-    string Name,
-    string? Email,
+    string UserName,
+    string DisplayName,
     string Password,
+    string? Email,
     string? Phone
 );

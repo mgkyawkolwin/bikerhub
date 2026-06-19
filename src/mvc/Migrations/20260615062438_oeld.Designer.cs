@@ -4,6 +4,7 @@ using BikerHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615062438_oeld")]
+    partial class oeld
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,45 +355,6 @@ namespace BikerHub.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Directories");
-                });
-
-            modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("CreatedById")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("FromProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime?>("RespondedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ToProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("UpdatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("UpdatedById")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FromProfileId");
-
-                    b.HasIndex("ToProfileId");
-
-                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Group", b =>
@@ -936,55 +900,6 @@ namespace BikerHub.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("SocialProfileFollow", b =>
-                {
-                    b.Property<Guid>("FollowerProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("FollowingProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("FollowerProfileId", "FollowingProfileId");
-
-                    b.HasIndex("FollowingProfileId");
-
-                    b.ToTable("SocialProfileFollows", (string)null);
-                });
-
-            modelBuilder.Entity("SocialProfileFriend", b =>
-                {
-                    b.Property<Guid>("ProfileId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("FriendId")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("ProfileId", "FriendId");
-
-                    b.HasIndex("FriendId");
-
-                    b.ToTable("SocialProfileFriends", (string)null);
-                });
-
-            modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
-                {
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "FromProfile")
-                        .WithMany()
-                        .HasForeignKey("FromProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", "ToProfile")
-                        .WithMany()
-                        .HasForeignKey("ToProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FromProfile");
-
-                    b.Navigation("ToProfile");
-                });
-
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
                 {
                     b.HasOne("BikerHub.Entities.SocialProfileEntity", "CreatedByProfile")
@@ -1013,7 +928,7 @@ namespace BikerHub.Migrations
             modelBuilder.Entity("BikerHub.Entities.SocialPostEntity", b =>
                 {
                     b.HasOne("BikerHub.Entities.SocialProfileEntity", "SocialProfile")
-                        .WithMany("Posts")
+                        .WithMany()
                         .HasForeignKey("SocialProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1051,36 +966,6 @@ namespace BikerHub.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SocialProfileFollow", b =>
-                {
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
-                        .WithMany()
-                        .HasForeignKey("FollowerProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
-                        .WithMany()
-                        .HasForeignKey("FollowingProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SocialProfileFriend", b =>
-                {
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
-                        .WithMany()
-                        .HasForeignKey("FriendId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
-                        .WithMany()
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
                 {
                     b.Navigation("Replies");
@@ -1091,11 +976,6 @@ namespace BikerHub.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Likes");
-                });
-
-            modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>
-                {
-                    b.Navigation("Posts");
                 });
 #pragma warning restore 612, 618
         }

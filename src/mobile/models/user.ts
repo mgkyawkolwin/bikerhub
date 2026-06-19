@@ -1,6 +1,7 @@
 export default class User {
     id!: string;
-    name?: string;
+    userName?: string;
+    displayName?: string;
     email?: string;
     address?: string;
     city?: string;

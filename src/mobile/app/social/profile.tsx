@@ -7,23 +7,46 @@ import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { SocialProfileServiceToken } from '@/services/socialProfileService';
 import { SocialPostServiceToken } from '@/services/socialPostService';
+import { SocialCommentServiceToken } from '@/services/socialCommentService';
+import { FriendRequestServiceToken } from '@/services/friendRequestService';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import type { SocialProfileService } from '@/services/socialProfileService';
 import type { SocialPostService } from '@/services/socialPostService';
+import type { SocialCommentService } from '@/services/socialCommentService';
+import type { FriendRequestService } from '@/services/friendRequestService';
 import type SocialProfile from '@/models/socialProfile';
 import type Post from '@/models/post';
+import type Comment from '@/models/comment';
+import type FriendRequest from '@/models/friendRequest';
+import SocialPostCard from '@/components/socialPostCard';
+import SocialCommentModal from '@/components/socialCommentModal';
+import SnackBar from '@/components/snackbar';
 
 export default function SocialProfileScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeContext();
   const params = useLocalSearchParams();
+  const { authUser } = useAuthContext();
   const profileService = useMemo(() => container.resolve<SocialProfileService>(SocialProfileServiceToken), []);
   const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const socialCommentService = useMemo(() => container.resolve<SocialCommentService>(SocialCommentServiceToken), []);
+  const friendRequestService = useMemo(() => container.resolve<FriendRequestService>(FriendRequestServiceToken), []);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState('');
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
+  const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+  const [loadingPendingRequests, setLoadingPendingRequests] = useState(false);
+  const [showPendingRequests, setShowPendingRequests] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const isOwnProfile = Boolean(userId && authUser?.id === userId);
 
   const loadProfile = useCallback(async () => {
     if (!userId) return;
@@ -33,14 +56,248 @@ export default function SocialProfileScreen() {
         profileService.getProfileById(userId),
         socialPostService.getPostsByAuthor(userId, 1, 20),
       ]);
-      setProfile(profileResult ?? null);
-      setPosts(postsResult.items);
+      if (!profileResult.ok || !postsResult.ok) {
+        SnackBar.Error('Failed to load profile');
+        return;
+      }
+      const profileData = await profileResult.json();
+      const postsData = await postsResult.json();
+      if (!profileData.success && !postsData.success) {
+        SnackBar.Error('Failed to load profile or posts');
+      }
+      console.debug('Profile data:', profileData);
+      console.debug('Posts data:', postsData);
+      setProfile(profileData.data ?? null);
+      setPosts(postsData.data.items ?? []);
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {
       setLoading(false);
     }
   }, [userId, profileService, socialPostService]);
+
+  const loadComments = useCallback(
+    async (postId: string) => {
+      setCommentsLoading(true);
+      try {
+        const response = await socialCommentService.getComments(postId);
+        if (!response.ok) {
+          SnackBar.Error('Failed to load comments.');
+          return;
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          SnackBar.Error(result.message || 'Failed to load comments.');
+          return;
+        }
+
+        setComments(result.data ?? []);
+      } catch (error) {
+        console.error('Failed to load comments:', error);
+        SnackBar.Error('Failed to load comments.');
+      } finally {
+        setCommentsLoading(false);
+      }
+    },
+    [socialCommentService],
+  );
+
+  const openComments = async (postId: string) => {
+    setSelectedPostId(postId);
+    setReplyToCommentId(null);
+    setReplyToCommentAuthor(null);
+    setCommentInput('');
+    await loadComments(postId);
+  };
+
+  const closeComments = () => {
+    setSelectedPostId(null);
+    setReplyToCommentId(null);
+    setReplyToCommentAuthor(null);
+    setCommentInput('');
+    setComments([]);
+  };
+
+  const clearReply = () => {
+    setReplyToCommentId(null);
+    setReplyToCommentAuthor(null);
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!selectedPostId || !commentInput.trim()) {
+      return;
+    }
+
+    try {
+      const response = await socialCommentService.createComment(
+        selectedPostId,
+        commentInput.trim(),
+        replyToCommentId,
+      );
+
+      if (!response.ok) {
+        SnackBar.Error('Unable to post comment.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to post comment.');
+        return;
+      }
+
+      setCommentInput('');
+      setReplyToCommentId(null);
+      setReplyToCommentAuthor(null);
+      await loadComments(selectedPostId);
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === selectedPostId
+            ? { ...post, commentCount: (post.commentCount ?? 0) + 1 }
+            : post,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+      SnackBar.Error('Unable to post comment.');
+    }
+  };
+
+  const handleDeleteComment = async (commentId?: string) => {
+    if (!selectedPostId || !commentId) {
+      return;
+    }
+
+    try {
+      const response = await socialCommentService.deleteComment(selectedPostId, commentId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to delete comment.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to delete comment.');
+        return;
+      }
+
+      const deletedCount = typeof result.data === 'number' ? result.data : 1;
+      await loadComments(selectedPostId);
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === selectedPostId
+            ? { ...post, commentCount: Math.max(0, (post.commentCount ?? deletedCount) - deletedCount) }
+            : post,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      SnackBar.Error('Unable to delete comment.');
+    }
+  };
+
+  const handleReply = (commentId: string, authorName: string) => {
+    setReplyToCommentId(commentId);
+    setReplyToCommentAuthor(authorName);
+  };
+
+  const loadPendingRequests = useCallback(async () => {
+    setLoadingPendingRequests(true);
+    try {
+      const response = await friendRequestService.getPendingFriendRequests();
+      if (!response.ok) {
+        SnackBar.Error('Failed to load pending friend requests.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Failed to load pending friend requests.');
+        return;
+      }
+
+      setPendingRequests(result.data ?? []);
+    } catch (error) {
+      console.error('Failed to load pending friend requests:', error);
+      SnackBar.Error('Failed to load pending friend requests.');
+    } finally {
+      setLoadingPendingRequests(false);
+    }
+  }, [friendRequestService]);
+
+  const handleAddFriend = async () => {
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const response = await friendRequestService.sendFriendRequest(userId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to send friend request.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to send friend request.');
+        return;
+      }
+
+      SnackBar.Success('Friend request sent.');
+    } catch (error) {
+      console.error('Failed to send friend request:', error);
+      SnackBar.Error('Unable to send friend request.');
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      const response = await friendRequestService.approveFriendRequest(requestId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to approve request.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to approve request.');
+        return;
+      }
+
+      setPendingRequests((prev) => prev.filter((request) => request.id !== requestId));
+      SnackBar.Success('Friend request approved.');
+    } catch (error) {
+      console.error('Failed to approve friend request:', error);
+      SnackBar.Error('Unable to approve request.');
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const response = await friendRequestService.rejectFriendRequest(requestId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to reject request.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to reject request.');
+        return;
+      }
+
+      setPendingRequests((prev) => prev.filter((request) => request.id !== requestId));
+      SnackBar.Success('Friend request rejected.');
+    } catch (error) {
+      console.error('Failed to reject friend request:', error);
+      SnackBar.Error('Unable to reject request.');
+    }
+  };
+
+  const handleFollowersPress = () => {
+    setShowPendingRequests((current) => !current);
+  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -52,51 +309,21 @@ export default function SocialProfileScreen() {
     loadProfile();
   }, [loadProfile]);
 
+  React.useEffect(() => {
+    if (showPendingRequests) {
+      void loadPendingRequests();
+    }
+  }, [showPendingRequests, loadPendingRequests]);
+
   const renderPost = ({ item }: { item: Post }) => (
-    <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      
-      <View style={styles.postHeader}>
-        <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
-        <View style={styles.postMeta}>
-          <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
-            {item.createdByName}
-          </Text>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}> 
-              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recent'}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
-
-      {item.imageUrls?.length ? (
-        <View style={styles.imageGrid}>
-          {item.imageUrls.map((uri, idx) => (
-            <Image
-              key={`${item.id}-${idx}`}
-              source={{ uri }}
-              style={[styles.postImage, item.imageUrls?.length === 1 ? styles.singleImage : styles.multiImage]}
-            />
-          ))}
-        </View>
-      ) : null}
-
-      <View style={styles.postActions}>
-        <View style={styles.actionBlock}>
-          <MaterialIcons name="favorite-border" size={18} color={colors.secondaryText} />
-          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.loveCount}</Text>
-        </View>
-        <View style={styles.actionBlock}>
-          <MaterialIcons name="comment" size={18} color={colors.secondaryText} />
-          <Text style={[styles.actionText, { color: colors.secondaryText }]}>{item.commentCount}</Text>
-        </View>
-        <TouchableOpacity style={styles.postShareButton} activeOpacity={0.75}>
-          <MaterialIcons name="share" size={18} color={colors.text} />
-          <Text style={[styles.shareText, { color: colors.text }]}>Share</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <SocialPostCard
+      post={item}
+      onAuthorPress={() => router.push({ pathname: '/social/profile', params: { userId: item.createdByUserId ?? '' } })}
+      onToggleLove={() => {}}
+      onOpenComments={(postId) => void openComments(postId ?? '')}
+      onSharePress={() => {}}
+      onMenuPress={() => {}}
+    />
   );
 
   if (!userId) {
@@ -158,32 +385,54 @@ export default function SocialProfileScreen() {
         ListHeaderComponent={
           profile ? (
             <>
-              <Image source={{ uri: profile.coverPhotoUrl }} style={styles.coverImage} />
-              
+              {profile.coverPhotoUrl ? (
+                <Image source={{ uri: profile.coverPhotoUrl }} style={styles.coverImage} />
+              ) : (
+                <View style={[styles.coverImage, styles.coverPlaceholder, { backgroundColor: colors.border }]}>
+                  <MaterialIcons name="photo" size={48} color={colors.secondaryText} />
+                </View>
+              )}
+
               <View style={styles.profileContainer}>
                 {/* Row 1: Avatar + Name + Social Icons */}
                 <View style={styles.avatarNameRow}>
-                  <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
+                  {profile.avatarUrl ? (
+                    <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.border }]}>
+                      <MaterialIcons name="person" size={32} color={colors.secondaryText} />
+                    </View>
+                  )}
                   <View style={styles.nameAndSocial}>
                     <View style={styles.nameRow}>
                       <Text style={[styles.profileName, { color: colors.text }]}>
-                      {profile.name}
-                    </Text>
-                    <TouchableOpacity style={styles.shareButton} activeOpacity={0.8} onPress={() => {}}>
-                      <MaterialIcons name="share" size={18} color={colors.accent} />
-                      <Text style={[styles.shareButtonText, { color: colors.accent }]}>Share</Text>
-                    </TouchableOpacity>
+                        {profile.displayName}
+                      </Text>
+                      {!isOwnProfile ? (
+                        <TouchableOpacity
+                          style={[styles.friendButton, { borderColor: colors.border }]}
+                          activeOpacity={0.85}
+                          onPress={handleAddFriend}
+                        >
+                          <MaterialIcons name="person-add" size={18} color={colors.accent} />
+                          <Text style={[styles.friendButtonText, { color: colors.accent }]}>Add Friend</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                      {/* <TouchableOpacity style={styles.shareButton} activeOpacity={0.8} onPress={() => { }}>
+                        <MaterialIcons name="share" size={18} color={colors.accent} />
+                        <Text style={[styles.shareButtonText, { color: colors.accent }]}>Share</Text>
+                      </TouchableOpacity> */}
                     </View>
-                    {profile.socialLinks.length > 0 && (
+                    {profile.socialLinks?.length > 0 && (
                       <View style={styles.socialIconRow}>
                         {profile.socialLinks.map((link) => (
-                          <TouchableOpacity 
-                            key={link.platform} 
-                            style={styles.socialIconButton} 
+                          <TouchableOpacity
+                            key={link.platform}
+                            style={styles.socialIconButton}
                             activeOpacity={0.7}
-                            onPress={() => {}}
+                            onPress={() => { }}
                           >
-                            <MaterialIcons name={mapPlatformIcon(link.platform)} size={16} color={colors.secondaryText} />
+                            <MaterialIcons name={mapPlatformIcon(link.platform)} size={16} color={colors.accent} />
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -201,14 +450,14 @@ export default function SocialProfileScreen() {
                 {/* Row 3: Followers, Following, Follow Button */}
                 <View style={styles.statsAndFollowRow}>
                   <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
+                    <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowersPress}>
                       <Text style={[styles.statValue, { color: colors.text }]}>
                         {profile.followersCount}
                       </Text>
-                      <Text style={[styles.statLabel, { color: colors.secondaryText }]}>
+                      <Text style={[styles.statLabel, { color: colors.accent }]}>
                         Followers
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                     <View style={styles.statItem}>
                       <Text style={[styles.statValue, { color: colors.text }]}>
                         {profile.followingCount}
@@ -218,16 +467,52 @@ export default function SocialProfileScreen() {
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.actionButtonsRow}>
-                    <TouchableOpacity style={[styles.followButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-                      <Text style={styles.followButtonText}>Follow</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.messageButton, { borderColor: colors.accent }]} activeOpacity={0.85}>
-                      <Text style={[styles.messageButtonText, { color: colors.accent }]}>Message</Text>
-                    </TouchableOpacity>
-                  </View>
+                  {!isOwnProfile ? (
+                    <View style={styles.actionButtonsRow}>
+                      <TouchableOpacity style={[styles.followButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
+                        <Text style={styles.followButtonText}>Follow</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.messageButton, { borderColor: colors.accent }]} activeOpacity={0.85}>
+                        <Text style={[styles.messageButtonText, { color: colors.accent }]}>Message</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
                 </View>
-
+                {showPendingRequests ? (
+                  <View style={[styles.pendingRequestsContainer, { borderColor: colors.border, backgroundColor: colors.card }]}> 
+                    <Text style={[styles.pendingRequestsTitle, { color: colors.text }]}>Pending Friend Requests</Text>
+                    {loadingPendingRequests ? (
+                      <Text style={[styles.pendingRequestMessage, { color: colors.secondaryText }]}>Loading...</Text>
+                    ) : pendingRequests.length === 0 ? (
+                      <Text style={[styles.pendingRequestMessage, { color: colors.secondaryText }]}>No pending friend requests.</Text>
+                    ) : (
+                      pendingRequests.map((request) => (
+                        <View key={request.id} style={styles.pendingRequestItem}>
+                          <View style={styles.pendingRequestInfo}>
+                            <Text style={[styles.pendingRequestName, { color: colors.text }]}>{request.fromDisplayName || request.fromUserName}</Text>
+                            <Text style={[styles.pendingRequestSubText, { color: colors.secondaryText }]}>Sent on {new Date(request.createdAtUTC).toLocaleDateString()}</Text>
+                          </View>
+                          <View style={styles.pendingRequestActions}>
+                            <TouchableOpacity
+                              style={[styles.approveButton, { backgroundColor: colors.accent }]}
+                              activeOpacity={0.85}
+                              onPress={() => void handleApproveRequest(request.id)}
+                            >
+                              <MaterialIcons name="check" size={18} color="#fff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.rejectButton, { borderColor: colors.border }]}
+                              activeOpacity={0.85}
+                              onPress={() => void handleRejectRequest(request.id)}
+                            >
+                              <MaterialIcons name="close" size={18} color={colors.text} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                ) : null}
                 {/* Row 4: 5 Stats - Garages, Rides, Distance, Duration, Elevation */}
                 <View style={[styles.fiveStatsGrid, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
                   {/* Garages */}
@@ -316,13 +601,13 @@ export default function SocialProfileScreen() {
               {/* Posts Header */}
               <View style={styles.postsHeader}>
                 <Text style={[styles.postsTitle, { color: colors.text }]}>Posts</Text>
-                <Text style={[styles.postsCount, { color: colors.secondaryText }]}>{posts.length}</Text>
+                <Text style={[styles.postsCount, { color: colors.secondaryText }]}>{posts?.length}</Text>
               </View>
             </>
           ) : null
         }
         ListEmptyComponent={
-          !loading && posts.length === 0 && profile ? (
+          !loading && posts?.length === 0 && profile ? (
             <View style={styles.emptyPosts}>
               <MaterialIcons name="post-add" size={48} color={colors.secondaryText} />
               <Text style={[styles.emptyText, { color: colors.secondaryText, marginTop: 12 }]}>
@@ -335,6 +620,20 @@ export default function SocialProfileScreen() {
           paddingBottom: insets.bottom + 80,
         }}
         showsVerticalScrollIndicator={false}
+      />
+
+      <SocialCommentModal
+        visible={selectedPostId !== null}
+        comments={comments}
+        commentsLoading={commentsLoading}
+        replyToCommentAuthor={replyToCommentAuthor}
+        commentInput={commentInput}
+        onClose={closeComments}
+        onClearReply={clearReply}
+        onReply={handleReply}
+        onDeleteComment={handleDeleteComment}
+        onCommentInputChange={setCommentInput}
+        onCommentSubmit={handleCommentSubmit}
       />
     </View>
   );
@@ -375,6 +674,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
   },
+  coverPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -391,6 +694,11 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nameAndSocial: {
     flex: 1,
@@ -399,6 +707,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 6,
+  },
+  friendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: 'transparent',
+  },
+  friendButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   socialIconRow: {
     flexDirection: 'row',
@@ -484,6 +807,60 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  pendingRequestsContainer: {
+    marginTop: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    padding: 14,
+  },
+  pendingRequestsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  pendingRequestMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  pendingRequestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#CCCCCC',
+  },
+  pendingRequestInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  pendingRequestName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pendingRequestSubText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  pendingRequestActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  approveButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   marketplaceButton: {
     marginTop: 14,

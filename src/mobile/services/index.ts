@@ -26,3 +26,8 @@ export type { AuthService } from './authService';
 export { AuthServiceToken } from './authService';
 export type { SocialCommentService } from './socialCommentService';
 export { SocialCommentServiceToken } from './socialCommentService';
+export type { FollowService } from './followService';
+export { FollowServiceToken } from './followService';
+export type { FriendRequestService } from './friendRequestService';
+export { FriendRequestServiceToken } from './friendRequestService';
+

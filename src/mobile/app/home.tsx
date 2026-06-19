@@ -1,9 +1,8 @@
 import { StyleSheet, View, TouchableOpacity, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Link, type Href } from 'expo-router';
+import { Link, type Href, useRouter } from 'expo-router';
 import { useThemeContext } from '@/hooks/use-theme-context';
-import { useAuthContext } from '@/hooks/use-auth-context';
 import { useI18n } from '@/i18n';
 
 function useSections() {
@@ -63,16 +62,14 @@ function useSections() {
 export default function HomeScreen() {
   const ins = useSafeAreaInsets();
   const { colors } = useThemeContext();
-  const { getAuthUser } = useAuthContext();
+  const router = useRouter();
   const sections = useSections();
-  const authUser = getAuthUser();
 
   return (
     <View style={[$.root, { backgroundColor: colors.background }]}>
 
       {/* ── header ── */}
-      <View style={[$.header, { paddingTop: ins.top + 8 }]}>
-        {/* top row — icons + logo */}
+      <View style={[$.header, { paddingTop: ins.top + 8 }]}> 
         <View style={$.headerTop}>
           <View style={$.headerSide}>
             <Link href="/settings" asChild>
@@ -80,6 +77,12 @@ export default function HomeScreen() {
                 <MaterialIcons name="tune" size={22} color={colors.text} />
               </TouchableOpacity>
             </Link>
+            <Text style={[$.logo, { color: colors.text, marginLeft: 10 }]}>BIKERHUB</Text>
+          </View>
+          <View style={$.headerSide}>
+            <TouchableOpacity hitSlop={12} onPress={() => router.push('/search')}>
+              <MaterialIcons name="search" size={22} color={colors.text} />
+            </TouchableOpacity>
             <Link href="/message/messages" asChild>
               <TouchableOpacity hitSlop={12}>
                 <View>
@@ -88,9 +91,6 @@ export default function HomeScreen() {
                 </View>
               </TouchableOpacity>
             </Link>
-          </View>
-          <Text style={[$.logo, { color: colors.text }]}>BIKERHUB</Text>
-          <View style={$.headerSide}>
             <Link href="/chat/chats" asChild>
               <TouchableOpacity hitSlop={12}>
                 <MaterialIcons name="chat-bubble-outline" size={20} color={colors.text} />
@@ -104,27 +104,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* info row — welcome + weather */}
         <View style={$.infoRow}>
-          <Text style={[$.welcome, { color: colors.text }]}>Welcome, {authUser?.name ?? 'MM Biker'}</Text>
-          <View style={$.weatherRow}>
-            <MaterialIcons name="wb-sunny" size={14} color="#FFC107" />
-            <Text style={$.weatherText}>34°C · Yangon</Text>
-          </View>
-        </View>
-
-        {/* stats row */}
-        <View style={$.statsRow}>
-          <View style={$.statItem}>
-            <MaterialIcons name="two-wheeler" size={20} color={colors.text} />
-            <Text style={[$.statValue, { color: colors.text }]}>3</Text>
-          </View>
-          <View style={[$.statDivider, { backgroundColor: '#333' }]} />
-          <View style={$.statItem}>
-            <MaterialIcons name="water-drop" size={20} color={colors.text} />
-            <Text style={[$.statValue, { color: colors.text }]}>3,000 Km</Text>
-          </View>
-          <View style={[$.statDivider, { backgroundColor: '#333' }]} />
           <View style={$.statItem}>
             <MaterialIcons name="settings" size={20} color={colors.text} />
             <Text style={[$.statValue, { color: colors.text }]}>5,000 Km</Text>
@@ -140,24 +120,20 @@ export default function HomeScreen() {
       {/* ── body ── */}
       <ScrollView
         contentContainerStyle={[$.scroll, { paddingBottom: ins.bottom + 20 }]}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         {sections.map((sec) => (
           <View key={sec.title} style={[$.group, { backgroundColor: colors.card, borderColor: colors.border }]}>
-
-            {/* group header */}
             <View style={$.groupHead}>
               <MaterialIcons name={sec.icon as any} size={18} color={colors.secondaryText} />
               <Text style={[$.groupTitle, { color: colors.text }]}>{sec.title}</Text>
             </View>
-
             <View style={[$.divider, { backgroundColor: colors.border }]} />
-
-            {/* items grid — 3 columns */}
             <View style={$.grid}>
               {sec.items.map((item) => (
                 <Link key={item.label} href={item.link as Href} asChild>
                   <TouchableOpacity style={$.tile} activeOpacity={0.5}>
-                    <View style={[$.tileIcon, { backgroundColor: colors.icon }]}>
+                    <View style={[$.tileIcon, { backgroundColor: colors.icon }]}> 
                       <MaterialIcons name={item.icon as any} size={22} color={colors.icon} />
                     </View>
                     <Text style={[$.tileLabel, { color: colors.text }]} numberOfLines={2}>
@@ -176,8 +152,6 @@ export default function HomeScreen() {
 
 const $ = StyleSheet.create({
   root: { flex: 1 },
-
-  /* header */
   header: {
     paddingHorizontal: 16,
     paddingBottom: 14,
@@ -204,23 +178,10 @@ const $ = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 14,
   },
-  welcome: { fontSize: 15, fontWeight: '600' },
-  weatherRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  weatherText: { fontSize: 12, color: '#AAAAAA' },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    marginTop: 14,
-  },
   statItem: { alignItems: 'center', gap: 4 },
   statValue: { fontSize: 14, fontWeight: '700' },
   statDivider: { width: 1, height: 28 },
-
-  /* scroll */
   scroll: { paddingHorizontal: 12, paddingTop: 8, gap: 8 },
-
-  /* group card */
   group: {
     borderRadius: 12,
     borderWidth: 1,
@@ -239,8 +200,6 @@ const $ = StyleSheet.create({
     letterSpacing: 0.3,
   },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 12 },
-
-  /* grid */
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

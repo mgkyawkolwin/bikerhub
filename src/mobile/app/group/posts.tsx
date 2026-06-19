@@ -87,13 +87,13 @@ export default function GroupPostsScreen() {
 
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id ?? `${item.createdById}-${item.createdAt}`}
+        keyExtractor={(item) => item.id ?? `${item.createdByUserId}-${item.createdAt}`}
         renderItem={({ item }) => (
           <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.postHeader}>
               <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
               <View style={styles.postMeta}>
-                <Text style={[styles.authorName, { color: colors.text }]}>{item.createdByName}</Text>
+                <Text style={[styles.authorName, { color: colors.text }]}>{item.createdByDisplayName}</Text>
                 <View style={styles.metaRow}>
                   <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
                   <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</Text>

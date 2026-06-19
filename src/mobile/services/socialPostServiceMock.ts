@@ -36,12 +36,33 @@ export class MockSocialPostService implements SocialPostService {
 
   async getPostsByAuthor(authorId: string, page: number, pageSize: number): Promise<Response> {
     const db = await this.getDb();
-    const posts = ((db.collections.socialPosts as Post[] | undefined) ?? []).filter((post) => post.createdById === authorId);
+    const posts = ((db.collections.socialPosts as Post[] | undefined) ?? []).filter((post) => post.createdByUserId === authorId);
     const sortedPosts = posts
       .slice()
       .sort((a, b) => new Date(b.createdAt ?? '').getTime() - new Date(a.createdAt ?? '').getTime());
     const payload = JSON.stringify(paginate(sortedPosts, page, pageSize));
     return Promise.resolve(new Response(payload, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  }
+
+  async getPostById(postId: string): Promise<Response> {
+    const db = await this.getDb();
+    const post = ((db.collections.socialPosts as Post[] | undefined) ?? []).find((item) => item.id === postId);
+
+    if (!post) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ Success: false, Message: 'Post not found.' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    }
+
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({ Success: true, Data: post }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
   }
 
   async createPost(payload: CreatePostPayload): Promise<Response> {

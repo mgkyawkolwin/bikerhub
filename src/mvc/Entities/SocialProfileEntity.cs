@@ -25,4 +25,8 @@ public class SocialProfileEntity : EntityBase<Guid>
     public string? RideDuration { get; set; }
     public string? RideElevation { get; set; }
     public string SocialLinksJson { get; set; } = "[]";
+    public virtual ICollection<SocialPostEntity> Posts { get; set; } = [];
+    public virtual ICollection<SocialProfileEntity> Friends { get; set; } = [];
+    public virtual ICollection<SocialProfileEntity> Followers { get; set; } = [];
+    public virtual ICollection<SocialProfileEntity> Following { get; set; } = [];
 }

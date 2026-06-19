@@ -26,4 +26,55 @@ public class AppDbContext : DbContext
     public DbSet<SocialPostLikeEntity> SocialPostLikes => Set<SocialPostLikeEntity>();
     public DbSet<SocialPostCommentEntity> SocialPostComments => Set<SocialPostCommentEntity>();
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();
+    public DbSet<FriendRequestEntity> FriendRequests => Set<FriendRequestEntity>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<SocialProfileEntity>(entity =>
+        {
+            entity
+                .HasMany(profile => profile.Followers)
+                .WithMany(profile => profile.Following)
+                .UsingEntity<Dictionary<string, object>>(
+                    "SocialProfileFollow",
+                    join => join
+                        .HasOne<SocialProfileEntity>()
+                        .WithMany()
+                        .HasForeignKey("FollowerProfileId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join => join
+                        .HasOne<SocialProfileEntity>()
+                        .WithMany()
+                        .HasForeignKey("FollowingProfileId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join =>
+                    {
+                        join.HasKey("FollowerProfileId", "FollowingProfileId");
+                        join.ToTable("SocialProfileFollows");
+                    });
+
+            entity
+                .HasMany(profile => profile.Friends)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "SocialProfileFriend",
+                    join => join
+                        .HasOne<SocialProfileEntity>()
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join => join
+                        .HasOne<SocialProfileEntity>()
+                        .WithMany()
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join =>
+                    {
+                        join.HasKey("ProfileId", "FriendId");
+                        join.ToTable("SocialProfileFriends");
+                    });
+        });
+    }
 }

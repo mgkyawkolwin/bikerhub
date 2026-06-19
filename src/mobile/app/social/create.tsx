@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeContext } from '@/hooks/use-theme-context';
@@ -15,6 +15,8 @@ export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
   const { colors } = useThemeContext();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const shareUrl = Array.isArray(params.shareUrl) ? params.shareUrl[0] : params.shareUrl;
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState<'Public' | 'Friends Only'>('Public');
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
@@ -85,16 +87,18 @@ export default function SocialCreateScreen() {
   }, []);
 
   const handlePost = useCallback(async () => {
-    if (!content.trim() && photos.length === 0) {
-      SnackBar.Error('Please add text or images before posting.');
+    if (!content.trim() && !shareUrl && photos.length === 0) {
+      SnackBar.Error('Please add text, a shared link, or images before posting.');
       return;
     }
+
+    const unifiedContent = [content.trim(), shareUrl].filter(Boolean).join('\n\n');
 
     setIsSubmitting(true);
     try {
       const payload: CreatePostPayload = {
-        createdById: authUser?.id ?? '', // Replace with actual user ID from auth context
-        content: content.trim() || undefined,
+        createdById: authUser?.id ?? '',
+        content: unifiedContent || undefined,
         imageUrls: photos.length > 0 ? photos : undefined,
         visibility,
       };
@@ -118,7 +122,7 @@ export default function SocialCreateScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [content, photos, socialPostService, visibility, router]);
+  }, [authUser?.id, content, photos, shareUrl, socialPostService, visibility, router]);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
@@ -173,6 +177,15 @@ export default function SocialCreateScreen() {
           value={content}
           onChangeText={setContent}
         />
+
+        {shareUrl ? (
+          <View style={[styles.sharePreview, { borderColor: colors.border, backgroundColor: colors.card }]}> 
+            <Text style={[styles.sharePreviewLabel, { color: colors.secondaryText }]}>Share:</Text>
+            <Text style={[styles.sharePreviewUrl, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
+              {shareUrl}
+            </Text>
+          </View>
+        ) : null}
 
         {photos.length > 0 ? (
           <View style={styles.photoGrid}>
@@ -234,6 +247,9 @@ const styles = StyleSheet.create({
   photoWrapper: { width: '48%', aspectRatio: 1, borderRadius: 18, overflow: 'hidden', position: 'relative' },
   photo: { width: '100%', height: '100%' },
   photoDelete: { position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+  sharePreview: { borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 12 },
+  sharePreviewLabel: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
+  sharePreviewUrl: { fontSize: 14 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   modalSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 24 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#CCCCCC', alignSelf: 'center', marginBottom: 12 },

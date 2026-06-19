@@ -5,8 +5,9 @@ public sealed record SocialLinkDto(string Platform, string Url);
 public sealed record SocialProfileDto
 {
     public Guid Id { get; set; }
-    public required Guid CreatedById { get; set; }
-    public required string CreatedByName { get; set; }
+    public required Guid UserId { get; set; }
+    public required string UserName { get; set; }
+    public required string DisplayName { get; set; }
     public string? CoverPhotoUrl { get; set; } = null;
     public string? Bio { get; set; } = null;
     public int FollowersCount { get; set; } = 0;

@@ -6,6 +6,7 @@ export const SocialCommentServiceToken = Symbol('SocialCommentService');
 export interface SocialCommentService {
   getComments(postId: string): Promise<Response>;
   createComment(postId: string, content: string, parentCommentId?: string | null): Promise<Response>;
+  deleteComment(postId: string, commentId: string): Promise<Response>;
 }
 
 export class SocialCommentServiceClient implements SocialCommentService {
@@ -17,6 +18,12 @@ export class SocialCommentServiceClient implements SocialCommentService {
     return authenticatedFetchApi(`/social/posts/${encodeURIComponent(postId)}/comments`, {
       method: 'POST',
       body: JSON.stringify({ postId, content, parentCommentId }),
+    });
+  }
+
+  async deleteComment(postId: string, commentId: string): Promise<Response> {
+    return authenticatedFetchApi(`/social/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`, {
+      method: 'DELETE',
     });
   }
 }

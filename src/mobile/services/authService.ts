@@ -4,8 +4,8 @@ import { fetchJson } from './apiClient';
 export const AuthServiceToken = Symbol('AuthService');
 
 export interface AuthService {
-  signIn(username: string, password: string): Promise<User>;
-  register(name: string, password: string, email?: string, phone?: string): Promise<User>;
+  signIn(userName: string, password: string): Promise<User>;
+  register(userName: string, displayName: string, password: string, email?: string, phone?: string): Promise<User>;
   signInWithGoogle(idToken: string): Promise<User>;
 }
 
@@ -19,10 +19,11 @@ interface ApiAuthResponse {
 }
 
 export class AuthServiceClient implements AuthService {
-  async signIn(username: string, password: string): Promise<User> {
+
+  async signIn(userName: string, password: string): Promise<User> {
     const response = await fetchJson('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ userName, password }),
     });
     const result = await response.json() as ApiAuthResponse;
 
@@ -39,10 +40,10 @@ export class AuthServiceClient implements AuthService {
     return { ...user, token };
   }
 
-  async register(name: string, password: string, email?: string, phone?: string): Promise<User> {
+  async register(userName: string, displayName: string, password: string, email?: string, phone?: string): Promise<User> {
     const response = await fetchJson('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, phone }),
+      body: JSON.stringify({ userName, displayName, email, password, phone }),
     });
     const result = await response.json() as ApiAuthResponse;
 

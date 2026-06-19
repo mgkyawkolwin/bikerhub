@@ -7,8 +7,11 @@ namespace BikerHub.Entities;
 public class UserEntity : EntityBase<Guid>
 {
     [Required]
+    [MaxLength(20)]
+    public string UserName { get; set; } = string.Empty;
+    [Required]
     [MaxLength(100)]
-    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
 
     [Required]
     [EmailAddress]

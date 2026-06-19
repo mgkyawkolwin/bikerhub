@@ -25,19 +25,19 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Attempting to register user {Name}", dto.Name);
+            _logger.LogInformation("Attempting to register user {Name}", dto.UserName);
             _logger.LogDebug("Register DTO: {Dto}", JsonSerializer.Serialize(dto));
 
             var response = await _authService.RegisterAsync(dto);
 
-            _logger.LogInformation("User registered successfully for {Name}", dto.Name);
+            _logger.LogInformation("User registered successfully for {Name}", dto.UserName);
             _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new {Success = true, Data = response});
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Registration failed for user {Name}", dto.Name);
+            _logger.LogWarning(ex, "Registration failed for user {Name}", dto.UserName);
             return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)

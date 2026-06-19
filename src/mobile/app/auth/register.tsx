@@ -14,14 +14,15 @@ export default function RegisterScreen() {
   const { t } = useI18n();
   const { setAuthUser } = useAuthContext();
   const authService = useMemo(() => container.resolve<AuthService>(AuthServiceToken), []);
-  const [username, setUsername] = useState('');
+  const [userName, setUserName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!username.trim() || !password.trim()) {
+    if (!userName.trim() || !password.trim()) {
       SnackBar.Error('Username and password are required.');
       return;
     }
@@ -29,7 +30,8 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await authService.register(
-        username.trim(),
+        userName.trim(),
+        displayName.trim(),
         password.trim(),
         email.trim() || undefined,
         phone.trim() || undefined
@@ -51,11 +53,27 @@ export default function RegisterScreen() {
       <View style={styles.content}>
         <TextInput
           style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
-          placeholder={t.Text.username ?? 'Username'}
+          placeholder={t.Text.userName ?? 'User Name'}
           placeholderTextColor={colors.secondaryText}
           autoCapitalize="none"
-          value={username}
-          onChangeText={setUsername}
+          value={userName}
+          onChangeText={setUserName}
+        />
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
+          placeholder={t.Text.displayName ?? 'Display Name'}
+          placeholderTextColor={colors.secondaryText}
+          autoCapitalize="none"
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
+          placeholder={t.Text.password ?? 'Password'}
+          placeholderTextColor={colors.secondaryText}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
         <TextInput
           style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
@@ -73,14 +91,6 @@ export default function RegisterScreen() {
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
-        />
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
-          placeholder={t.Text.password ?? 'Password'}
-          placeholderTextColor={colors.secondaryText}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
         />
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleRegister} disabled={loading}>
           {loading ? (

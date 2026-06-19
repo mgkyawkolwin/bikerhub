@@ -37,7 +37,7 @@ public class AuthService : IAuthService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Name, user.UserName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
@@ -58,28 +58,29 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+        DtoValidationHelper.ValidateRequiredString(dto.UserName, "Name");
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {
             DtoValidationHelper.ValidateEmail(dto.Email);
         }
         DtoValidationHelper.ValidateRequiredString(dto.Password, "Password");
 
-        _logger.LogTrace("RegisterAsync called for user {Name}", dto.Name);
-        _logger.LogInformation("Registering user {Name}", dto.Name);
+        _logger.LogTrace("RegisterAsync called for user {Name}", dto.UserName);
+        _logger.LogInformation("Registering user {Name}", dto.UserName);
 
-        var normalizedName = dto.Name.Trim();
+        var normalizedName = dto.UserName.Trim();
         var normalizedEmail = string.IsNullOrWhiteSpace(dto.Email) ? string.Empty : dto.Email.Trim().ToLowerInvariant();
 
-        if (await _dbContext.Users.AnyAsync(u => u.Name == normalizedName || (!string.IsNullOrEmpty(normalizedEmail) && u.Email == normalizedEmail)))
+        if (await _dbContext.Users.AnyAsync(u => u.UserName == normalizedName || (!string.IsNullOrEmpty(normalizedEmail) && u.Email == normalizedEmail)))
         {
-            _logger.LogWarning("Registration conflict for user {Name}", dto.Name);
+            _logger.LogWarning("Registration conflict for user {Name}", dto.UserName);
             throw new CustomException("A user with this username or email already exists.");
         }
 
         var user = new UserEntity
         {
-            Name = normalizedName,
+            UserName = normalizedName,
+            DisplayName = dto.DisplayName,
             Email = normalizedEmail,
             CreatedAtUTC = DateTime.UtcNow,
         };
@@ -105,7 +106,7 @@ public class AuthService : IAuthService
             new UserDto
             {
                 Id = user.Id,
-                Name = user.Name,
+                UserName = user.UserName,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,
@@ -132,7 +133,7 @@ public class AuthService : IAuthService
         var normalizedUsername = dto.Username.Trim();
         var normalizedEmail = normalizedUsername.Contains('@') ? normalizedUsername.ToLowerInvariant() : null;
         var normalizedName = normalizedUsername.ToLowerInvariant();
-        var user = await _dbContext.Users.SingleOrDefaultAsync(u => (normalizedEmail != null && u.Email == normalizedEmail) || u.Name.ToLower() == normalizedName);
+        var user = await _dbContext.Users.SingleOrDefaultAsync(u => (normalizedEmail != null && u.Email == normalizedEmail) || u.UserName.ToLower() == normalizedName);
 
         if (user == null)
         {
@@ -155,7 +156,7 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
             new UserDto
             {
                 Id = user.Id,
-                Name = user.Name,
+                UserName = user.UserName,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,
@@ -206,7 +207,7 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
         {
             user = new UserEntity
             {
-                Name = tokenInfo.Name ?? tokenInfo.Email,
+                UserName = tokenInfo.Name ?? tokenInfo.Email,
                 Email = normalizedEmail,
                 ProfilePictureUrl = tokenInfo.Picture,
                 CreatedAtUTC = DateTime.UtcNow,
@@ -221,9 +222,9 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
         else
         {
             var updated = false;
-            if (!string.IsNullOrEmpty(tokenInfo.Name) && user.Name != tokenInfo.Name)
+            if (!string.IsNullOrEmpty(tokenInfo.Name) && user.UserName != tokenInfo.Name)
             {
-                user.Name = tokenInfo.Name;
+                user.UserName = tokenInfo.Name;
                 updated = true;
             }
             if (!string.IsNullOrEmpty(tokenInfo.Picture) && user.ProfilePictureUrl != tokenInfo.Picture)
@@ -245,7 +246,7 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
             new UserDto
             {
                 Id = user.Id,
-                Name = user.Name,
+                UserName = user.UserName,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,

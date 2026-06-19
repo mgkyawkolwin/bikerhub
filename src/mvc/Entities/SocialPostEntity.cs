@@ -17,6 +17,6 @@ public class SocialPostEntity : EntityBase<Guid>
     [ForeignKey(nameof(SocialProfileId))]
     public virtual SocialProfileEntity SocialProfile { get; set; } = null!;
 
-    public virtual ICollection<SocialPostLikeEntity> Likes { get; set; } = new List<SocialPostLikeEntity>();
-    public virtual ICollection<SocialPostCommentEntity> Comments { get; set; } = new List<SocialPostCommentEntity>();
+    public virtual ICollection<SocialPostLikeEntity> Likes { get; set; } = [];
+    public virtual ICollection<SocialPostCommentEntity> Comments { get; set; } = [];
 }

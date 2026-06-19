@@ -8,8 +8,9 @@ public sealed record SocialPostDto
     public int CommentCount { get; set; }
     public int ShareCount { get; set; }
     public DateTime CreatedAtUTC { get; set; }
-    public required Guid CreatedById { get; set; }
-    public required string CreatedByName { get; set; }
+    public required Guid CreatedByUserId { get; set; }
+    public required string CreatedByDisplayName { get; set; }
+    public required string CreatedByUserName { get; set; }
     public string? Content { get; set; } = null;
     public IEnumerable<string>? ImageUrls { get; set; } = null;
 }

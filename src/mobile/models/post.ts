@@ -1,7 +1,8 @@
 export default class Post {
   id?: string;
-  createdById?: string;
-  createdByName?: string;
+  createdByUserId?: string;
+  createdByUserName?: string;
+  createdByDisplayName?: string;
   authorAvatarUrl?: string;
   groupId?: string;
   content?: string;

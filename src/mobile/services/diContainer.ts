@@ -17,6 +17,8 @@ import { SocialCommentServiceClient } from './socialCommentService';
 import { SocialProfileServiceClient } from './socialProfileService';
 import { StolenBikeServiceClient } from './stolenBikeService';
 import { UserServiceClient } from './userService';
+import { FollowServiceClient } from './followService';
+import { FriendRequestServiceClient, FriendRequestServiceToken } from './friendRequestService';
 import { MarketplaceServiceToken } from './marketplaceService';
 import { StolenBikeServiceToken } from './stolenBikeService';
 import { MessageServiceToken } from './messageService';
@@ -34,6 +36,7 @@ import { ConfigServiceToken } from './configService';
 import { ChatServiceToken } from './chatService';
 import { AuthServiceToken } from './authService';
 import { UserServiceToken } from './userService';
+import { FollowServiceToken } from './followService';
 
 container.registerSingleton(MarketplaceServiceToken, MarketplaceServiceClient);
 container.registerSingleton(StolenBikeServiceToken, StolenBikeServiceClient);
@@ -52,5 +55,7 @@ container.registerSingleton(ConfigServiceToken, ConfigServiceClient);
 container.registerSingleton(ChatServiceToken, ChatServiceClient);
 container.registerSingleton(AuthServiceToken, AuthServiceClient);
 container.registerSingleton(UserServiceToken, UserServiceClient);
+container.registerSingleton(FollowServiceToken, FollowServiceClient);
+container.registerSingleton(FriendRequestServiceToken, FriendRequestServiceClient);
 
 export { container };
