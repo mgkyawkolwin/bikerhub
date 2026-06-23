@@ -14,19 +14,19 @@ public enum FriendRequestStatus
 public class FriendRequestEntity : EntityBase<Guid>
 {
     [Required]
-    public required Guid FromProfileId { get; set; }
+    public required Guid FromUserId { get; set; }
     
     [Required]
-    public required Guid ToProfileId { get; set; }
+    public required Guid ToUserId { get; set; }
     
     [Required]
     public FriendRequestStatus Status { get; set; } = FriendRequestStatus.Pending;
     
     public DateTime? RespondedAtUTC { get; set; }
 
-    [ForeignKey(nameof(FromProfileId))]
-    public virtual SocialProfileEntity FromProfile { get; set; } = null!;
+    [ForeignKey(nameof(FromUserId))]
+    public virtual UserEntity FromUser { get; set; } = null!;
 
-    [ForeignKey(nameof(ToProfileId))]
-    public virtual SocialProfileEntity ToProfile { get; set; } = null!;
+    [ForeignKey(nameof(ToUserId))]
+    public virtual UserEntity ToUser { get; set; } = null!;
 }

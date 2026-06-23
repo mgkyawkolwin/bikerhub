@@ -10,6 +10,7 @@ import { container, AuthServiceToken } from '@/services';
 import type { AuthService } from '@/services';
 import { GoogleAuthConfig } from '@/services/googleAuthConfig';
 import SnackBar from '@/components/snackbar';
+import appJson from '../../app.json';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -110,6 +111,9 @@ export default function SignInScreen() {
           <Text style={[styles.registerButtonText, { color: colors.text }]}>Register</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.versionContainer}>
+        <Text style={[styles.version, { color: colors.secondaryText }]}>Version {appJson.expo.version}</Text>
+      </View>
     </View>
   );
 }
@@ -119,6 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 48,
+    position: 'relative',
   },
   header: {
     marginTop: 54,
@@ -179,5 +184,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  versionContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 24,
+    alignItems: 'center',
+  },
+  version: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

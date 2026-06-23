@@ -5,12 +5,14 @@ import { router } from 'expo-router';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { Label } from '@react-navigation/elements';
+import appJson from '../app.json';
 
 export default function SettingsScreen() {
   const ins = useSafeAreaInsets();
   const { colors, isDark, toggleTheme } = useThemeContext();
   const { t, locale, setLocale } = useI18n();
 
+  const appVersion = appJson.expo.version;
 
   return (
     <View style={[$.root, { backgroundColor: colors.background }]}>
@@ -75,6 +77,9 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+      <View style={[$.versionContainer, { bottom: ins.bottom + 16 }]}> 
+        <Label style={[$.version, { color: colors.secondaryText }]}>Version {appVersion}</Label>
+      </View>
     </View>
   );
 }
@@ -89,7 +94,7 @@ const $ = StyleSheet.create({
     paddingBottom: 10,
   },
   title: { fontSize: 17, fontWeight: '700', letterSpacing: 1 },
-  scroll: { paddingHorizontal: 12, paddingTop: 8, gap: 8 },
+  scroll: { paddingHorizontal: 12, paddingTop: 8, gap: 8, paddingBottom: 64 },
   card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   cardHead: {
     flexDirection: 'row',
@@ -115,4 +120,14 @@ const $ = StyleSheet.create({
   },
   langText: { fontSize: 13, fontWeight: '600' },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  versionContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  version: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });

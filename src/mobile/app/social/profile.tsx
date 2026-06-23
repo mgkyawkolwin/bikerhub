@@ -5,32 +5,21 @@ import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
-import { SocialProfileServiceToken } from '@/services/socialProfileService';
-import { SocialPostServiceToken } from '@/services/socialPostService';
-import { SocialCommentServiceToken } from '@/services/socialCommentService';
-import { FriendRequestServiceToken } from '@/services/friendRequestService';
 import { useAuthContext } from '@/hooks/use-auth-context';
-import type { SocialProfileService } from '@/services/socialProfileService';
-import type { SocialPostService } from '@/services/socialPostService';
-import type { SocialCommentService } from '@/services/socialCommentService';
-import type { FriendRequestService } from '@/services/friendRequestService';
 import type SocialProfile from '@/models/socialProfile';
 import type Post from '@/models/post';
 import type Comment from '@/models/comment';
-import type FriendRequest from '@/models/friendRequest';
 import SocialPostCard from '@/components/socialPostCard';
 import SocialCommentModal from '@/components/socialCommentModal';
 import SnackBar from '@/components/snackbar';
+import { SocialServiceClient, SocialServiceToken } from '@/services/socialService';
 
 export default function SocialProfileScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const { authUser } = useAuthContext();
-  const profileService = useMemo(() => container.resolve<SocialProfileService>(SocialProfileServiceToken), []);
-  const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
-  const socialCommentService = useMemo(() => container.resolve<SocialCommentService>(SocialCommentServiceToken), []);
-  const friendRequestService = useMemo(() => container.resolve<FriendRequestService>(FriendRequestServiceToken), []);
+  const socialSerivce = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,9 +29,6 @@ export default function SocialProfileScreen() {
   const [commentInput, setCommentInput] = useState('');
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
-  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
-  const [loadingPendingRequests, setLoadingPendingRequests] = useState(false);
-  const [showPendingRequests, setShowPendingRequests] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
@@ -53,8 +39,8 @@ export default function SocialProfileScreen() {
     setLoading(true);
     try {
       const [profileResult, postsResult] = await Promise.all([
-        profileService.getProfileById(userId),
-        socialPostService.getPostsByAuthor(userId, 1, 20),
+        socialSerivce.getProfileById(userId),
+        socialSerivce.getPostsByUser(userId, 1, 20),
       ]);
       if (!profileResult.ok || !postsResult.ok) {
         SnackBar.Error('Failed to load profile');
@@ -74,13 +60,13 @@ export default function SocialProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, [userId, profileService, socialPostService]);
+  }, [userId, socialSerivce]);
 
   const loadComments = useCallback(
     async (postId: string) => {
       setCommentsLoading(true);
       try {
-        const response = await socialCommentService.getComments(postId);
+        const response = await socialSerivce.getComments(postId);
         if (!response.ok) {
           SnackBar.Error('Failed to load comments.');
           return;
@@ -100,7 +86,7 @@ export default function SocialProfileScreen() {
         setCommentsLoading(false);
       }
     },
-    [socialCommentService],
+    [socialSerivce],
   );
 
   const openComments = async (postId: string) => {
@@ -130,7 +116,7 @@ export default function SocialProfileScreen() {
     }
 
     try {
-      const response = await socialCommentService.createComment(
+      const response = await socialSerivce.createComment(
         selectedPostId,
         commentInput.trim(),
         replyToCommentId,
@@ -170,7 +156,7 @@ export default function SocialProfileScreen() {
     }
 
     try {
-      const response = await socialCommentService.deleteComment(selectedPostId, commentId);
+      const response = await socialSerivce.deleteComment(selectedPostId, commentId);
       if (!response.ok) {
         SnackBar.Error('Unable to delete comment.');
         return;
@@ -202,101 +188,114 @@ export default function SocialProfileScreen() {
     setReplyToCommentAuthor(authorName);
   };
 
-  const loadPendingRequests = useCallback(async () => {
-    setLoadingPendingRequests(true);
-    try {
-      const response = await friendRequestService.getPendingFriendRequests();
-      if (!response.ok) {
-        SnackBar.Error('Failed to load pending friend requests.');
-        return;
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        SnackBar.Error(result.message || 'Failed to load pending friend requests.');
-        return;
-      }
-
-      setPendingRequests(result.data ?? []);
-    } catch (error) {
-      console.error('Failed to load pending friend requests:', error);
-      SnackBar.Error('Failed to load pending friend requests.');
-    } finally {
-      setLoadingPendingRequests(false);
-    }
-  }, [friendRequestService]);
-
-  const handleAddFriend = async () => {
-    if (!userId) {
+  const handleFriendRequest = async () => {
+    if (!userId || !profile) {
       return;
     }
 
     try {
-      const response = await friendRequestService.sendFriendRequest(userId);
+      if (profile.isFriend) {
+        const response = await socialSerivce.removeFriend(userId);
+        if (!response.ok) {
+          SnackBar.Error('Unable to unfriend user.');
+          return;
+        }
+
+        const responseJson = await response.json();
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Unable to unfriend user.');
+          return;
+        }
+
+        setProfile(responseJson.data);
+        SnackBar.Success('Friend removed.');
+        return;
+      }
+
+      if (profile.isFriendRequestPending) {
+        const response = await socialSerivce.cancelFriendRequest(userId);
+        if (!response.ok) {
+          SnackBar.Error('Unable to cancel friend request.');
+          return;
+        }
+
+        const responseJson = await response.json();
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Unable to cancel friend request.');
+          return;
+        }
+
+        setProfile(responseJson.data);
+        SnackBar.Success('Friend request cancelled.');
+        return;
+      }
+
+      const response = await socialSerivce.sendFriendRequest(userId);
       if (!response.ok) {
         SnackBar.Error('Unable to send friend request.');
         return;
       }
 
-      const result = await response.json();
-      if (!result.success) {
-        SnackBar.Error(result.message || 'Unable to send friend request.');
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Unable to send friend request.');
         return;
       }
 
+      setProfile(responseJson.data);
       SnackBar.Success('Friend request sent.');
     } catch (error) {
-      console.error('Failed to send friend request:', error);
-      SnackBar.Error('Unable to send friend request.');
-    }
-  };
-
-  const handleApproveRequest = async (requestId: string) => {
-    try {
-      const response = await friendRequestService.approveFriendRequest(requestId);
-      if (!response.ok) {
-        SnackBar.Error('Unable to approve request.');
-        return;
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        SnackBar.Error(result.message || 'Unable to approve request.');
-        return;
-      }
-
-      setPendingRequests((prev) => prev.filter((request) => request.id !== requestId));
-      SnackBar.Success('Friend request approved.');
-    } catch (error) {
-      console.error('Failed to approve friend request:', error);
-      SnackBar.Error('Unable to approve request.');
-    }
-  };
-
-  const handleRejectRequest = async (requestId: string) => {
-    try {
-      const response = await friendRequestService.rejectFriendRequest(requestId);
-      if (!response.ok) {
-        SnackBar.Error('Unable to reject request.');
-        return;
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        SnackBar.Error(result.message || 'Unable to reject request.');
-        return;
-      }
-
-      setPendingRequests((prev) => prev.filter((request) => request.id !== requestId));
-      SnackBar.Success('Friend request rejected.');
-    } catch (error) {
-      console.error('Failed to reject friend request:', error);
-      SnackBar.Error('Unable to reject request.');
+      console.error('Failed to update friend request:', error);
+      SnackBar.Error(
+        profile.isFriend
+          ? 'Unable to unfriend user.'
+          : profile.isFriendRequestPending
+          ? 'Unable to cancel friend request.'
+          : 'Unable to send friend request.',
+      );
     }
   };
 
   const handleFollowersPress = () => {
-    setShowPendingRequests((current) => !current);
+    if (!userId) return;
+    void router.push({ pathname: './followers', params: { userId } });
+  };
+
+  const handleFollowingPress = () => {
+    if (!userId) return;
+    void router.push({ pathname: './following', params: { userId } });
+  };
+
+  const handleEditSocialLinks = () => {
+    void router.push('/social/socialLinks');
+  };
+
+  const handleToggleFollow = async () => {
+    if (!userId || !profile) {
+      return;
+    }
+
+    try {
+      const response = profile.isFollowing
+        ? await socialSerivce.unfollowUser(userId)
+        : await socialSerivce.followUser(userId);
+
+      if (!response.ok) {
+        SnackBar.Error(profile.isFollowing ? 'Unable to unfollow user.' : 'Unable to follow user.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || (profile.isFollowing ? 'Unable to unfollow user.' : 'Unable to follow user.'));
+        return;
+      }
+
+      setProfile(responseJson.data);
+    } catch (error) {
+      console.error('Failed to update follow status:', error);
+      SnackBar.Error(profile.isFollowing ? 'Unable to unfollow user.' : 'Unable to follow user.');
+    }
   };
 
   const onRefresh = useCallback(async () => {
@@ -308,12 +307,6 @@ export default function SocialProfileScreen() {
   React.useEffect(() => {
     loadProfile();
   }, [loadProfile]);
-
-  React.useEffect(() => {
-    if (showPendingRequests) {
-      void loadPendingRequests();
-    }
-  }, [showPendingRequests, loadPendingRequests]);
 
   const renderPost = ({ item }: { item: Post }) => (
     <SocialPostCard
@@ -412,10 +405,20 @@ export default function SocialProfileScreen() {
                         <TouchableOpacity
                           style={[styles.friendButton, { borderColor: colors.border }]}
                           activeOpacity={0.85}
-                          onPress={handleAddFriend}
+                          onPress={handleFriendRequest}
                         >
-                          <MaterialIcons name="person-add" size={18} color={colors.accent} />
-                          <Text style={[styles.friendButtonText, { color: colors.accent }]}>Add Friend</Text>
+                          <MaterialIcons
+                            name={profile.isFriend ? 'person-off' : profile.isFriendRequestPending ? 'person-remove' : 'person-add'}
+                            size={18}
+                            color={colors.accent}
+                          />
+                          <Text style={[styles.friendButtonText, { color: colors.accent }]}> 
+                            {profile.isFriend
+                              ? 'Unfriend'
+                              : profile.isFriendRequestPending
+                                ? 'Cancel Friend Request'
+                                : 'Add Friend'}
+                          </Text>
                         </TouchableOpacity>
                       ) : null}
                       {/* <TouchableOpacity style={styles.shareButton} activeOpacity={0.8} onPress={() => { }}>
@@ -423,18 +426,33 @@ export default function SocialProfileScreen() {
                         <Text style={[styles.shareButtonText, { color: colors.accent }]}>Share</Text>
                       </TouchableOpacity> */}
                     </View>
-                    {profile.socialLinks?.length > 0 && (
-                      <View style={styles.socialIconRow}>
-                        {profile.socialLinks.map((link) => (
+                    {(profile.socialLinks?.length > 0 || isOwnProfile) && (
+                      <View style={styles.socialLinksRow}>
+                        {profile.socialLinks?.length > 0 ? (
+                          <View style={styles.socialIconRow}>
+                            {profile.socialLinks.map((link) => (
+                              <TouchableOpacity
+                                key={link.platform}
+                                style={styles.socialIconButton}
+                                activeOpacity={0.7}
+                                onPress={() => { }}
+                              >
+                                <MaterialIcons name={mapPlatformIcon(link.platform)} size={16} color={colors.accent} />
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        ) : (
+                          <Text style={[styles.noSocialText, { color: colors.secondaryText }]}>Add social links</Text>
+                        )}
+                        {isOwnProfile ? (
                           <TouchableOpacity
-                            key={link.platform}
-                            style={styles.socialIconButton}
+                            style={styles.editSocialButton}
                             activeOpacity={0.7}
-                            onPress={() => { }}
+                            onPress={handleEditSocialLinks}
                           >
-                            <MaterialIcons name={mapPlatformIcon(link.platform)} size={16} color={colors.accent} />
+                            <MaterialIcons name="edit" size={18} color={colors.accent} />
                           </TouchableOpacity>
-                        ))}
+                        ) : null}
                       </View>
                     )}
                   </View>
@@ -458,19 +476,25 @@ export default function SocialProfileScreen() {
                         Followers
                       </Text>
                     </TouchableOpacity>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statValue, { color: colors.text }]}>
+                    <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowingPress}>
+                      <Text style={[styles.statValue, { color: colors.text }]}> 
                         {profile.followingCount}
                       </Text>
-                      <Text style={[styles.statLabel, { color: colors.secondaryText }]}>
+                      <Text style={[styles.statLabel, { color: colors.accent }]}> 
                         Following
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                   </View>
                   {!isOwnProfile ? (
                     <View style={styles.actionButtonsRow}>
-                      <TouchableOpacity style={[styles.followButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
-                        <Text style={styles.followButtonText}>Follow</Text>
+                      <TouchableOpacity
+                        style={[styles.followButton, { backgroundColor: colors.accent }]}
+                        activeOpacity={0.85}
+                        onPress={handleToggleFollow}
+                      >
+                        <Text style={styles.followButtonText}>
+                          {profile.isFollowing ? 'Unfollow' : 'Follow'}
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.messageButton, { borderColor: colors.accent }]} activeOpacity={0.85}>
                         <Text style={[styles.messageButtonText, { color: colors.accent }]}>Message</Text>
@@ -478,41 +502,6 @@ export default function SocialProfileScreen() {
                     </View>
                   ) : null}
                 </View>
-                {showPendingRequests ? (
-                  <View style={[styles.pendingRequestsContainer, { borderColor: colors.border, backgroundColor: colors.card }]}> 
-                    <Text style={[styles.pendingRequestsTitle, { color: colors.text }]}>Pending Friend Requests</Text>
-                    {loadingPendingRequests ? (
-                      <Text style={[styles.pendingRequestMessage, { color: colors.secondaryText }]}>Loading...</Text>
-                    ) : pendingRequests.length === 0 ? (
-                      <Text style={[styles.pendingRequestMessage, { color: colors.secondaryText }]}>No pending friend requests.</Text>
-                    ) : (
-                      pendingRequests.map((request) => (
-                        <View key={request.id} style={styles.pendingRequestItem}>
-                          <View style={styles.pendingRequestInfo}>
-                            <Text style={[styles.pendingRequestName, { color: colors.text }]}>{request.fromDisplayName || request.fromUserName}</Text>
-                            <Text style={[styles.pendingRequestSubText, { color: colors.secondaryText }]}>Sent on {new Date(request.createdAtUTC).toLocaleDateString()}</Text>
-                          </View>
-                          <View style={styles.pendingRequestActions}>
-                            <TouchableOpacity
-                              style={[styles.approveButton, { backgroundColor: colors.accent }]}
-                              activeOpacity={0.85}
-                              onPress={() => void handleApproveRequest(request.id)}
-                            >
-                              <MaterialIcons name="check" size={18} color="#fff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.rejectButton, { borderColor: colors.border }]}
-                              activeOpacity={0.85}
-                              onPress={() => void handleRejectRequest(request.id)}
-                            >
-                              <MaterialIcons name="close" size={18} color={colors.text} />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      ))
-                    )}
-                  </View>
-                ) : null}
                 {/* Row 4: 5 Stats - Garages, Rides, Distance, Duration, Elevation */}
                 <View style={[styles.fiveStatsGrid, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
                   {/* Garages */}
@@ -618,6 +607,9 @@ export default function SocialProfileScreen() {
         }
         contentContainerStyle={{
           paddingBottom: insets.bottom + 80,
+          paddingHorizontal: 12,
+          gap: 12,
+          paddingTop: 10,
         }}
         showsVerticalScrollIndicator={false}
       />
@@ -727,6 +719,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  socialLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
+  },
+  editSocialButton: {
+    padding: 6,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E0E0E0',
+  },
+  noSocialText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   socialIconButton: {
     padding: 2,
   },
@@ -807,60 +815,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  pendingRequestsContainer: {
-    marginTop: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
-    padding: 14,
-  },
-  pendingRequestsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  pendingRequestMessage: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  pendingRequestItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#CCCCCC',
-  },
-  pendingRequestInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  pendingRequestName: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  pendingRequestSubText: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  pendingRequestActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  approveButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rejectButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
   },
   marketplaceButton: {
     marginTop: 14,

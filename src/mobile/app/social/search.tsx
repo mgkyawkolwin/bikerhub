@@ -5,8 +5,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
-import { SocialProfileServiceToken } from '@/services/socialProfileService';
-import type { SocialProfileService } from '@/services/socialProfileService';
+import { SocialServiceToken } from '@/services/socialService';
+import type { SocialServiceClient } from '@/services/socialService';
 import type SocialProfile from '@/models/socialProfile';
 
 export default function SearchScreen() {
@@ -14,7 +14,7 @@ export default function SearchScreen() {
   const { colors } = useThemeContext();
   const router = useRouter();
   const profileService = useMemo(
-    () => container.resolve<SocialProfileService>(SocialProfileServiceToken),
+    () => container.resolve<SocialServiceClient>(SocialServiceToken),
     [],
   );
 

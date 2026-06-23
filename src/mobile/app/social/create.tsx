@@ -6,10 +6,11 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
-import { SocialPostServiceToken, type SocialPostService, type CreatePostPayload } from '@/services/socialPostService';
+import { SocialServiceToken, type SocialServiceClient } from '@/services/socialService';
 import SnackBar from '@/components/snackbar';
 import Logger from '@/logging/logger';
 import { useAuthContext } from '@/hooks/use-auth-context';
+import { CreatePostPayload } from '@/models/createPostPayload';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
@@ -22,7 +23,7 @@ export default function SocialCreateScreen() {
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const { authUser } = useAuthContext();
 
   const requestCamera = useCallback(async () => {
@@ -104,7 +105,7 @@ export default function SocialCreateScreen() {
       };
 
       console.info('Submitting post with payload:', payload);
-      const response = await socialPostService.createPost(payload);
+      const response = await socialService.createPost(payload);
       console.info('Received response:', response);
       const result = await response.json();
       Logger.debug('Create post response XXXXXXXXX:', result);
@@ -122,7 +123,7 @@ export default function SocialCreateScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [authUser?.id, content, photos, shareUrl, socialPostService, visibility, router]);
+  }, [authUser?.id, content, photos, shareUrl, socialService, visibility, router]);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));

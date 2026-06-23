@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
-const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
-// const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
+// const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
+const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
 export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
@@ -56,5 +56,6 @@ export async function fetchApi(path: string, options: RequestInit = {}): Promise
 }
 
 export async function authenticatedFetchApi(path: string, options: RequestInit = {}): Promise<Response> {
+  console.log('Authenticated API Request:', { path, options });
   return authenticatedFetchJson(path, options);
 }

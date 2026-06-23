@@ -32,7 +32,7 @@ public class SocialController : ControllerBase
         try
         {
             _logger.LogInformation("CALLED GetPosts()");
-            _logger.LogDebug("GetPosts called with page {Page} and pageSize {PageSize}", filterDto.Page, filterDto.PageSize);
+            _logger.LogDebug("GetPosts called with page {@dto}", filterDto);
             PaginatedResultDto<SocialPostDto> result;
             if (filterDto.List == Constants.PostListTypes.Feed)
             {
@@ -120,7 +120,7 @@ public class SocialController : ControllerBase
         try
         {
             _logger.LogInformation("CALLED CreatePostComment()");
-            _logger.LogDebug("CreatePostComment called with postId {PostId} and parentCommentId {ParentCommentId}", postId, createPostCommentDto.ParentCommentId);
+            _logger.LogDebug("CreatePostComment called with postId {PostId} and parentCommentId {@createPostCommentDto}", postId, createPostCommentDto);
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
             {
@@ -182,7 +182,7 @@ public class SocialController : ControllerBase
         try
         {
             _logger.LogInformation("CALLED CreatePost()");
-            _logger.LogDebug("CreatePost called with content {Content}", createPostDto.Content);
+            _logger.LogDebug("CreatePost called with content {@Content}", createPostDto);
             if (string.IsNullOrWhiteSpace(createPostDto.Content) && (createPostDto.ImageUrls == null || !createPostDto.ImageUrls.Any()))
             {
                 return BadRequest(new { Success = false, Message = "Post content or images are required." });
@@ -260,7 +260,12 @@ public class SocialController : ControllerBase
         {
             _logger.LogInformation("CALLED GetProfileById()");
             _logger.LogDebug("GetProfileById called with id {Id}", userId);
-            var profile = await _socialService.GetProfileByIdAsync(userId);
+            var currentUserId = GetCurrentUserId();
+            if(!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+            var profile = await _socialService.GetProfileByIdAsync(userId, currentUserId.Value);
             if (profile is null)
             {
                 return NotFound(new { Success = false, Message = "Social profile not found." });
@@ -276,6 +281,35 @@ public class SocialController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error occurred in GetProfileById");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPatch("profiles/social-links")]
+    public async Task<IActionResult> UpdateSocialLinks([FromBody] UpdateSocialLinksDto updateSocialLinksDto)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED UpdateSocialLinks()");
+            _logger.LogDebug("UpdateSocialLinks called with payload {@Payload}", updateSocialLinksDto);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            var result = await _socialService.UpdateSocialLinksAsync(currentUserId.Value, updateSocialLinksDto.SocialLinks ?? Enumerable.Empty<SocialLinkDto>());
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in UpdateSocialLinks");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in UpdateSocialLinks");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -440,20 +474,77 @@ public class SocialController : ControllerBase
     }
 
     [Authorize]
-    [HttpPost("friend-requests")]
-    public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequestDto sendFriendRequestDto)
+    [HttpGet("friends")]
+    public async Task<IActionResult> GetFriends()
     {
         try
         {
-            _logger.LogInformation("CALLED SendFriendRequest()");
-            _logger.LogDebug("SendFriendRequest called with toProfileId {ToProfileId}", sendFriendRequestDto.ToProfileId);
+            _logger.LogInformation("CALLED GetFriends()");
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
             {
                 return Unauthorized(new { Success = false, Message = "Authentication required." });
             }
 
-            var result = await _socialService.SendFriendRequestAsync(currentUserId.Value, sendFriendRequestDto.ToProfileId);
+            var friends = await _socialService.GetFriendsAsync(currentUserId.Value);
+            return Ok(new { Success = true, Data = friends });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in GetFriends");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in GetFriends");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("friends/{userId:guid}")]
+    public async Task<IActionResult> RemoveFriend([FromRoute] Guid userId)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED RemoveFriend()");
+            _logger.LogDebug("RemoveFriend called with userId {UserId}", userId);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            var result = await _socialService.RemoveFriendAsync(currentUserId.Value, userId);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in RemoveFriend");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in RemoveFriend");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("friend-requests")]
+    public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequestDto sendFriendRequestDto)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED SendFriendRequest()");
+            _logger.LogDebug("SendFriendRequest called with: {@dto}", sendFriendRequestDto);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            var result = await _socialService.AddFriendRequestAsync(currentUserId.Value, sendFriendRequestDto.ToProfileId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -461,9 +552,33 @@ public class SocialController : ControllerBase
             _logger.LogWarning(ex, "Custom exception occurred in SendFriendRequest");
             return BadRequest(new { Success = false, Message = ex.Message });
         }
+    }
+
+    [Authorize]
+    [HttpDelete("friend-requests/{toProfileId:guid}")]
+    public async Task<IActionResult> CancelFriendRequest([FromRoute] Guid toProfileId)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED CancelFriendRequest()");
+            _logger.LogDebug("CancelFriendRequest called with toProfileId {ToProfileId}", toProfileId);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            var result = await _socialService.CancelFriendRequestAsync(currentUserId.Value, toProfileId);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in CancelFriendRequest");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in SendFriendRequest");
+            _logger.LogError(ex, "Unexpected error occurred in CancelFriendRequest");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

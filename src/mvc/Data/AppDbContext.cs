@@ -34,45 +34,74 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<SocialProfileEntity>(entity =>
         {
+            entity.HasOne(profile => profile.User)
+                .WithMany()
+                .HasForeignKey(profile => profile.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Followers relationship - SocialProfile has many User followers
             entity
                 .HasMany(profile => profile.Followers)
-                .WithMany(profile => profile.Following)
+                .WithMany()
                 .UsingEntity<Dictionary<string, object>>(
-                    "SocialProfileFollow",
+                    "SocialProfileFollowers",
                     join => join
-                        .HasOne<SocialProfileEntity>()
+                        .HasOne<UserEntity>()
                         .WithMany()
-                        .HasForeignKey("FollowerProfileId")
+                        .HasForeignKey("FollowerUserId")
                         .OnDelete(DeleteBehavior.Cascade),
                     join => join
                         .HasOne<SocialProfileEntity>()
                         .WithMany()
-                        .HasForeignKey("FollowingProfileId")
+                        .HasForeignKey("SocialProfileId")
                         .OnDelete(DeleteBehavior.Cascade),
                     join =>
                     {
-                        join.HasKey("FollowerProfileId", "FollowingProfileId");
-                        join.ToTable("SocialProfileFollows");
+                        join.HasKey("SocialProfileId", "FollowerUserId");
+                        join.ToTable("SocialProfileFollowers");
                     });
 
+            // Following relationship - SocialProfile follows many Users
+            entity
+                .HasMany(profile => profile.Following)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "SocialProfileFollowing",
+                    join => join
+                        .HasOne<UserEntity>()
+                        .WithMany()
+                        .HasForeignKey("FollowingUserId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join => join
+                        .HasOne<SocialProfileEntity>()
+                        .WithMany()
+                        .HasForeignKey("SocialProfileId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join =>
+                    {
+                        join.HasKey("SocialProfileId", "FollowingUserId");
+                        join.ToTable("SocialProfileFollowing");
+                    });
+
+            // Friends relationship - SocialProfile has many User friends
             entity
                 .HasMany(profile => profile.Friends)
                 .WithMany()
                 .UsingEntity<Dictionary<string, object>>(
-                    "SocialProfileFriend",
+                    "SocialProfileFriends",
                     join => join
-                        .HasOne<SocialProfileEntity>()
+                        .HasOne<UserEntity>()
                         .WithMany()
-                        .HasForeignKey("ProfileId")
+                        .HasForeignKey("FriendUserId")
                         .OnDelete(DeleteBehavior.Cascade),
                     join => join
                         .HasOne<SocialProfileEntity>()
                         .WithMany()
-                        .HasForeignKey("FriendId")
+                        .HasForeignKey("SocialProfileId")
                         .OnDelete(DeleteBehavior.Cascade),
                     join =>
                     {
-                        join.HasKey("ProfileId", "FriendId");
+                        join.HasKey("SocialProfileId", "FriendUserId");
                         join.ToTable("SocialProfileFriends");
                     });
         });

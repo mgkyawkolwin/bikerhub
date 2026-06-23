@@ -7,10 +7,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
-import { SocialPostServiceToken } from '@/services/socialPostService';
-import { SocialCommentServiceToken } from '@/services/socialCommentService';
-import type { SocialPostService } from '@/services/socialPostService';
-import type { SocialCommentService } from '@/services/socialCommentService';
+import { SocialServiceToken } from '@/services/socialService';
+import type { SocialServiceClient } from '@/services/socialService';
 import type Post from '@/models/post';
 import type Comment from '@/models/comment';
 import SocialPostCard from '@/components/socialPostCard';
@@ -20,7 +18,7 @@ import SnackBar from '@/components/snackbar';
 export default function SocialPostsScreen() {
   const ins = useSafeAreaInsets();
   const { colors } = useThemeContext();
-  const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const { getAuthUser } = useAuthContext();
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -36,13 +34,12 @@ export default function SocialPostsScreen() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const commentsScrollRef = useRef<ScrollView | null>(null);
 
-  const socialCommentService = useMemo(() => container.resolve<SocialCommentService>(SocialCommentServiceToken), []);
 
   const loadPosts = useCallback(
     async (pageNumber: number, reset = false) => {
       setLoading(true);
       try {
-        const response = await socialPostService.getPosts(pageNumber, 10);
+        const response = await socialService.getPosts(pageNumber, 10);
         if (!response.ok) {
           SnackBar.Error(
             'Failed to load posts.'
@@ -67,14 +64,14 @@ export default function SocialPostsScreen() {
         setRefreshing(false);
       }
     },
-    [socialPostService],
+    [socialService],
   );
 
   const loadComments = useCallback(
     async (postId: string) => {
       setCommentsLoading(true);
       try {
-        const response = await socialCommentService.getComments(postId);
+        const response = await socialService.getComments(postId);
         if (!response.ok) {
           SnackBar.Error('Unable to load comments.');
           return;
@@ -93,7 +90,7 @@ export default function SocialPostsScreen() {
         setCommentsLoading(false);
       }
     },
-    [socialCommentService],
+    [socialService],
   );
 
   useEffect(() => {
@@ -128,7 +125,7 @@ export default function SocialPostsScreen() {
     }
 
     try {
-      const response = await socialCommentService.createComment(selectedPostId, commentInput.trim(), replyToCommentId);
+      const response = await socialService.createComment(selectedPostId, commentInput.trim(), replyToCommentId);
       if (!response.ok) {
         SnackBar.Error('Unable to post comment.');
         return;
@@ -156,7 +153,7 @@ export default function SocialPostsScreen() {
     }
 
     try {
-      const response = await socialCommentService.deleteComment(selectedPostId, commentId);
+      const response = await socialService.deleteComment(selectedPostId, commentId);
       if (!response.ok) {
         SnackBar.Error('Unable to delete comment.');
         return;
@@ -206,7 +203,7 @@ export default function SocialPostsScreen() {
     const currentUserId = getAuthUser()?.id ?? '';
 
     try {
-      const response = await socialPostService.toggleLove(postId);
+      const response = await socialService.toggleLove(postId);
       if (!response.ok) {
         SnackBar.Error('Unable to update love status.');
         return;

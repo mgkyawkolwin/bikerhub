@@ -6,9 +6,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { GroupServiceToken } from '@/services/groupService';
-import { SocialPostServiceToken } from '@/services/socialPostService';
+import { SocialServiceToken } from '@/services/socialService';
 import type { GroupService } from '@/services/groupService';
-import type { SocialPostService } from '@/services/socialPostService';
+import type { SocialServiceClient } from '@/services/socialService';
 import type Group from '@/models/group';
 import type Post from '@/models/post';
 
@@ -17,7 +17,7 @@ export default function GroupPostsScreen() {
   const { colors } = useThemeContext();
   const params = useLocalSearchParams();
   const groupService = useMemo(() => container.resolve<GroupService>(GroupServiceToken), []);
-  const postService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const [group, setGroup] = useState<Group | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,8 +27,17 @@ export default function GroupPostsScreen() {
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
-    const groupResult = await groupService.getGroupById(groupId);
-    setGroup(groupResult ?? null);
+    const response = await groupService.getGroupById(groupId);
+    if(!response.ok) {
+      setGroup(null);
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      setGroup(null);
+      return;
+    }
+    setGroup(responseJson.data ?? null);
   }, [groupId, groupService]);
 
   const loadPosts = useCallback(async () => {
@@ -38,13 +47,22 @@ export default function GroupPostsScreen() {
     }
     setLoading(true);
     try {
-      const result = await postService.getPosts(1, 100);
-      setPosts(result.items.filter((post) => post.groupId === groupId));
+      const response = await socialService.getPosts(1, 100);
+      if (!response.ok) {
+        setPosts([]);
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        setPosts([]);
+        return;
+      }
+      setPosts(responseJson.data.items.filter((post:any) => post.groupId === groupId));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [groupId, postService]);
+  }, [groupId, socialService]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -87,7 +105,7 @@ export default function GroupPostsScreen() {
 
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id ?? `${item.createdByUserId}-${item.createdAt}`}
+        keyExtractor={(item) => item.id ?? `${item.createdByUserId}-${item.createdAtUTC}`}
         renderItem={({ item }) => (
           <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.postHeader}>
@@ -96,7 +114,7 @@ export default function GroupPostsScreen() {
                 <Text style={[styles.authorName, { color: colors.text }]}>{item.createdByDisplayName}</Text>
                 <View style={styles.metaRow}>
                   <MaterialIcons name="schedule" size={12} color={colors.secondaryText} />
-                  <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Today'}</Text>
+                  <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.createdAtUTC ? new Date(item.createdAtUTC).toLocaleDateString() : 'Today'}</Text>
                 </View>
               </View>
             </View>

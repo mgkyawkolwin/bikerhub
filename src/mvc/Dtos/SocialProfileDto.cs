@@ -1,6 +1,7 @@
 namespace BikerHub.Dtos;
 
 public sealed record SocialLinkDto(string Platform, string Url);
+public sealed record UpdateSocialLinksDto(IEnumerable<SocialLinkDto> SocialLinks);
 
 public sealed record SocialProfileDto
 {
@@ -21,4 +22,7 @@ public sealed record SocialProfileDto
     public string? RideDuration { get; set; } = null;
     public string? RideElevation { get; set; } = null;
     public IEnumerable<SocialLinkDto>? SocialLinks { get; set; } = null;
+    public bool IsFriend { get; set; }
+    public bool IsFriendRequestPending { get; set; }
+    public bool IsFollowing { get; set; }
 }

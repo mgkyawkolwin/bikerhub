@@ -9,6 +9,7 @@ import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, MarketplaceFilter } from '@/models/marketplace';
+import SnackBar from '@/components/snackbar';
 
 export default function SocialGarageScreen() {
   const insets = useSafeAreaInsets();
@@ -38,8 +39,18 @@ export default function SocialGarageScreen() {
   const loadGarage = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await marketplaceService.getListings(filter, 1, 50);
-      const items = result.items.filter((item) => (userId ? item.sellerId === userId : true));
+      const response = await marketplaceService.getListings(filter, 1, 50);
+      if (!response.ok) {
+        SnackBar.Error('Failed to load garage. Please try again later.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.Success) {
+        SnackBar.Error(responseJson.Message || 'Failed to load garage. Please try again later.');
+        return;
+      }
+      const result = responseJson.Data as { items: BikeListing[]; totalCount: number };
+      const items = result.items.filter((item: any) => (userId ? item.sellerId === userId : true));
       setBikes(items);
     } finally {
       setLoading(false);

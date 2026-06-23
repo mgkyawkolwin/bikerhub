@@ -3,8 +3,8 @@ import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
-import { SocialPostServiceToken } from '@/services/socialPostService';
-import type { SocialPostService } from '@/services/socialPostService';
+import { SocialServiceToken } from '@/services/socialService';
+import type { SocialServiceClient } from '@/services/socialService';
 import type Post from '@/models/post';
 import SocialPostPreviewCard from '@/components/socialPostPreviewCard';
 
@@ -26,7 +26,7 @@ export default function SocialPostCard({
   onMenuPress,  // Added
 }: SocialPostCardProps) {
   const { colors } = useThemeContext();
-  const socialPostService = useMemo(() => container.resolve<SocialPostService>(SocialPostServiceToken), []);
+  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const [previewPost, setPreviewPost] = useState<Post | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -44,7 +44,7 @@ export default function SocialPostCard({
     }
 
     setPreviewLoading(true);
-    void socialPostService.getPostById(previewPostId)
+    void socialService.getPostById(previewPostId)
       .then(async (response) => {
         if (!isMounted || !response.ok) {
           return;
@@ -69,7 +69,7 @@ export default function SocialPostCard({
     return () => {
       isMounted = false;
     };
-  }, [previewPostId, socialPostService]);
+  }, [previewPostId, socialService]);
 
   return (
     <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      

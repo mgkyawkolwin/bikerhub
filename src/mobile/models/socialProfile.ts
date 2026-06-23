@@ -18,4 +18,7 @@ export default interface SocialProfile {
   rideDuration?: string;
   rideElevation?: string;
   socialLinks: Array<{ platform: SocialPlatform; url: string }>;
+  isFriend?: boolean;
+  isFriendRequestPending?: boolean;
+  isFollowing?: boolean;
 }

@@ -12,10 +12,10 @@ public class SocialPostEntity : EntityBase<Guid>
     public int CommentCount { get; set; }
     public int ShareCount { get; set; }
     
-    public required Guid SocialProfileId { get; set; }
+    public required Guid UserId { get; set; }
 
-    [ForeignKey(nameof(SocialProfileId))]
-    public virtual SocialProfileEntity SocialProfile { get; set; } = null!;
+    [ForeignKey(nameof(UserId))]
+    public virtual UserEntity User { get; set; } = null!;
 
     public virtual ICollection<SocialPostLikeEntity> Likes { get; set; } = [];
     public virtual ICollection<SocialPostCommentEntity> Comments { get; set; } = [];
