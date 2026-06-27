@@ -4,8 +4,9 @@ export default interface SocialProfile {
   id: string;
   userName: string;
   displayName: string;
-  coverPhotoUrl: string;
-  avatarUrl: string;
+  coverPhotoUrl?: string;
+  profilePhotoUrl?: string;
+  avatarUrl?: string;
   bio?: string;
   followersCount: number;
   followingCount: number;

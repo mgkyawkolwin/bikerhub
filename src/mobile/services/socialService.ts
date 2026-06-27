@@ -26,6 +26,9 @@ export interface ISocialService {
   getPostsByUser(authorId: string, page: number, pageSize: number): Promise<Response>;
   getPostById(postId: string): Promise<Response>;
   createPost(payload: CreatePostPayload): Promise<Response>;
+  uploadPostMedia(postId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
+  uploadProfileCoverPhoto(file: { uri: string; name: string; type: string }): Promise<Response>;
+  uploadProfilePhoto(file: { uri: string; name: string; type: string }): Promise<Response>;
   toggleLove(postId: string): Promise<Response>;
   getProfileById(profileId: string): Promise<Response>;
   updateSocialLinks(socialLinks: Array<{ platform: string; url: string }>): Promise<Response>;
@@ -139,6 +142,48 @@ export class SocialServiceClient implements ISocialService {
     return authenticatedFetchApi('/social/posts', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  async uploadPostMedia(postId: string, file: { uri: string; name: string; type: string }): Promise<Response> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    return authenticatedFetchApi(`/social/posts/${encodeURIComponent(postId)}/media`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async uploadProfileCoverPhoto(file: { uri: string; name: string; type: string }): Promise<Response> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    return authenticatedFetchApi('/social/profiles/cover-photo', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async uploadProfilePhoto(file: { uri: string; name: string; type: string }): Promise<Response> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    return authenticatedFetchApi('/social/profiles/profile-photo', {
+      method: 'POST',
+      body: formData,
     });
   }
 

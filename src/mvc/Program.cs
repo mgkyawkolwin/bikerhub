@@ -25,6 +25,14 @@ var googleAuthSettings = builder.Configuration.GetSection("GoogleAuth").Get<Goog
 
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(googleAuthSettings);
+
+// Minio settings and storage service
+var minioSettings = builder.Configuration.GetSection("Minio").Get<MinioSettings>();
+if (minioSettings is not null)
+{
+    builder.Services.Configure<MinioSettings>(builder.Configuration.GetSection("Minio"));
+    builder.Services.AddScoped<IStorageService, MinioStorageService>();
+}
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

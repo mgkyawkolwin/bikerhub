@@ -23,6 +23,32 @@ export default function SocialCreateScreen() {
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getFileName = (uri: string) => {
+    const parts = uri.split('/');
+    return parts[parts.length - 1] ?? `file-${Date.now()}`;
+  };
+
+  const getMimeType = (uri: string) => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
+      default:
+        return 'application/octet-stream';
+    }
+  };
   const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const { authUser } = useAuthContext();
 
@@ -100,7 +126,6 @@ export default function SocialCreateScreen() {
       const payload: CreatePostPayload = {
         createdById: authUser?.id ?? '',
         content: unifiedContent || undefined,
-        imageUrls: photos.length > 0 ? photos : undefined,
         visibility,
       };
 
@@ -114,6 +139,27 @@ export default function SocialCreateScreen() {
       if (!response.ok || !result.success) {
         SnackBar.Error(result.message || 'Unable to post. Please try again.');
         return;
+      }
+
+      const createdPostId = result.data?.id;
+      if (!createdPostId) {
+        SnackBar.Error('Unable to determine post ID after creation.');
+        return;
+      }
+
+      if (photos.length > 0) {
+        for (const uri of photos) {
+          const uploadResponse = await socialService.uploadPostMedia(createdPostId, {
+            uri,
+            name: getFileName(uri),
+            type: getMimeType(uri),
+          });
+
+          if (!uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json().catch(() => null);
+            throw new Error(uploadResult?.message || 'Media upload failed.');
+          }
+        }
       }
 
       SnackBar.Success('Post submitted successfully.');

@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<SocialProfileEntity> SocialProfiles => Set<SocialProfileEntity>();
     public DbSet<SocialPostLikeEntity> SocialPostLikes => Set<SocialPostLikeEntity>();
     public DbSet<SocialPostCommentEntity> SocialPostComments => Set<SocialPostCommentEntity>();
+    public DbSet<SocialPostMediaEntity> PostMedia => Set<SocialPostMediaEntity>();
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();
     public DbSet<FriendRequestEntity> FriendRequests => Set<FriendRequestEntity>();
 
@@ -104,6 +105,15 @@ public class AppDbContext : DbContext
                         join.HasKey("SocialProfileId", "FriendUserId");
                         join.ToTable("SocialProfileFriends");
                     });
+        });
+
+        modelBuilder.Entity<SocialPostEntity>(entity =>
+        {
+            entity
+                .HasMany(post => post.Media)
+                .WithOne(media => media.Post)
+                .HasForeignKey(media => media.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

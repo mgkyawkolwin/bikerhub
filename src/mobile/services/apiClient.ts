@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
-// const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
-const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
+const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
+// const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
 export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
@@ -14,11 +14,16 @@ export type ApiResponse<T> = {
 
 export async function fetchJson(path: string, options: RequestInit = {}): Promise<Response> {
   console.log('API Request:', { API_BASE_URL, path, options });
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    },
+    headers,
     ...options,
   });
 
@@ -30,9 +35,12 @@ export async function authenticatedFetchJson(path: string, options: RequestInit 
   const authUserJson = await SecureStore.getItemAsync(AUTH_USER_STORAGE_KEY);
   const token = authUserJson ? (JSON.parse(authUserJson)?.token as string | undefined) : undefined;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;

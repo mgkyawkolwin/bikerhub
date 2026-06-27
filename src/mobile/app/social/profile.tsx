@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -30,6 +31,8 @@ export default function SocialProfileScreen() {
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const [isProfileUploading, setIsProfileUploading] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const isOwnProfile = Boolean(userId && authUser?.id === userId);
@@ -109,6 +112,120 @@ export default function SocialProfileScreen() {
     setReplyToCommentId(null);
     setReplyToCommentAuthor(null);
   };
+
+  const getFileName = (uri: string) => {
+    const parts = uri.split('/');
+    return parts[parts.length - 1] ?? `file-${Date.now()}`;
+  };
+
+  const getMimeType = (uri: string) => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'application/octet-stream';
+    }
+  };
+
+  const requestLibrary = useCallback(async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      SnackBar.Error('Photo library permission is required to upload profile photos.');
+      return false;
+    }
+    return true;
+  }, []);
+
+  const pickImageFromLibrary = useCallback(async () => {
+    if (!(await requestLibrary())) return null;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    const imageResult = result as ImagePicker.ImagePickerResult;
+    if (imageResult.canceled || !imageResult.assets?.[0]?.uri) {
+      return null;
+    }
+
+    return imageResult.assets[0].uri;
+  }, [requestLibrary]);
+
+  const handleUploadCoverPhoto = useCallback(async () => {
+    if (!isOwnProfile) return;
+    const uri = await pickImageFromLibrary();
+    if (!uri) return;
+
+    setIsCoverUploading(true);
+    try {
+      const response = await socialSerivce.uploadProfileCoverPhoto({
+        uri,
+        name: getFileName(uri),
+        type: getMimeType(uri),
+      });
+
+      if (!response.ok) {
+        const errorResult = await response.json().catch(() => null);
+        throw new Error(errorResult?.message || 'Cover photo upload failed.');
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Cover photo upload failed.');
+      }
+
+      setProfile(result.data);
+      SnackBar.Success('Cover photo updated.');
+    } catch (error) {
+      console.error('Failed to upload cover photo:', error);
+      SnackBar.Error('Unable to upload cover photo. Please try again.');
+    } finally {
+      setIsCoverUploading(false);
+    }
+  }, [isOwnProfile, pickImageFromLibrary, socialSerivce]);
+
+  const handleUploadProfilePhoto = useCallback(async () => {
+    if (!isOwnProfile) return;
+    const uri = await pickImageFromLibrary();
+    if (!uri) return;
+
+    setIsProfileUploading(true);
+    try {
+      const response = await socialSerivce.uploadProfilePhoto({
+        uri,
+        name: getFileName(uri),
+        type: getMimeType(uri),
+      });
+
+      if (!response.ok) {
+        const errorResult = await response.json().catch(() => null);
+        throw new Error(errorResult?.message || 'Profile photo upload failed.');
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Profile photo upload failed.');
+      }
+
+      setProfile(result.data);
+      SnackBar.Success('Profile photo updated.');
+    } catch (error) {
+      console.error('Failed to upload profile photo:', error);
+      SnackBar.Error('Unable to upload profile photo. Please try again.');
+    } finally {
+      setIsProfileUploading(false);
+    }
+  }, [isOwnProfile, pickImageFromLibrary, socialSerivce]);
 
   const handleCommentSubmit = async () => {
     if (!selectedPostId || !commentInput.trim()) {
@@ -378,24 +495,48 @@ export default function SocialProfileScreen() {
         ListHeaderComponent={
           profile ? (
             <>
-              {profile.coverPhotoUrl ? (
-                <Image source={{ uri: profile.coverPhotoUrl }} style={styles.coverImage} />
-              ) : (
-                <View style={[styles.coverImage, styles.coverPlaceholder, { backgroundColor: colors.border }]}>
-                  <MaterialIcons name="photo" size={48} color={colors.secondaryText} />
-                </View>
-              )}
+<TouchableOpacity
+                disabled={!isOwnProfile || isCoverUploading}
+                onPress={handleUploadCoverPhoto}
+                style={styles.coverTouchable}
+                activeOpacity={0.9}
+              >
+                {profile.coverPhotoUrl ? (
+                  <Image source={{ uri: profile.coverPhotoUrl }} style={styles.coverImage} />
+                ) : (
+                  <View style={[styles.coverImage, styles.coverPlaceholder, { backgroundColor: colors.border }]}> 
+                    <MaterialIcons name="photo" size={48} color={colors.secondaryText} />
+                  </View>
+                )}
+                {isOwnProfile ? (
+                  <View style={[styles.coverEditBadge, { backgroundColor: colors.card }]}> 
+                    <MaterialIcons name={isCoverUploading ? 'hourglass-top' : 'photo-camera'} size={20} color={colors.accent} />
+                  </View>
+                ) : null}
+              </TouchableOpacity>
 
               <View style={styles.profileContainer}>
                 {/* Row 1: Avatar + Name + Social Icons */}
                 <View style={styles.avatarNameRow}>
-                  {profile.avatarUrl ? (
-                    <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
-                  ) : (
-                    <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.border }]}>
-                      <MaterialIcons name="person" size={32} color={colors.secondaryText} />
-                    </View>
-                  )}
+                  <TouchableOpacity
+                    disabled={!isOwnProfile || isProfileUploading}
+                    onPress={handleUploadProfilePhoto}
+                    style={styles.avatarTouchable}
+                    activeOpacity={0.85}
+                  >
+                    {profile.avatarUrl ? (
+                      <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
+                    ) : (
+                      <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.border }]}> 
+                        <MaterialIcons name="person" size={32} color={colors.secondaryText} />
+                      </View>
+                    )}
+                    {isOwnProfile ? (
+                      <View style={[styles.avatarEditBadge, { backgroundColor: colors.card }]}> 
+                        <MaterialIcons name={isProfileUploading ? 'hourglass-top' : 'photo-camera'} size={18} color={colors.accent} />
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
                   <View style={styles.nameAndSocial}>
                     <View style={styles.nameRow}>
                       <Text style={[styles.profileName, { color: colors.text }]}>
@@ -665,6 +806,38 @@ const styles = StyleSheet.create({
   coverImage: {
     width: '100%',
     height: 200,
+  },
+  coverTouchable: {
+    position: 'relative',
+  },
+  coverEditBadge: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    borderRadius: 22,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  avatarTouchable: {
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    borderRadius: 16,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
   coverPlaceholder: {
     alignItems: 'center',

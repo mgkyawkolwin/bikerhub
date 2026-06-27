@@ -10,6 +10,8 @@ public sealed record SocialProfileDto
     public required string UserName { get; set; }
     public required string DisplayName { get; set; }
     public string? CoverPhotoUrl { get; set; } = null;
+    public string? ProfilePhotoUrl { get; set; } = null;
+    public string? AvatarUrl { get; set; } = null;
     public string? Bio { get; set; } = null;
     public int FollowersCount { get; set; } = 0;
     public int FollowingCount { get; set; } = 0;

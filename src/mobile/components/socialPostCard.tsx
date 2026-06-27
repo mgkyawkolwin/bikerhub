@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
@@ -71,6 +72,19 @@ export default function SocialPostCard({
     };
   }, [previewPostId, socialService]);
 
+  const handleMediaPress = (index: number) => {
+    if (!post.imageUrls?.length) return;
+
+    const mediaPayload = encodeURIComponent(JSON.stringify(post.imageUrls));
+    router.push({
+      pathname: '/social/media',
+      params: {
+        media: mediaPayload,
+        index: index.toString(),
+      },
+    });
+  };
+
   return (
     <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      
       <View style={styles.postHeader}>
@@ -104,13 +118,25 @@ export default function SocialPostCard({
 
       {post.imageUrls?.length ? (
         <View style={styles.imageGrid}>
-          {post.imageUrls.map((uri, idx) => (
-            <Image
-              key={`${post.id}-${idx}`}
-              source={{ uri }}
-              style={[styles.postImage, post.imageUrls?.length === 1 ? styles.singleImage : styles.multiImage]}
-            />
-          ))}
+          {post.imageUrls.slice(0, 4).map((uri, idx) => {
+            const extraCount = post.imageUrls!.length - 4;
+            const isLastSlot = idx === 3 && extraCount > 0;
+            return (
+              <TouchableOpacity
+                key={`${post.id}-${idx}`}
+                activeOpacity={0.85}
+                style={[styles.gridItem, post.imageUrls!.length === 1 ? styles.singleImage : styles.gridItem]}
+                onPress={() => handleMediaPress(idx)}
+              >
+                <Image source={{ uri }} style={styles.gridItemImage} />
+                {isLastSlot ? (
+                  <View style={styles.overlay}>
+                    <Text style={styles.overlayText}>+{extraCount}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       ) : null}
 
@@ -156,10 +182,23 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   metaText: { fontSize: 12 },
   postContent: { fontSize: 15, lineHeight: 22 },
-  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
   postImage: { borderRadius: 4, backgroundColor: '#222222' },
   singleImage: { width: '100%', height: 200 },
-  multiImage: { width: '48%', height: 140 },
+  gridItem: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', backgroundColor: '#222222', marginBottom: 8 },
+  gridItemImage: { width: '100%', height: '100%' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  singleImage: { width: '100%', height: 200, borderRadius: 12, overflow: 'hidden' },
   postActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   actionBlock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { fontSize: 13 },

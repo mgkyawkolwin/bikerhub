@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using BikerHub.Data;
 using BikerHub.Dtos;
@@ -19,6 +20,10 @@ public interface ISocialService
     Task<SocialPostDto?> GetPostByIdAsync(Guid postId, Guid? currentUserId = null);
     // Task<PaginatedResultDto<SocialPostDto>> GetPostsByCreatorAsync(Guid createdById, int page, int pageSize, Guid? currentUserId = null);
     Task<SocialPostDto> CreatePostAsync(CreatePostDto createPostDto);
+    Task<SocialPostMediaDto> UploadPostMediaAsync(Guid postId, IFormFile file);
+    Task<SocialProfileDto> UploadProfileCoverPhotoAsync(Guid currentUserId, IFormFile file);
+    Task<SocialProfileDto> UploadProfilePhotoAsync(Guid currentUserId, IFormFile file);
+    Task<IEnumerable<SocialPostMediaDto>> GetPostMediaAsync(Guid postId);
     Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId, Guid currentUserId);
     Task<SocialProfileDto> UpdateSocialLinksAsync(Guid currentUserId, IEnumerable<SocialLinkDto> socialLinks);
     Task<IEnumerable<SocialProfileDto>> SearchProfilesAsync(string query);
@@ -44,11 +49,15 @@ public class SocialService : ISocialService
 {
     private readonly AppDbContext _dbContext;
     private readonly ILogger<SocialService> _logger;
+    private readonly IStorageService? _storageService;
+    private readonly BikerHub.Models.MinioSettings? _minioSettings;
 
-    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger)
+    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService? storageService = null, Microsoft.Extensions.Options.IOptions<BikerHub.Models.MinioSettings>? minioOptions = null)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _storageService = storageService;
+        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto)
@@ -74,6 +83,7 @@ public class SocialService : ISocialService
         var query = _dbContext.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
+            .Include(p => p.Media)
             .OrderByDescending(post => post.CreatedAtUTC);
 
         var total = await query.CountAsync();
@@ -112,6 +122,7 @@ public class SocialService : ISocialService
         var query = _dbContext.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
+            .Include(p => p.Media)
             .Where(post => post.UserId == filterDto.UserId)
             .OrderByDescending(post => post.CreatedAtUTC);
 
@@ -525,8 +536,18 @@ public class SocialService : ISocialService
         _logger.LogTrace("Post is not null.");
         _logger.LogTrace("Processing image urls: {urls}", post.ImageUrlsJson ?? "null");
         var imageUrls = string.IsNullOrWhiteSpace(post.ImageUrlsJson)
-            ? Enumerable.Empty<string>()
-            : JsonSerializer.Deserialize<IEnumerable<string>>(post.ImageUrlsJson) ?? Enumerable.Empty<string>();
+            ? new List<string>()
+            : JsonSerializer.Deserialize<IEnumerable<string>>(post.ImageUrlsJson)?.ToList() ?? new List<string>();
+
+        if (post.Media?.Any() == true && _minioSettings is not null)
+        {
+            var baseUrl = _minioSettings.ServerAddress?.TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+            {
+                var mediaUrls = post.Media.Select(m => $"{_minioSettings.ObjectBaseUrl}{baseUrl}/{_minioSettings.BucketName}/{m.ObjectName}");
+                imageUrls.AddRange(mediaUrls);
+            }
+        }
 
         _logger.LogTrace("Mapped image urls: {urls}", JsonSerializer.Serialize(imageUrls));
         _logger.LogTrace("Returning mapped SocialPostDto");
@@ -544,12 +565,166 @@ public class SocialService : ISocialService
             CreatedByDisplayName = post.User?.DisplayName ?? string.Empty,
             CreatedByUserName = post.User?.UserName ?? string.Empty
         };
+
+        // Map media entries if any
+        if (post.Media?.Any() == true)
+        {
+            var baseUrl = _minioSettings is null ? null : _minioSettings.ServerAddress?.TrimEnd('/');
+            socialPostDto.Media = post.Media.Select(m => new SocialPostMediaDto
+            {
+                Id = m.Id,
+                MediaGuid = m.MediaGuid,
+                ObjectName = m.ObjectName,
+                ContentType = m.ContentType,
+                Url = baseUrl is null ? null : $"{baseUrl}/{_minioSettings!.BucketName}/{m.ObjectName}"
+            }).ToList();
+        }
         _logger.LogTrace("Mapped SocialPostDto: {SocialPostDto}", JsonSerializer.Serialize(socialPostDto, new JsonSerializerOptions
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
             WriteIndented = true
         }));
         return socialPostDto;
+    }
+
+    public async Task<SocialPostMediaDto> UploadPostMediaAsync(Guid postId, IFormFile file)
+    {
+        _logger.LogInformation("CALLED UploadPostMediaAsync()");
+        if (_storageService is null)
+        {
+            _logger.LogWarning("Storage service is not configured for upload");
+            throw new InvalidOperationException("Storage service not configured.");
+        }
+
+        var post = await _dbContext.Posts.FindAsync(postId);
+        if (post is null)
+        {
+            _logger.LogWarning("Post not found for ID {PostId}", postId);
+            throw new Exception("Post not found.");
+        }
+
+        var mediaEntity = await _storageService.UploadPostMediaAsync(postId, file);
+        var url = await _storageService.GetPresignedUrlAsync(mediaEntity.ObjectName);
+
+        return new SocialPostMediaDto
+        {
+            Id = mediaEntity.Id,
+            MediaGuid = mediaEntity.MediaGuid,
+            ObjectName = mediaEntity.ObjectName,
+            ContentType = mediaEntity.ContentType,
+            Url = url
+        };
+    }
+
+    public async Task<SocialProfileDto> UploadProfileCoverPhotoAsync(Guid currentUserId, IFormFile file)
+    {
+        _logger.LogInformation("CALLED UploadProfileCoverPhotoAsync()");
+        if (_storageService is null)
+        {
+            _logger.LogWarning("Storage service is not configured for upload");
+            throw new InvalidOperationException("Storage service not configured.");
+        }
+
+        var profile = await _dbContext.SocialProfiles
+            .Include(p => p.User)
+            .Include(p => p.Followers)
+            .Include(p => p.Friends)
+            .FirstOrDefaultAsync(p => p.UserId == currentUserId);
+
+        if (profile is null)
+        {
+            _logger.LogWarning("Social profile not found for user ID {UserId}", currentUserId);
+            throw new CustomException("Social profile not found.");
+        }
+
+        var objectName = await _storageService.UploadFileAsync(file);
+        profile.CoverPhotoUrl = BuildObjectUrl(objectName);
+
+        _dbContext.SocialProfiles.Update(profile);
+        await _dbContext.SaveChangesAsync();
+
+        return MapProfile(profile, false, false, false);
+    }
+
+    public async Task<SocialProfileDto> UploadProfilePhotoAsync(Guid currentUserId, IFormFile file)
+    {
+        _logger.LogInformation("CALLED UploadProfilePhotoAsync()");
+        if (_storageService is null)
+        {
+            _logger.LogWarning("Storage service is not configured for upload");
+            throw new InvalidOperationException("Storage service not configured.");
+        }
+
+        var profile = await _dbContext.SocialProfiles
+            .Include(p => p.User)
+            .Include(p => p.Followers)
+            .Include(p => p.Friends)
+            .FirstOrDefaultAsync(p => p.UserId == currentUserId);
+
+        if (profile is null)
+        {
+            _logger.LogWarning("Social profile not found for user ID {UserId}", currentUserId);
+            throw new CustomException("Social profile not found.");
+        }
+
+        var objectName = await _storageService.UploadFileAsync(file);
+        profile.ProfilePhotoUrl = BuildObjectUrl(objectName);
+
+        _dbContext.SocialProfiles.Update(profile);
+        await _dbContext.SaveChangesAsync();
+
+        return MapProfile(profile, false, false, false);
+    }
+
+    public async Task<IEnumerable<SocialPostMediaDto>> GetPostMediaAsync(Guid postId)
+    {
+        _logger.LogInformation("CALLED GetPostMediaAsync()");
+        var mediaList = await _dbContext.PostMedia
+            .Where(m => m.PostId == postId)
+            .ToListAsync();
+
+        if (mediaList == null || mediaList.Count == 0)
+        {
+            return Enumerable.Empty<SocialPostMediaDto>();
+        }
+
+        if (_storageService is null)
+        {
+            return mediaList.Select(m => new SocialPostMediaDto
+            {
+                Id = m.Id,
+                MediaGuid = m.MediaGuid,
+                ObjectName = m.ObjectName,
+                ContentType = m.ContentType
+            });
+        }
+
+        var results = await Task.WhenAll(mediaList.Select(async m => new SocialPostMediaDto
+        {
+            Id = m.Id,
+            MediaGuid = m.MediaGuid,
+            ObjectName = m.ObjectName,
+            ContentType = m.ContentType,
+            Url = await _storageService.GetPresignedUrlAsync(m.ObjectName)
+        }));
+
+        return results;
+    }
+
+    private string BuildObjectUrl(string objectName)
+    {
+        if (_minioSettings is null)
+        {
+            return objectName;
+        }
+
+        var baseUrl = _minioSettings.ServerAddress?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return objectName;
+        }
+
+        return $"{_minioSettings.ObjectBaseUrl}{baseUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 
     public async Task<SocialProfileDto> FollowUserAsync(Guid followerId, Guid followingId)
@@ -1180,6 +1355,10 @@ public class SocialService : ISocialService
             UserName = profile.User.UserName,
             DisplayName = profile.User.DisplayName,
             CoverPhotoUrl = profile.CoverPhotoUrl,
+            ProfilePhotoUrl = profile.ProfilePhotoUrl,
+            AvatarUrl = !string.IsNullOrWhiteSpace(profile.ProfilePhotoUrl)
+                ? profile.ProfilePhotoUrl
+                : profile.User.ProfilePictureUrl,
             Bio = profile.Bio,
             FollowersCount = profile.FollowersCount,
             FollowingCount = profile.FollowingCount,

@@ -2,6 +2,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using BikerHub.Dtos;
 using BikerHub.Entities;
@@ -23,6 +25,47 @@ public class SocialController : ControllerBase
     {
         _socialService = socialService;
         _logger = logger;
+    }
+
+    [Authorize]
+    [HttpPost("posts/{postId:guid}/media")]
+    public async Task<IActionResult> UploadPostMedia([FromRoute] Guid postId, [FromForm] IFormFile file)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED UploadPostMedia()");
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+
+            var dto = await _socialService.UploadPostMediaAsync(postId, file);
+            return Ok(new { Success = true, Data = dto });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in UploadPostMedia");
+            return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet("posts/{postId:guid}/media")]
+    public async Task<IActionResult> GetPostMedia([FromRoute] Guid postId)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED GetPostMedia()");
+            var results = await _socialService.GetPostMediaAsync(postId);
+            if (!results.Any())
+            {
+                return NotFound(new { Success = false, Message = "Post not found or has no media." });
+            }
+            return Ok(new { Success = true, Data = results });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in GetPostMedia");
+            return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
     }
 
     [Authorize]
@@ -183,10 +226,6 @@ public class SocialController : ControllerBase
         {
             _logger.LogInformation("CALLED CreatePost()");
             _logger.LogDebug("CreatePost called with content {@Content}", createPostDto);
-            if (string.IsNullOrWhiteSpace(createPostDto.Content) && (createPostDto.ImageUrls == null || !createPostDto.ImageUrls.Any()))
-            {
-                return BadRequest(new { Success = false, Message = "Post content or images are required." });
-            }
 
             var postDto = await _socialService.CreatePostAsync(createPostDto);
             return Ok(new { Success = true, Data = postDto });
@@ -310,6 +349,64 @@ public class SocialController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error occurred in UpdateSocialLinks");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("profiles/cover-photo")]
+    public async Task<IActionResult> UploadProfileCoverPhoto([FromForm] IFormFile file)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED UploadProfileCoverPhoto()");
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+
+            if (file is null)
+                return BadRequest(new { Success = false, Message = "A cover photo file is required." });
+
+            var result = await _socialService.UploadProfileCoverPhotoAsync(currentUserId.Value, file);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in UploadProfileCoverPhoto");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in UploadProfileCoverPhoto");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("profiles/profile-photo")]
+    public async Task<IActionResult> UploadProfilePhoto([FromForm] IFormFile file)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED UploadProfilePhoto()");
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+
+            if (file is null)
+                return BadRequest(new { Success = false, Message = "A profile photo file is required." });
+
+            var result = await _socialService.UploadProfilePhotoAsync(currentUserId.Value, file);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in UploadProfilePhoto");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in UploadProfilePhoto");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

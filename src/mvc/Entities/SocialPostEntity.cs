@@ -19,4 +19,5 @@ public class SocialPostEntity : EntityBase<Guid>
 
     public virtual ICollection<SocialPostLikeEntity> Likes { get; set; } = [];
     public virtual ICollection<SocialPostCommentEntity> Comments { get; set; } = [];
+    public virtual ICollection<SocialPostMediaEntity> Media { get; set; } = [];
 }

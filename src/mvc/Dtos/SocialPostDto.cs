@@ -13,4 +13,5 @@ public sealed record SocialPostDto
     public required string CreatedByUserName { get; set; }
     public string? Content { get; set; } = null;
     public IEnumerable<string>? ImageUrls { get; set; } = null;
+    public IEnumerable<SocialPostMediaDto>? Media { get; set; } = null;
 }
