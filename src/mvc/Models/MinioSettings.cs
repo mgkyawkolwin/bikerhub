@@ -2,7 +2,7 @@ namespace BikerHub.Models;
 
 public sealed record MinioSettings
 {
-    public required string ObjectBaseUrl { get; init; }
+    public required string ObjectAccessUrl { get; init; }
     public required string ServerAddress { get; init; }
     public required string AccessKey { get; init; }
     public required string SecretKey { get; init; }

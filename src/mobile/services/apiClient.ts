@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
-const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
-// const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
+// const DEFAULT_API_BASE_URL = 'http://192.168.50.131:5264/api';
+const DEFAULT_API_BASE_URL = 'https://bikerhubapi.preview.software/api';
 export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 

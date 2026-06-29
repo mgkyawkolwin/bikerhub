@@ -243,6 +243,64 @@ public class SocialController : ControllerBase
     }
 
     [Authorize]
+    [HttpDelete("posts/{postId:guid}")]
+    public async Task<IActionResult> DeletePost([FromRoute] Guid postId)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED DeletePost()");
+            _logger.LogDebug("DeletePost called with postId {PostId}", postId);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            await _socialService.DeletePostAsync(currentUserId.Value, postId);
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in DeletePost");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in DeletePost");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("posts/{postId:guid}/media/{mediaId:guid}")]
+    public async Task<IActionResult> DeletePostMedia([FromRoute] Guid postId, [FromRoute] Guid mediaId)
+    {
+        try
+        {
+            _logger.LogInformation("CALLED DeletePostMedia()");
+            _logger.LogDebug("DeletePostMedia called with postId {PostId} and mediaId {MediaId}", postId, mediaId);
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+            {
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+            }
+
+            await _socialService.DeletePostMediaAsync(currentUserId.Value, postId, mediaId);
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in DeletePostMedia");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in DeletePostMedia");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
     [HttpGet("posts/{postId:guid}")]
     public async Task<IActionResult> GetPostById([FromRoute] Guid postId)
     {
@@ -407,6 +465,58 @@ public class SocialController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error occurred in UploadProfilePhoto");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("profiles/cover-photo")]
+    public async Task<IActionResult> DeleteProfileCoverPhoto()
+    {
+        try
+        {
+            _logger.LogInformation("CALLED DeleteProfileCoverPhoto()");
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+
+            var result = await _socialService.DeleteProfileCoverPhotoAsync(currentUserId.Value);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in DeleteProfileCoverPhoto");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in DeleteProfileCoverPhoto");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("profiles/profile-photo")]
+    public async Task<IActionResult> DeleteProfilePhoto()
+    {
+        try
+        {
+            _logger.LogInformation("CALLED DeleteProfilePhoto()");
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Authentication required." });
+
+            var result = await _socialService.DeleteProfilePhotoAsync(currentUserId.Value);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Custom exception occurred in DeleteProfilePhoto");
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in DeleteProfilePhoto");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

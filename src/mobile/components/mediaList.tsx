@@ -1,19 +1,27 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 
+type MediaItem = {
+  id?: string;
+  uri: string;
+  contentType?: string;
+};
+
 type MediaListProps = {
-  media: string[];
+  media: MediaItem[];
   initialIndex?: number;
-  onMediaPress?: (uri: string, index: number) => void;
+  onMediaPress?: (item: MediaItem, index: number) => void;
+  onMenuPress?: (item: MediaItem, index: number) => void;
+  canDelete?: boolean;
 };
 
 const ITEM_HEIGHT = 320;
 
-export default function MediaList({ media, initialIndex = 0, onMediaPress }: MediaListProps) {
+export default function MediaList({ media, initialIndex = 0, onMediaPress, onMenuPress, canDelete = false }: MediaListProps) {
   const { colors } = useThemeContext();
-  const listRef = useRef<FlatList<string>>(null);
+  const listRef = useRef<FlatList<MediaItem>>(null);
 
   const parsedMedia = useMemo(() => media ?? [], [media]);
 
@@ -25,7 +33,7 @@ export default function MediaList({ media, initialIndex = 0, onMediaPress }: Med
     listRef.current.scrollToIndex({ index: initialIndex, animated: false });
   }, [initialIndex, parsedMedia.length]);
 
-  const renderMediaItem = ({ item, index }: { item: string; index: number }) => (
+  const renderMediaItem = ({ item, index }: { item: MediaItem; index: number }) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
       <TouchableOpacity
         activeOpacity={0.85}
@@ -33,14 +41,19 @@ export default function MediaList({ media, initialIndex = 0, onMediaPress }: Med
         style={styles.mediaWrapper}
       >
         <Image
-          source={{ uri: item }}
+          source={item.uri ? { uri: item.uri } : undefined}
           style={styles.mediaImage}
           resizeMode="cover"
         />
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.menuButton, { backgroundColor: colors.card + 'CC' }]}> 
-        <MaterialIcons name="more-vert" size={20} color={colors.text} />
-      </TouchableOpacity>
+      {onMenuPress && canDelete ? (
+        <TouchableOpacity
+          style={[styles.menuButton, { backgroundColor: colors.card + 'CC' }]}
+          onPress={() => onMenuPress(item, index)}
+        >
+          <MaterialIcons name="more-vert" size={20} color={colors.text} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -48,7 +61,7 @@ export default function MediaList({ media, initialIndex = 0, onMediaPress }: Med
     <FlatList
       ref={listRef}
       data={parsedMedia}
-      keyExtractor={(item, index) => `${item}-${index}`}
+      keyExtractor={(item, index) => item.id ?? item.uri ?? index.toString()}
       renderItem={renderMediaItem}
       style={styles.list}
       contentContainerStyle={styles.listContent}
@@ -68,7 +81,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     height: ITEM_HEIGHT,
-    borderRadius: 18,
+    borderRadius: 4,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     marginBottom: 20,
@@ -76,10 +89,13 @@ const styles = StyleSheet.create({
   },
   mediaWrapper: {
     flex: 1,
+    overflow: 'hidden',
   },
   mediaImage: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
+    width: undefined,
+    height: undefined,
+    alignSelf: 'stretch',
   },
   menuButton: {
     position: 'absolute',

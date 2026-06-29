@@ -110,7 +110,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SocialPostEntity>(entity =>
         {
             entity
-                .HasMany(post => post.Media)
+                .HasMany(post => post.Medias)
                 .WithOne(media => media.Post)
                 .HasForeignKey(media => media.PostId)
                 .OnDelete(DeleteBehavior.Cascade);

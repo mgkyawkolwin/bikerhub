@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
+import { Alert, FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,6 +12,7 @@ import type Post from '@/models/post';
 import type Comment from '@/models/comment';
 import SocialPostCard from '@/components/socialPostCard';
 import SocialCommentModal from '@/components/socialCommentModal';
+import PopupMenu from '@/components/popupMenu';
 import SnackBar from '@/components/snackbar';
 import { SocialServiceClient, SocialServiceToken } from '@/services/socialService';
 
@@ -27,6 +28,8 @@ export default function SocialProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+  const [photoMenuTarget, setPhotoMenuTarget] = useState<'cover' | 'profile' | null>(null);
   const [commentInput, setCommentInput] = useState('');
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
@@ -108,6 +111,53 @@ export default function SocialProfileScreen() {
     setComments([]);
   };
 
+  const handleDeletePost = async (postId?: string) => {
+    if (!postId) return;
+
+    try {
+      const response = await socialSerivce.deletePost(postId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to delete post.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to delete post.');
+        return;
+      }
+
+      setPosts((prev) => prev.filter((post) => post.id !== postId));
+      if (selectedPostId === postId) {
+        closeComments();
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      SnackBar.Error('Unable to delete post.');
+    }
+  };
+
+  const handleSharePost = (postId?: string) => {
+    if (!postId) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${postId}` } });
+  };
+
+  const handleConfirmDeletePost = (postId?: string) => {
+    if (!postId) return;
+
+    Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => void handleDeletePost(postId) },
+    ]);
+  };
+
+  const handleOpenPostMenu = (postId?: string) => {
+    if (!postId) return;
+
+    setActiveMenuPostId(postId);
+  };
+
   const clearReply = () => {
     setReplyToCommentId(null);
     setReplyToCommentAuthor(null);
@@ -144,7 +194,33 @@ export default function SocialProfileScreen() {
     return true;
   }, []);
 
-  const pickImageFromLibrary = useCallback(async () => {
+  const requestCamera = useCallback(async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      SnackBar.Error('Camera permission is required to take a profile photo.');
+      return false;
+    }
+    return true;
+  }, []);
+
+  const pickImageFromSource = useCallback(async (source: 'camera' | 'gallery') => {
+    if (source === 'camera') {
+      if (!(await requestCamera())) return null;
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      const imageResult = result as ImagePicker.ImagePickerResult;
+      if (imageResult.canceled || !imageResult.assets?.[0]?.uri) {
+        return null;
+      }
+
+      return imageResult.assets[0].uri;
+    }
+
     if (!(await requestLibrary())) return null;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -159,73 +235,149 @@ export default function SocialProfileScreen() {
     }
 
     return imageResult.assets[0].uri;
-  }, [requestLibrary]);
+  }, [requestCamera, requestLibrary]);
 
-  const handleUploadCoverPhoto = useCallback(async () => {
+  const handleUploadPhotoFromSource = useCallback(
+    async (target: 'cover' | 'profile', source: 'camera' | 'gallery') => {
+      if (!isOwnProfile) return;
+
+      const uri = await pickImageFromSource(source);
+      if (!uri) return;
+
+      if (target === 'cover') {
+        setIsCoverUploading(true);
+      } else {
+        setIsProfileUploading(true);
+      }
+
+      try {
+        const response = target === 'cover'
+          ? await socialSerivce.uploadProfileCoverPhoto({ uri, name: getFileName(uri), type: getMimeType(uri) })
+          : await socialSerivce.uploadProfilePhoto({ uri, name: getFileName(uri), type: getMimeType(uri) });
+
+        if (!response.ok) {
+          const errorResult = await response.json().catch(() => null);
+          throw new Error(errorResult?.message || `${target === 'cover' ? 'Cover' : 'Profile'} photo upload failed.`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || `${target === 'cover' ? 'Cover' : 'Profile'} photo upload failed.`);
+        }
+
+        setProfile(result.data);
+        SnackBar.Success(`${target === 'cover' ? 'Cover' : 'Profile'} photo updated.`);
+      } catch (error) {
+        console.error(`Failed to upload ${target} photo:`, error);
+        SnackBar.Error(`Unable to upload ${target} photo. Please try again.`);
+      } finally {
+        if (target === 'cover') {
+          setIsCoverUploading(false);
+        } else {
+          setIsProfileUploading(false);
+        }
+      }
+    },
+    [isOwnProfile, pickImageFromSource, socialSerivce],
+  );
+
+  const handleUploadCoverPhoto = useCallback(() => {
     if (!isOwnProfile) return;
-    const uri = await pickImageFromLibrary();
-    if (!uri) return;
+    setPhotoMenuTarget('cover');
+  }, [isOwnProfile]);
 
-    setIsCoverUploading(true);
-    try {
-      const response = await socialSerivce.uploadProfileCoverPhoto({
-        uri,
-        name: getFileName(uri),
-        type: getMimeType(uri),
-      });
-
-      if (!response.ok) {
-        const errorResult = await response.json().catch(() => null);
-        throw new Error(errorResult?.message || 'Cover photo upload failed.');
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || 'Cover photo upload failed.');
-      }
-
-      setProfile(result.data);
-      SnackBar.Success('Cover photo updated.');
-    } catch (error) {
-      console.error('Failed to upload cover photo:', error);
-      SnackBar.Error('Unable to upload cover photo. Please try again.');
-    } finally {
-      setIsCoverUploading(false);
-    }
-  }, [isOwnProfile, pickImageFromLibrary, socialSerivce]);
-
-  const handleUploadProfilePhoto = useCallback(async () => {
+  const handleUploadProfilePhoto = useCallback(() => {
     if (!isOwnProfile) return;
-    const uri = await pickImageFromLibrary();
-    if (!uri) return;
+    setPhotoMenuTarget('profile');
+  }, [isOwnProfile]);
 
-    setIsProfileUploading(true);
-    try {
-      const response = await socialSerivce.uploadProfilePhoto({
-        uri,
-        name: getFileName(uri),
-        type: getMimeType(uri),
-      });
+  const handleSelectPhotoSource = useCallback(
+    async (source: 'camera' | 'gallery') => {
+      if (!photoMenuTarget) return;
+      const target = photoMenuTarget;
+      setPhotoMenuTarget(null);
+      await handleUploadPhotoFromSource(target, source);
+    },
+    [handleUploadPhotoFromSource, photoMenuTarget],
+  );
 
-      if (!response.ok) {
-        const errorResult = await response.json().catch(() => null);
-        throw new Error(errorResult?.message || 'Profile photo upload failed.');
+  const handleDeletePhoto = useCallback(
+    async (target: 'cover' | 'profile') => {
+      try {
+        const response =
+          target === 'cover'
+            ? await socialSerivce.deleteProfileCoverPhoto()
+            : await socialSerivce.deleteProfilePhoto();
+
+        if (!response.ok) {
+          SnackBar.Error('Unable to delete photo.');
+          return;
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          SnackBar.Error(result.message || 'Unable to delete photo.');
+          return;
+        }
+
+        setProfile(result.data);
+      } catch {
+        SnackBar.Error('Unable to delete photo.');
       }
+    },
+    [socialSerivce],
+  );
 
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || 'Profile photo upload failed.');
-      }
+  const handleConfirmDeletePhoto = useCallback(
+    (target: 'cover' | 'profile') => {
+      if (!target) return;
 
-      setProfile(result.data);
-      SnackBar.Success('Profile photo updated.');
-    } catch (error) {
-      console.error('Failed to upload profile photo:', error);
-      SnackBar.Error('Unable to upload profile photo. Please try again.');
-    } finally {
-      setIsProfileUploading(false);
+      Alert.alert(
+        'Delete photo',
+        `Are you sure you want to delete this ${target === 'cover' ? 'cover' : 'profile'} photo?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => void handleDeletePhoto(target) },
+        ],
+      );
+    },
+    [handleDeletePhoto],
+  );
+
+  const handleViewPhoto = useCallback(
+    (target: 'cover' | 'profile') => {
+      if (!profile) return;
+
+      const photoUrl = target === 'cover' ? profile.coverPhotoUrl : profile.profilePhotoUrl;
+      if (!photoUrl) return;
+
+      setPhotoMenuTarget(null);
+      void router.push(
+        `/social/photoViewer?url=${encodeURIComponent(photoUrl)}&title=${encodeURIComponent(
+          target === 'cover' ? 'Cover Photo' : 'Profile Photo',
+        )}`,
+      );
+    },
+    [profile, router],
+  );
+
+  const photoMenuItems = useMemo(() => {
+    if (!photoMenuTarget || !profile) return [];
+
+    const hasPhoto = photoMenuTarget === 'cover' ? Boolean(profile.coverPhotoUrl) : Boolean(profile.profilePhotoUrl);
+    const items: Array<{ label: string; onPress: () => void; destructive?: boolean }> = [];
+
+    if (hasPhoto) {
+      items.push({ label: 'View Photo', onPress: () => handleViewPhoto(photoMenuTarget) });
+      items.push({ label: 'Delete Photo', destructive: true, onPress: () => handleConfirmDeletePhoto(photoMenuTarget) });
     }
-  }, [isOwnProfile, pickImageFromLibrary, socialSerivce]);
+
+    items.push({ label: 'Take Photo', onPress: () => handleSelectPhotoSource('camera') });
+    items.push({ label: 'Choose From Gallery', onPress: () => handleSelectPhotoSource('gallery') });
+    items.push({ label: 'Cancel', onPress: () => setPhotoMenuTarget(null) });
+
+    return items;
+  }, [photoMenuTarget, profile, handleViewPhoto, handleConfirmDeletePhoto, handleSelectPhotoSource]);
 
   const handleCommentSubmit = async () => {
     if (!selectedPostId || !commentInput.trim()) {
@@ -431,8 +583,8 @@ export default function SocialProfileScreen() {
       onAuthorPress={() => router.push({ pathname: '/social/profile', params: { userId: item.createdByUserId ?? '' } })}
       onToggleLove={() => {}}
       onOpenComments={(postId) => void openComments(postId ?? '')}
-      onSharePress={() => {}}
-      onMenuPress={() => {}}
+      onSharePress={() => handleSharePost(item.id)}
+      onMenuPress={item.createdByUserId === authUser?.id ? () => void handleOpenPostMenu(item.id) : undefined}
     />
   );
 
@@ -767,6 +919,30 @@ export default function SocialProfileScreen() {
         onDeleteComment={handleDeleteComment}
         onCommentInputChange={setCommentInput}
         onCommentSubmit={handleCommentSubmit}
+      />
+      <PopupMenu
+        visible={activeMenuPostId !== null}
+        onClose={() => setActiveMenuPostId(null)}
+        items={[
+          {
+            label: 'Share',
+            onPress: () => handleSharePost(activeMenuPostId ?? undefined),
+          },
+          {
+            label: 'Delete',
+            destructive: true,
+            onPress: () => handleConfirmDeletePost(activeMenuPostId ?? undefined),
+          },
+          {
+            label: 'Cancel',
+            onPress: () => setActiveMenuPostId(null),
+          },
+        ]}
+      />
+      <PopupMenu
+        visible={photoMenuTarget !== null}
+        onClose={() => setPhotoMenuTarget(null)}
+        items={photoMenuItems}
       />
     </View>
   );

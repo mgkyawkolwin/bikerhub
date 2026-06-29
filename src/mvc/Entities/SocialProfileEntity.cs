@@ -11,7 +11,7 @@ public class SocialProfileEntity : EntityBase<Guid>
     public virtual UserEntity User { get; set; } = null!;
 
     [MaxLength(512)]
-    public string CoverPhotoUrl { get; set; } = string.Empty;
+    public string? CoverPhotoUrl { get; set; }
 
     [MaxLength(512)]
     public string? ProfilePhotoUrl { get; set; }

@@ -126,6 +126,34 @@ public class MinioStorageService : IStorageService
         return objectName;
     }
 
+    public async Task DeleteObjectAsync(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            throw new ArgumentNullException(nameof(objectName));
+        }
+
+        await EnsureBucketExistsAsync();
+
+        try
+        {
+            var removeArgs = new Minio.DataModel.Args.RemoveObjectArgs()
+                .WithBucket(_settings.BucketName)
+                .WithObject(objectName);
+
+            await _client.RemoveObjectAsync(removeArgs).ConfigureAwait(false);
+        }
+        catch (Minio.Exceptions.ObjectNotFoundException)
+        {
+            _logger.LogWarning("Attempted to delete non-existent object {ObjectName}", objectName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete object {ObjectName} from Minio", objectName);
+            throw;
+        }
+    }
+
     public async Task<string> GetPresignedUrlAsync(string objectName, int expirySeconds = 60 * 60)
     {
         try

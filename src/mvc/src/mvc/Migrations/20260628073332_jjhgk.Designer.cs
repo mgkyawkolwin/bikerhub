@@ -4,16 +4,19 @@ using BikerHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BikerHub.Migrations
+namespace BikerHub.src.mvc.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628073332_jjhgk")]
+    partial class jjhgk
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -677,6 +680,9 @@ namespace BikerHub.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("ImageUrlsJson")
+                        .HasColumnType("longtext");
+
                     b.Property<int>("LoveCount")
                         .HasColumnType("int");
 
@@ -701,7 +707,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SocialPosts");
+                    b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostLikeEntity", b =>
@@ -783,7 +789,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("SocialPostMedias");
+                    b.ToTable("PostMedia");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>
@@ -1113,7 +1119,7 @@ namespace BikerHub.Migrations
             modelBuilder.Entity("BikerHub.Entities.SocialPostMediaEntity", b =>
                 {
                     b.HasOne("BikerHub.Entities.SocialPostEntity", "Post")
-                        .WithMany("Medias")
+                        .WithMany("Media")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1188,7 +1194,7 @@ namespace BikerHub.Migrations
 
                     b.Navigation("Likes");
 
-                    b.Navigation("Medias");
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>

@@ -15,7 +15,7 @@ export default function SocialPostPreviewCard({ post }: SocialPostPreviewCardPro
     <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>      
       <View style={styles.postHeader}>
         <View style={styles.authorLink}>
-          <Image source={{ uri: post.authorAvatarUrl ?? '' }} style={styles.avatar} />
+          <Image source={{ uri: post.createdByUserProfilePhotoUrl ?? '' }} style={styles.avatar} />
           <View style={styles.postMeta}>
             <Text style={[styles.authorName, { color: colors.text }]}>{post.createdByDisplayName}</Text>
             <View style={styles.metaRow}>
@@ -30,13 +30,13 @@ export default function SocialPostPreviewCard({ post }: SocialPostPreviewCardPro
 
       <Text style={[styles.postContent, { color: colors.text }]}>{post.content}</Text>
 
-      {post.imageUrls?.length ? (
+      {post.medias?.length ? (
         <View style={styles.imageGrid}>
-          {post.imageUrls.map((uri, idx) => (
+          {post.medias.map((item, idx) => (
             <Image
               key={`${post.id}-preview-${idx}`}
-              source={{ uri }}
-              style={[styles.postImage, post.imageUrls?.length === 1 ? styles.singleImage : styles.multiImage]}
+              source={{ uri: item.url ?? '' }}
+              style={[styles.postImage, post.medias?.length === 1 ? styles.singleImage : styles.multiImage]}
             />
           ))}
         </View>

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BikerHub.Entities;
 
-[Table("PostMedia")]
+[Table("SocialPostMedias")]
 public class SocialPostMediaEntity : EntityBase<Guid>
 {
     public required Guid PostId { get; set; }

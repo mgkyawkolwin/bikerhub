@@ -18,11 +18,15 @@ public interface ISocialService
     Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto);
     Task<PaginatedResultDto<SocialPostDto>> GetPostsAsync(SocialPostsFilterDto filterDto);
     Task<SocialPostDto?> GetPostByIdAsync(Guid postId, Guid? currentUserId = null);
+    Task DeletePostAsync(Guid currentUserId, Guid postId);
+    Task DeletePostMediaAsync(Guid currentUserId, Guid postId, Guid mediaId);
     // Task<PaginatedResultDto<SocialPostDto>> GetPostsByCreatorAsync(Guid createdById, int page, int pageSize, Guid? currentUserId = null);
     Task<SocialPostDto> CreatePostAsync(CreatePostDto createPostDto);
     Task<SocialPostMediaDto> UploadPostMediaAsync(Guid postId, IFormFile file);
     Task<SocialProfileDto> UploadProfileCoverPhotoAsync(Guid currentUserId, IFormFile file);
     Task<SocialProfileDto> UploadProfilePhotoAsync(Guid currentUserId, IFormFile file);
+    Task<SocialProfileDto> DeleteProfileCoverPhotoAsync(Guid currentUserId);
+    Task<SocialProfileDto> DeleteProfilePhotoAsync(Guid currentUserId);
     Task<IEnumerable<SocialPostMediaDto>> GetPostMediaAsync(Guid postId);
     Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId, Guid currentUserId);
     Task<SocialProfileDto> UpdateSocialLinksAsync(Guid currentUserId, IEnumerable<SocialLinkDto> socialLinks);
@@ -65,7 +69,7 @@ public class SocialService : ISocialService
         _logger.LogInformation("CALLED GetFeedsAsync()");
         _logger.LogDebug("GetFeedsAsync called with page {Page}, pageSize {PageSize}, and currentUserId {CurrentUserId}", filterDto.Page, filterDto.PageSize, filterDto.UserId);
 
-        Guid? currentProfileId = null;
+        Guid currentProfileId = Guid.Empty;
         if (filterDto.UserId.HasValue)
         {
             _logger.LogTrace("Fetching current profile ID for user ID {CurrentUserId}", filterDto.UserId.Value);
@@ -76,15 +80,24 @@ public class SocialService : ISocialService
             _logger.LogTrace("Fetched current profile ID: {CurrentProfileId}", currentProfileId);
             if (currentProfileId == Guid.Empty)
             {
-                currentProfileId = null;
+                currentProfileId = Guid.Empty;
             }
         }
 
         var query = _dbContext.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Media)
-            .OrderByDescending(post => post.CreatedAtUTC);
+            .Include(p => p.Medias)
+            .OrderByDescending(post => post.CreatedAtUTC)
+            .Select(post => new
+            {
+                post,
+                currentProfileId,
+                profilePhotoUrl = _dbContext.SocialProfiles
+                    .Where(profile => profile.UserId == post.UserId)
+                    .Select(profile => profile.ProfilePhotoUrl)
+                    .FirstOrDefault()
+            });
 
         var total = await query.CountAsync();
         var items = await query.Skip((filterDto.Page - 1) * filterDto.PageSize).Take(filterDto.PageSize).ToListAsync();
@@ -96,7 +109,7 @@ public class SocialService : ISocialService
         WriteIndented = true
     })
     : "No posts");
-        return new PaginatedResultDto<SocialPostDto>(items.Select(post => MapPost(post, currentProfileId)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
+        return new PaginatedResultDto<SocialPostDto>(items.Select(item => MapPost(item.post, item.currentProfileId, item.profilePhotoUrl)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetPostsAsync(SocialPostsFilterDto filterDto)
@@ -104,7 +117,7 @@ public class SocialService : ISocialService
         _logger.LogInformation("CALLED GetPostsAsync()");
         _logger.LogDebug("GetPostsAsync called with page {Page}, pageSize {PageSize}, and currentUserId {CurrentUserId}", filterDto.Page, filterDto.PageSize, filterDto.UserId);
 
-        Guid? currentProfileId = null;
+        Guid currentProfileId = Guid.Empty;
         if (filterDto.UserId.HasValue)
         {
             _logger.LogTrace("Fetching current profile ID for user ID {CurrentUserId}", filterDto.UserId.Value);
@@ -115,16 +128,25 @@ public class SocialService : ISocialService
             _logger.LogTrace("Fetched current profile ID: {CurrentProfileId}", currentProfileId);
             if (currentProfileId == Guid.Empty)
             {
-                currentProfileId = null;
+                currentProfileId = Guid.Empty;
             }
         }
 
         var query = _dbContext.Posts
             .Include(p => p.User)
             .Include(p => p.Likes)
-            .Include(p => p.Media)
+            .Include(p => p.Medias)
             .Where(post => post.UserId == filterDto.UserId)
-            .OrderByDescending(post => post.CreatedAtUTC);
+            .OrderByDescending(post => post.CreatedAtUTC)
+            .Select(post => new
+            {
+                post,
+                currentProfileId,
+                profilePhotoUrl = _dbContext.SocialProfiles
+                    .Where(profile => profile.UserId == post.UserId)
+                    .Select(profile => profile.ProfilePhotoUrl)
+                    .FirstOrDefault()
+            });
 
         var total = await query.CountAsync();
         var items = await query.Skip((filterDto.Page - 1) * filterDto.PageSize).Take(filterDto.PageSize).ToListAsync();
@@ -136,7 +158,7 @@ public class SocialService : ISocialService
         WriteIndented = true
     })
     : "No posts");
-        return new PaginatedResultDto<SocialPostDto>(items.Select(post => MapPost(post, currentProfileId)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
+        return new PaginatedResultDto<SocialPostDto>(items.Select(item => MapPost(item.post, item.currentProfileId, item.profilePhotoUrl)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
     }
 
     // public async Task<PaginatedResultDto<SocialPostDto>> GetPostsByCreatorAsync(Guid createdByUserId, int page, int pageSize, Guid? currentUserId = null)
@@ -177,7 +199,7 @@ public class SocialService : ISocialService
         _logger.LogInformation("CALLED GetPostByIdAsync()");
         _logger.LogDebug("GetPostByIdAsync called with postId {PostId} and currentUserId {CurrentUserId}", postId, currentUserId);
 
-        Guid? currentProfileId = null;
+        Guid currentProfileId = Guid.Empty;
         if (currentUserId.HasValue)
         {
             currentProfileId = await _dbContext.SocialProfiles
@@ -186,14 +208,23 @@ public class SocialService : ISocialService
                 .FirstOrDefaultAsync();
             if (currentProfileId == Guid.Empty)
             {
-                currentProfileId = null;
+                currentProfileId = Guid.Empty;
             }
         }
 
         var post = await _dbContext.Posts
             .Include(p => p.Likes)
             .Include(p => p.User)
-            .FirstOrDefaultAsync(p => p.Id == postId);
+            .Where(p => p.Id == postId)
+            .Select(p => new
+            {
+                post = p,
+                profilePhotoUrl = _dbContext.SocialProfiles
+                    .Where(profile => profile.UserId == p.UserId)
+                    .Select(profile => profile.ProfilePhotoUrl)
+                    .FirstOrDefault()
+            })
+            .FirstOrDefaultAsync();
 
         if (post is null)
         {
@@ -201,15 +232,15 @@ public class SocialService : ISocialService
             return null;
         }
 
-        return MapPost(post, currentProfileId);
+        return MapPost(post.post, currentProfileId, post.profilePhotoUrl);
     }
 
     public async Task<SocialPostDto> CreatePostAsync(CreatePostDto createPostDto)
     {
         _logger.LogInformation("CALLED CreatePostAsync()");
         _logger.LogDebug("CreatePostAsync called with createdByUserId {CreatedById}", createPostDto.CreatedById);
-        var profile = await _dbContext.Users.FirstOrDefaultAsync(p => p.Id == createPostDto.CreatedById);
-        if (profile is null)
+        var user = await _dbContext.Users.FirstOrDefaultAsync(p => p.Id == createPostDto.CreatedById);
+        if (user is null)
         {
             _logger.LogWarning("User not found for ID {CreatedById}", createPostDto.CreatedById);
             throw new Exception("User not found for the given user ID.");
@@ -217,15 +248,95 @@ public class SocialService : ISocialService
         var postEntity = new SocialPostEntity
         {
             Content = createPostDto.Content,
-            ImageUrlsJson = createPostDto.ImageUrls == null ? null : JsonSerializer.Serialize(createPostDto.ImageUrls),
-            UserId = profile.Id,
-            User = profile
+            UserId = user.Id,
+            User = user
         };
 
         _dbContext.Posts.Add(postEntity);
         await _dbContext.SaveChangesAsync();
 
-        return MapPost(postEntity, null);
+        return MapPost(postEntity, Guid.Empty, "");
+    }
+
+    public async Task DeletePostAsync(Guid currentUserId, Guid postId)
+    {
+        _logger.LogInformation("CALLED DeletePostAsync()");
+        _logger.LogDebug("DeletePostAsync called with currentUserId {CurrentUserId} and postId {PostId}", currentUserId, postId);
+
+        var post = await _dbContext.Posts
+            .Include(p => p.Medias)
+            .FirstOrDefaultAsync(p => p.Id == postId);
+
+        if (post is null)
+        {
+            _logger.LogWarning("Post not found for ID {PostId}", postId);
+            throw new CustomException("Post not found.");
+        }
+
+        if (post.UserId != currentUserId)
+        {
+            _logger.LogWarning("User {UserId} is not authorized to delete post {PostId}", currentUserId, postId);
+            throw new CustomException("Not authorized to delete this post.");
+        }
+
+        if (post.Medias?.Any() == true && _storageService is not null)
+        {
+            foreach (var media in post.Medias)
+            {
+                try
+                {
+                    await _storageService.DeleteObjectAsync(media.ObjectName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete media object {ObjectName} for post {PostId}", media.ObjectName, postId);
+                }
+            }
+        }
+
+        _dbContext.Posts.Remove(post);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task DeletePostMediaAsync(Guid currentUserId, Guid postId, Guid mediaId)
+    {
+        _logger.LogInformation("CALLED DeletePostMediaAsync()");
+        _logger.LogDebug("DeletePostMediaAsync called with currentUserId {CurrentUserId}, postId {PostId}, mediaId {MediaId}", currentUserId, postId, mediaId);
+
+        var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+        if (post is null)
+        {
+            _logger.LogWarning("Post not found for ID {PostId}", postId);
+            throw new CustomException("Post not found.");
+        }
+
+        if (post.UserId != currentUserId)
+        {
+            _logger.LogWarning("User {UserId} is not authorized to delete media for post {PostId}", currentUserId, postId);
+            throw new CustomException("Not authorized to delete this media.");
+        }
+
+        var media = await _dbContext.PostMedia.FirstOrDefaultAsync(m => m.Id == mediaId && m.PostId == postId);
+        if (media is null)
+        {
+            _logger.LogWarning("Media not found for ID {MediaId} on post {PostId}", mediaId, postId);
+            throw new CustomException("Media not found.");
+        }
+
+        if (_storageService is not null)
+        {
+            try
+            {
+                await _storageService.DeleteObjectAsync(media.ObjectName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete media object {ObjectName} for post {PostId}", media.ObjectName, postId);
+            }
+        }
+
+        _dbContext.PostMedia.Remove(media);
+        await _dbContext.SaveChangesAsync();
     }
 
     public async Task<SocialPostDto?> TogglePostLoveAsync(Guid postId, Guid currentUserId)
@@ -523,10 +634,10 @@ public class SocialService : ISocialService
         return toDelete.Count;
     }
 
-    private SocialPostDto MapPost(SocialPostEntity post, Guid? currentProfileId = null)
+    private SocialPostDto MapPost(SocialPostEntity post, Guid currentProfileId, string? profilePhotoUrl = null)
     {
         _logger.LogInformation("CALLED MapPost()");
-        _logger.LogDebug("Mapping post with currentProfileId {CurrentProfileId}", currentProfileId);
+        _logger.LogDebug("Mapping post with currentProfileId {CurrentProfileId} and profilePhotoUrl {ProfilePhotoUrl}", currentProfileId, profilePhotoUrl);
         _logger.LogDebug("Mapping post: {Post}", JsonSerializer.Serialize(post, new JsonSerializerOptions
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
@@ -534,49 +645,34 @@ public class SocialService : ISocialService
         }));
         if (post == null) throw new ArgumentNullException(nameof(post));
         _logger.LogTrace("Post is not null.");
-        _logger.LogTrace("Processing image urls: {urls}", post.ImageUrlsJson ?? "null");
-        var imageUrls = string.IsNullOrWhiteSpace(post.ImageUrlsJson)
-            ? new List<string>()
-            : JsonSerializer.Deserialize<IEnumerable<string>>(post.ImageUrlsJson)?.ToList() ?? new List<string>();
+        _logger.LogTrace("Processing media entries");
 
-        if (post.Media?.Any() == true && _minioSettings is not null)
-        {
-            var baseUrl = _minioSettings.ServerAddress?.TrimEnd('/');
-            if (!string.IsNullOrWhiteSpace(baseUrl))
-            {
-                var mediaUrls = post.Media.Select(m => $"{_minioSettings.ObjectBaseUrl}{baseUrl}/{_minioSettings.BucketName}/{m.ObjectName}");
-                imageUrls.AddRange(mediaUrls);
-            }
-        }
-
-        _logger.LogTrace("Mapped image urls: {urls}", JsonSerializer.Serialize(imageUrls));
         _logger.LogTrace("Returning mapped SocialPostDto");
         var socialPostDto = new SocialPostDto
         {
             Id = post.Id,
             Content = post.Content,
-            ImageUrls = imageUrls,
             LoveCount = post.LoveCount,
             CommentCount = post.CommentCount,
             ShareCount = post.ShareCount,
-            IsLikedByCurrentUser = currentProfileId.HasValue && post.Likes?.Any(like => like.UserId == currentProfileId.Value) == true,
+            IsLikedByCurrentUser = post.Likes?.Any(like => like.UserId == currentProfileId) == true,
             CreatedAtUTC = post.CreatedAtUTC,
             CreatedByUserId = post.UserId,
             CreatedByDisplayName = post.User?.DisplayName ?? string.Empty,
-            CreatedByUserName = post.User?.UserName ?? string.Empty
+            CreatedByUserName = post.User?.UserName ?? string.Empty,
+            CreatedByUserProfilePhotoUrl = profilePhotoUrl,
         };
 
         // Map media entries if any
-        if (post.Media?.Any() == true)
+        if (post.Medias?.Count() > 0)
         {
-            var baseUrl = _minioSettings is null ? null : _minioSettings.ServerAddress?.TrimEnd('/');
-            socialPostDto.Media = post.Media.Select(m => new SocialPostMediaDto
+            socialPostDto.Medias = post.Medias.Select(m => new SocialPostMediaDto
             {
                 Id = m.Id,
                 MediaGuid = m.MediaGuid,
                 ObjectName = m.ObjectName,
                 ContentType = m.ContentType,
-                Url = baseUrl is null ? null : $"{baseUrl}/{_minioSettings!.BucketName}/{m.ObjectName}"
+                Url = $"{_minioSettings!.ObjectAccessUrl}/{_minioSettings!.BucketName}/{m.ObjectName}"
             }).ToList();
         }
         _logger.LogTrace("Mapped SocialPostDto: {SocialPostDto}", JsonSerializer.Serialize(socialPostDto, new JsonSerializerOptions
@@ -676,6 +772,104 @@ public class SocialService : ISocialService
         return MapProfile(profile, false, false, false);
     }
 
+    public async Task<SocialProfileDto> DeleteProfileCoverPhotoAsync(Guid currentUserId)
+    {
+        _logger.LogInformation("CALLED DeleteProfileCoverPhotoAsync()");
+        var profile = await _dbContext.SocialProfiles
+            .Include(p => p.User)
+            .Include(p => p.Followers)
+            .Include(p => p.Friends)
+            .FirstOrDefaultAsync(p => p.UserId == currentUserId);
+
+        if (profile is null)
+        {
+            _logger.LogWarning("Social profile not found for user ID {UserId}", currentUserId);
+            throw new CustomException("Social profile not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.CoverPhotoUrl) && _storageService is not null)
+        {
+            var objectName = GetObjectNameFromUrl(profile.CoverPhotoUrl);
+            if (!string.IsNullOrWhiteSpace(objectName))
+            {
+                try
+                {
+                    await _storageService.DeleteObjectAsync(objectName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete cover photo object {ObjectName} for user {UserId}", objectName, currentUserId);
+                }
+            }
+        }
+
+        profile.CoverPhotoUrl = null;
+        _dbContext.SocialProfiles.Update(profile);
+        await _dbContext.SaveChangesAsync();
+
+        return MapProfile(profile, false, false, false);
+    }
+
+    public async Task<SocialProfileDto> DeleteProfilePhotoAsync(Guid currentUserId)
+    {
+        _logger.LogInformation("CALLED DeleteProfilePhotoAsync()");
+        var profile = await _dbContext.SocialProfiles
+            .Include(p => p.User)
+            .Include(p => p.Followers)
+            .Include(p => p.Friends)
+            .FirstOrDefaultAsync(p => p.UserId == currentUserId);
+
+        if (profile is null)
+        {
+            _logger.LogWarning("Social profile not found for user ID {UserId}", currentUserId);
+            throw new CustomException("Social profile not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.ProfilePhotoUrl) && _storageService is not null)
+        {
+            var objectName = GetObjectNameFromUrl(profile.ProfilePhotoUrl);
+            if (!string.IsNullOrWhiteSpace(objectName))
+            {
+                try
+                {
+                    await _storageService.DeleteObjectAsync(objectName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete profile photo object {ObjectName} for user {UserId}", objectName, currentUserId);
+                }
+            }
+        }
+
+        profile.ProfilePhotoUrl = null;
+        _dbContext.SocialProfiles.Update(profile);
+        await _dbContext.SaveChangesAsync();
+
+        return MapProfile(profile, false, false, false);
+    }
+
+    private static string? GetObjectNameFromUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return uri.Segments.LastOrDefault()?.Trim('/');
+            }
+
+            return url.Split('/').LastOrDefault();
+        }
+        catch
+        {
+            return url.Split('/').LastOrDefault();
+        }
+    }
+
     public async Task<IEnumerable<SocialPostMediaDto>> GetPostMediaAsync(Guid postId)
     {
         _logger.LogInformation("CALLED GetPostMediaAsync()");
@@ -718,13 +912,13 @@ public class SocialService : ISocialService
             return objectName;
         }
 
-        var baseUrl = _minioSettings.ServerAddress?.TrimEnd('/');
+        var baseUrl = _minioSettings.ObjectAccessUrl?.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(baseUrl))
         {
             return objectName;
         }
 
-        return $"{_minioSettings.ObjectBaseUrl}{baseUrl}/{_minioSettings.BucketName}/{objectName}";
+        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 
     public async Task<SocialProfileDto> FollowUserAsync(Guid followerId, Guid followingId)

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
+import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -13,6 +13,7 @@ import type Post from '@/models/post';
 import type Comment from '@/models/comment';
 import SocialPostCard from '@/components/socialPostCard';
 import SocialCommentModal from '@/components/socialCommentModal';
+import PopupMenu from '@/components/popupMenu';
 import SnackBar from '@/components/snackbar';
 
 export default function SocialPostsScreen() {
@@ -28,6 +29,7 @@ export default function SocialPostsScreen() {
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function SocialPostsScreen() {
         setPosts((prev) => (reset ? result.data.items : [...prev, ...result.data.items]));
         setPage(result.data.page);
         setTotal(result.data.total);
-      } catch (error) {
+      } catch {
         SnackBar.Error('Failed to load posts.');
       } finally {
         setLoading(false);
@@ -112,11 +114,6 @@ export default function SocialPostsScreen() {
     setReplyToCommentId(null);
     setReplyToCommentAuthor(null);
     setCommentInput('');
-  };
-
-  const clearReply = () => {
-    setReplyToCommentId(null);
-    setReplyToCommentAuthor(null);
   };
 
   const handleCommentSubmit = async () => {
@@ -195,12 +192,56 @@ export default function SocialPostsScreen() {
     }
   };
 
+  const handleDeletePost = async (postId?: string) => {
+    if (!postId) return;
+
+    try {
+      const response = await socialService.deletePost(postId);
+      if (!response.ok) {
+        SnackBar.Error('Unable to delete post.');
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        SnackBar.Error(result.message || 'Unable to delete post.');
+        return;
+      }
+
+      setPosts((prev) => prev.filter((post) => post.id !== postId));
+      if (selectedPostId === postId) {
+        closeComments();
+      }
+    } catch {
+      SnackBar.Error('Unable to delete post.');
+    }
+  };
+
+  const handleConfirmDeletePost = (postId?: string) => {
+    if (!postId) return;
+
+    Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => void handleDeletePost(postId) },
+    ]);
+  };
+
+  const handleSharePost = (postId?: string) => {
+    if (!postId) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${postId}` } });
+  };
+
+  const handleOpenPostMenu = (postId?: string) => {
+    if (!postId) return;
+
+    setActiveMenuPostId(postId);
+  };
+
   const handleToggleLove = async (postId?: string) => {
     if (!postId) {
       return;
     }
-
-    const currentUserId = getAuthUser()?.id ?? '';
 
     try {
       const response = await socialService.toggleLove(postId);
@@ -217,10 +258,12 @@ export default function SocialPostsScreen() {
 
       const updatedPost = result.data as Post;
       setPosts((prev) => prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post)));
-    } catch (error) {
+    } catch {
       SnackBar.Error('Unable to update love status.');
     }
   };
+
+  const currentUserId = getAuthUser()?.id ?? '';
 
   const renderPost = ({ item }: { item: Post }) => (
     <SocialPostCard
@@ -232,6 +275,7 @@ export default function SocialPostsScreen() {
         if (!item.id) return;
         void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${item.id}` } });
       }}
+      onMenuPress={item.createdByUserId === currentUserId ? () => void handleOpenPostMenu(item.id) : undefined}
     />
   );
 
@@ -356,6 +400,25 @@ export default function SocialPostsScreen() {
         onDeleteComment={handleDeleteComment}
         onCommentInputChange={setCommentInput}
         onCommentSubmit={handleCommentSubmit}
+      />
+      <PopupMenu
+        visible={activeMenuPostId !== null}
+        onClose={() => setActiveMenuPostId(null)}
+        items={[
+          {
+            label: 'Share',
+            onPress: () => handleSharePost(activeMenuPostId ?? undefined),
+          },
+          {
+            label: 'Delete',
+            destructive: true,
+            onPress: () => handleConfirmDeletePost(activeMenuPostId ?? undefined),
+          },
+          {
+            label: 'Cancel',
+            onPress: () => setActiveMenuPostId(null),
+          },
+        ]}
       />
     </View>
   );

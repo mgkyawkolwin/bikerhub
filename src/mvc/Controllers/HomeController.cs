@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using BikerHub.Dtos;
@@ -20,7 +21,13 @@ public class HomeController : Controller
     {
         _logger.LogInformation("Retrieving application version from configuration.");
 
-        var version = _configuration["Version"] ?? "unknown";
+        _logger.LogInformation("Retrieving application version from assembly/project.");
+
+        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                      ?? assembly?.GetName()?.Version?.ToString()
+                      ?? _configuration["Version"]
+                      ?? "unknown";
 
         _logger.LogDebug("Application version retrieved: {Version}", version);
 

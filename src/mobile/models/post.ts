@@ -3,13 +3,13 @@ export default class Post {
   createdByUserId?: string;
   createdByUserName?: string;
   createdByDisplayName?: string;
-  authorAvatarUrl?: string;
+  createdByUserProfilePhotoUrl?: string;
   groupId?: string;
   content?: string;
-  imageUrls?: string[];
   loveCount?: number;
   commentCount?: number;
   shareCount?: number;
   createdAtUTC?: string;
   isLikedByCurrentUser?: boolean;
+  medias?: Array<{ id?: string; url?: string; contentType?: string }>;
 }

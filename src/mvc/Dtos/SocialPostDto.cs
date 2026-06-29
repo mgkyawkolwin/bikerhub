@@ -11,7 +11,8 @@ public sealed record SocialPostDto
     public required Guid CreatedByUserId { get; set; }
     public required string CreatedByDisplayName { get; set; }
     public required string CreatedByUserName { get; set; }
+    public string? CreatedByUserProfilePhotoUrl { get; set; }
     public string? Content { get; set; } = null;
-    public IEnumerable<string>? ImageUrls { get; set; } = null;
-    public IEnumerable<SocialPostMediaDto>? Media { get; set; } = null;
+    public IEnumerable<SocialPostMediaDto>? Medias { get; set; } = null;
 }
+

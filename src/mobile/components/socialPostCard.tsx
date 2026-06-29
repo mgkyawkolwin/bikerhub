@@ -3,6 +3,7 @@ import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
 import { SocialServiceToken } from '@/services/socialService';
 import type { SocialServiceClient } from '@/services/socialService';
@@ -27,8 +28,11 @@ export default function SocialPostCard({
   onMenuPress,  // Added
 }: SocialPostCardProps) {
   const { colors } = useThemeContext();
+  const { getAuthUser } = useAuthContext();
   const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const [previewPost, setPreviewPost] = useState<Post | null>(null);
+  const currentUserId = getAuthUser()?.id ?? '';
+  const canDeletePost = Boolean(post.createdByUserId && post.createdByUserId === currentUserId);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const previewPostId = useMemo(() => {
@@ -73,14 +77,20 @@ export default function SocialPostCard({
   }, [previewPostId, socialService]);
 
   const handleMediaPress = (index: number) => {
-    if (!post.imageUrls?.length) return;
+    const mediaItems = post.medias?.length
+      ? post.medias.map((item) => ({ id: item.id, url: item.url ?? '', contentType: item.contentType }))
+      : [];
 
-    const mediaPayload = encodeURIComponent(JSON.stringify(post.imageUrls));
+    if (!mediaItems.length) return;
+
+    const mediaPayload = encodeURIComponent(JSON.stringify(mediaItems));
     router.push({
       pathname: '/social/media',
       params: {
         media: mediaPayload,
         index: index.toString(),
+        postId: post.id ?? '',
+        canDelete: canDeletePost.toString(),
       },
     });
   };
@@ -93,7 +103,7 @@ export default function SocialPostCard({
           activeOpacity={0.8}
           onPress={onAuthorPress}
         >
-          <Image source={{ uri: post.authorAvatarUrl ?? '' }} style={styles.avatar} />
+          <Image source={{ uri: post.createdByUserProfilePhotoUrl ?? '' }} style={styles.avatar} />
           <View style={styles.postMeta}>
             <Text style={[styles.authorName, { color: colors.text }]}>{post.createdByDisplayName}</Text>
             <View style={styles.metaRow}>
@@ -105,30 +115,32 @@ export default function SocialPostCard({
           </View>
         </TouchableOpacity>
         
-        <TouchableOpacity
-          style={styles.menuButton}
-          activeOpacity={0.7}
-          onPress={onMenuPress}
-        >
-          <MaterialIcons name="more-vert" size={24} color={colors.text} />
-        </TouchableOpacity>
+        {onMenuPress ? (
+          <TouchableOpacity
+            style={styles.menuButton}
+            activeOpacity={0.7}
+            onPress={onMenuPress}
+          >
+            <MaterialIcons name="more-vert" size={24} color={colors.text} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <Text style={[styles.postContent, { color: colors.text }]}>{post.content}</Text>
 
-      {post.imageUrls?.length ? (
+      {post.medias?.length ? (
         <View style={styles.imageGrid}>
-          {post.imageUrls.slice(0, 4).map((uri, idx) => {
-            const extraCount = post.imageUrls!.length - 4;
+          {post.medias.slice(0, 4).map((item, idx) => {
+            const extraCount = post.medias!.length - 4;
             const isLastSlot = idx === 3 && extraCount > 0;
             return (
               <TouchableOpacity
                 key={`${post.id}-${idx}`}
                 activeOpacity={0.85}
-                style={[styles.gridItem, post.imageUrls!.length === 1 ? styles.singleImage : styles.gridItem]}
+                style={[styles.gridItem, post.medias!.length === 1 ? styles.singleImage : styles.gridItem]}
                 onPress={() => handleMediaPress(idx)}
               >
-                <Image source={{ uri }} style={styles.gridItemImage} />
+                <Image source={{ uri: item.url ?? '' }} style={styles.gridItemImage} />
                 {isLastSlot ? (
                   <View style={styles.overlay}>
                     <Text style={styles.overlayText}>+{extraCount}</Text>
@@ -184,7 +196,7 @@ const styles = StyleSheet.create({
   postContent: { fontSize: 15, lineHeight: 22 },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
   postImage: { borderRadius: 4, backgroundColor: '#222222' },
-  singleImage: { width: '100%', height: 200 },
+  // singleImage: { width: '100%', height: 200 },
   gridItem: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', backgroundColor: '#222222', marginBottom: 8 },
   gridItemImage: { width: '100%', height: '100%' },
   overlay: {

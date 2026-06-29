@@ -109,7 +109,7 @@ export default function GroupPostsScreen() {
         renderItem={({ item }) => (
           <View style={[styles.postCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.postHeader}>
-              <Image source={{ uri: item.authorAvatarUrl ?? '' }} style={styles.postAvatar} />
+              <Image source={{ uri: item.createdByUserProfilePhotoUrl ?? '' }} style={styles.postAvatar} />
               <View style={styles.postMeta}>
                 <Text style={[styles.authorName, { color: colors.text }]}>{item.createdByDisplayName}</Text>
                 <View style={styles.metaRow}>
@@ -119,13 +119,13 @@ export default function GroupPostsScreen() {
               </View>
             </View>
             <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
-            {item.imageUrls?.length ? (
+            {item.medias?.length ? (
               <View style={styles.imageGrid}>
-                {item.imageUrls.map((uri, idx) => (
+                {item.medias.map((itemMedia, idx) => (
                   <Image
                     key={`${item.id}-${idx}`}
-                    source={{ uri }}
-                    style={[styles.postImage, item.imageUrls && item.imageUrls.length === 1 ? styles.singleImage : styles.multiImage]}
+                    source={{ uri: itemMedia.url ?? '' }}
+                    style={[styles.postImage, item.medias && item.medias.length === 1 ? styles.singleImage : styles.multiImage]}
                   />
                 ))}
               </View>

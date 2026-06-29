@@ -3,11 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BikerHub.Entities;
 
-[Table("Posts")]
+[Table("SocialPosts")]
 public class SocialPostEntity : EntityBase<Guid>
 {
     public string? Content { get; set; }
-    public string? ImageUrlsJson { get; set; }
     public int LoveCount { get; set; }
     public int CommentCount { get; set; }
     public int ShareCount { get; set; }
@@ -19,5 +18,5 @@ public class SocialPostEntity : EntityBase<Guid>
 
     public virtual ICollection<SocialPostLikeEntity> Likes { get; set; } = [];
     public virtual ICollection<SocialPostCommentEntity> Comments { get; set; } = [];
-    public virtual ICollection<SocialPostMediaEntity> Media { get; set; } = [];
+    public virtual ICollection<SocialPostMediaEntity> Medias { get; set; } = [];
 }

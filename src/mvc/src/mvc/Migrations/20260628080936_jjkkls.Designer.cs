@@ -4,16 +4,19 @@ using BikerHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BikerHub.Migrations
+namespace BikerHub.src.mvc.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628080936_jjkkls")]
+    partial class jjkkls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -676,6 +679,9 @@ namespace BikerHub.Migrations
 
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("char(36)");
+
+                    b.Property<string>("ImageUrlsJson")
+                        .HasColumnType("longtext");
 
                     b.Property<int>("LoveCount")
                         .HasColumnType("int");

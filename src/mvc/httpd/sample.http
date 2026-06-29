@@ -1,0 +1,20 @@
+
+@API_URL=https://bikerhubapi.preview.software/api
+@TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwOGRlZDA0Ni1mNzgwLTRkNzktOGRlZS1lMWJiN2JmODQ1MmUiLCJlbWFpbCI6IiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhYSIsImp0aSI6IjI3OGQ3ODg5LTA3OWMtNGYzMy1hODgzLTc0ZTdjMTM3OTMyYSIsImV4cCI6MTc4MjcxODYwMCwiaXNzIjoiQmlrZXJIdWIiLCJhdWQiOiJCaWtlckh1YkNsaWVudCJ9.YdrO9yIVgGP2zyQ4OtGFvm77u2zk4iwaTPantp6yLvs","user":{"id":"08ded046-f780-4d79-8dee-e1bb7bf8452e","userName":"aa","email":"","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwOGRlZDA0Ni1mNzgwLTRkNzktOGRlZS1lMWJiN2JmODQ1MmUiLCJlbWFpbCI6IiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhYSIsImp0aSI6IjI3OGQ3ODg5LTA3OWMtNGYzMy1hODgzLTc0ZTdjMTM3OTMyYSIsImV4cCI6MTc4MjcxODYwMCwiaXNzIjoiQmlrZXJIdWIiLCJhdWQiOiJCaWtlckh1YkNsaWVudCJ9.YdrO9yIVgGP2zyQ4OtGFvm77u2zk4iwaTPantp6yLvs
+
+#
+curl --request POST \
+--url https://bikerhubapi.preview.software/api/auth/login
+--header 'Content-Type: application/json' \
+--data '{ \
+    "userName": "aa", \
+    "password": "Aa" \
+}'
+###
+
+#
+curl --request GET \
+--url https://bikerhubapi.preview.software/api/social/posts \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwOGRlZDA0Ni1mNzgwLTRkNzktOGRlZS1lMWJiN2JmODQ1MmUiLCJlbWFpbCI6IiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhYSIsImp0aSI6IjI3OGQ3ODg5LTA3OWMtNGYzMy1hODgzLTc0ZTdjMTM3OTMyYSIsImV4cCI6MTc4MjcxODYwMCwiaXNzIjoiQmlrZXJIdWIiLCJhdWQiOiJCaWtlckh1YkNsaWVudCJ9.YdrO9yIVgGP2zyQ4OtGFvm77u2zk4iwaTPantp6yLvs'
+###
