@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import type Comment from '@/models/comment';
@@ -39,7 +39,11 @@ export default function SocialCommentModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <Pressable style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onClose} />
-        <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+        <KeyboardAvoidingView
+          style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
             <TouchableOpacity onPress={onClose} hitSlop={12}>
@@ -112,7 +116,7 @@ export default function SocialCommentModal({
               <MaterialIcons name="send" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -126,8 +130,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
-    minHeight: 280,
-    maxHeight: '85%',
+    height: '95%',
   },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   modalTitle: { fontSize: 18, fontWeight: '700' },

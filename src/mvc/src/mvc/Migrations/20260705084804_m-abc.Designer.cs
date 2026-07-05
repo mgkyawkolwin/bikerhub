@@ -4,16 +4,19 @@ using BikerHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BikerHub.Migrations
+namespace BikerHub.src.mvc.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705084804_m-abc")]
+    partial class mabc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -463,9 +466,11 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.LookUpEntity", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -480,14 +485,14 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("CreatedById")
-                        .HasColumnType("char(36)");
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("UpdatedById")
-                        .HasColumnType("char(36)");
+                    b.Property<int>("UpdatedById")
+                        .HasColumnType("int");
 
                     b.Property<string>("Value")
                         .HasMaxLength(256)

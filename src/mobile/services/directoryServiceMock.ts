@@ -71,4 +71,40 @@ export class MockDirectoryService implements DirectoryService {
     await saveDatabase(db);
     return newDirectory;
   }
+
+  async updateDirectory(directoryId: string, directory: Directory): Promise<Directory> {
+    const db = await this.getDb();
+    const directories = (db.collections.directories as Directory[] | undefined) ?? [];
+    const existing = directories.find((item) => item.id === directoryId);
+    if (!existing) throw new Error('Directory not found');
+
+    existing.name = directory.name;
+    existing.businessType = directory.businessType;
+    existing.address = directory.address;
+    existing.city = directory.city;
+    existing.state = directory.state;
+    existing.country = directory.country;
+    existing.postalCode = directory.postalCode;
+    existing.phone = directory.phone;
+    existing.email = directory.email;
+    existing.googleMapUrl = directory.googleMapUrl;
+
+    if (directory.logoUrl) {
+      existing.logoUrl = directory.logoUrl;
+    }
+
+    if (directory.coverImageUrl) {
+      existing.coverImageUrl = directory.coverImageUrl;
+    }
+
+    await saveDatabase(db);
+    return existing;
+  }
+
+  async deleteDirectory(directoryId: string): Promise<void> {
+    const db = await this.getDb();
+    const directories = (db.collections.directories as Directory[] | undefined) ?? [];
+    db.collections.directories = directories.filter((item) => item.id !== directoryId);
+    await saveDatabase(db);
+  }
 }

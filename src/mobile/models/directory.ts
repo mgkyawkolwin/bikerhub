@@ -4,9 +4,13 @@ export default class Directory {
   address?: string;
   city?: string;
   state?: string;
+  country?: string;
+  postalCode?: string;
   phone?: string;
+  email?: string;
   logoUrl?: string;
   coverImageUrl?: string;
+  googleMapUrl?: string;
   businessType?: string;
   createdById?: string;
   isLiked?: boolean;

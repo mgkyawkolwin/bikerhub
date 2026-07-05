@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<SocialPostMediaEntity> PostMedia => Set<SocialPostMediaEntity>();
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();
     public DbSet<FriendRequestEntity> FriendRequests => Set<FriendRequestEntity>();
+    public DbSet<LookUpEntity> LookUps => Set<LookUpEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

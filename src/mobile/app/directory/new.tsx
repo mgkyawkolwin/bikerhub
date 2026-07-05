@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
@@ -9,12 +9,20 @@ import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { ConfigServiceToken } from '@/services/configService';
 import { DirectoryServiceToken } from '@/services/directoryService';
+import type { ApiResponse } from '@/services/apiClient';
 import type { ConfigService } from '@/services/configService';
 import type { DirectoryService } from '@/services/directoryService';
 import type Directory from '@/models/directory';
 import SnackBar from '@/components/snackbar';
 
-type DropdownField = 'businessType' | 'city' | 'stateDivision' | null;
+type LookupItem = {
+  id: string;
+  category: string;
+  code: string;
+  value?: string;
+};
+
+type DropdownField = 'businessType' | null;
 
 export default function DirectoryCreateScreen() {
   const insets = useSafeAreaInsets();
@@ -24,57 +32,106 @@ export default function DirectoryCreateScreen() {
   const configService = useMemo(() => container.resolve<ConfigService>(ConfigServiceToken), []);
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
 
-  const [businessTypes, setBusinessTypes] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-  const [stateDivisions, setStateDivisions] = useState<string[]>([]);
+  const [businessTypes, setBusinessTypes] = useState<LookupItem[]>([]);
   const [name, setName] = useState('');
   const [businessType, setBusinessType] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateDivision, setStateDivision] = useState('');
+  const [country, setCountry] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [googleMapUrl, setGoogleMapUrl] = useState('');
+  const params = useLocalSearchParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [logoUri, setLogoUri] = useState('');
   const [coverUri, setCoverUri] = useState('');
+  const [logoFileUri, setLogoFileUri] = useState('');
+  const [coverFileUri, setCoverFileUri] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'name' | 'businessType' | 'address' | 'city' | 'stateDivision', string>>>({});
 
   useEffect(() => {
     void (async () => {
-      const [types, cityList, states] = await Promise.all([
-        configService.getBusinessTypes(),
-        configService.getCities(),
-        configService.getStateDivisions(),
-      ]);
-      setBusinessTypes(types);
-      setCities(cityList);
-      setStateDivisions(states);
+      const typesResponse = await configService.getBusinessTypes();
+      if (!typesResponse.ok) {
+        SnackBar.Error('Error loading configuration data. Invalid response from server.');
+        return;
+      }
+      const typesJson = (await typesResponse.json());
+      if (typesJson?.success !== true) {
+        SnackBar.Error('Error loading configuration data. Failed response.');
+        return;
+      }
+      setBusinessTypes(typesJson.data || []);
     })();
   }, [configService]);
 
-  const dropdownItems = useMemo(
-    () => ({
-      businessType: businessTypes,
-      city: cities,
-      stateDivision: stateDivisions,
-    }),
-    [businessTypes, cities, stateDivisions],
-  );
+  const isEditing = Boolean(id);
 
   const getDisplayText = (field: DropdownField) => {
     if (field === 'businessType') return businessType || t.Title.businessType;
-    if (field === 'city') return city || t.Title.city;
-    if (field === 'stateDivision') return stateDivision || t.Title.stateDivision;
     return t.Title.selectOption;
   };
 
   const selectOption = (option: string, field: DropdownField) => {
-    if (!field) return;
-    if (field === 'businessType') setBusinessType(option);
-    if (field === 'city') setCity(option);
-    if (field === 'stateDivision') setStateDivision(option);
+    if (field !== 'businessType') return;
+    setBusinessType(option);
     setActiveDropdown(null);
   };
+
+  const getFileName = (uri: string) => {
+    const parts = uri.split('/');
+    return parts[parts.length - 1] ?? `file-${Date.now()}`;
+  };
+
+  const getMimeType = (uri: string) => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'application/octet-stream';
+    }
+  };
+
+  useEffect(() => {
+    if (!id) return;
+
+    void (async () => {
+      const response = await directoryService.getDirectoryById(id);
+      if (!response.ok) {
+        return;
+      }
+      const responseJson = await response.json();
+      if (responseJson?.success !== true) {
+        return;
+      }
+
+      const directory: Directory = responseJson.data;
+      setName(directory.name ?? '');
+      setBusinessType(directory.businessType ?? '');
+      setAddress(directory.address ?? '');
+      setCity(directory.city ?? '');
+      setStateDivision(directory.state ?? '');
+      setCountry(directory.country ?? '');
+      setPostalCode(directory.postalCode ?? '');
+      setPhone(directory.phone ?? '');
+      setEmail(directory.email ?? '');
+      setGoogleMapUrl(directory.googleMapUrl ?? '');
+      setLogoUri(directory.logoUrl ?? '');
+      setCoverUri(directory.coverImageUrl ?? '');
+    })();
+  }, [id, directoryService]);
 
   const requestLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -85,13 +142,14 @@ export default function DirectoryCreateScreen() {
     return true;
   };
 
-  const pickImage = async (setter: (uri: string) => void) => {
+  const pickImage = async (setter: (uri: string) => void, aspect: [number, number]) => {
     const canPick = await requestLibrary();
     if (!canPick) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
       quality: 0.7,
       allowsEditing: true,
+      aspect,
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
 
@@ -99,6 +157,11 @@ export default function DirectoryCreateScreen() {
     const selected = Array.isArray(imageResult.assets) ? imageResult.assets[0] : undefined;
     if (!imageResult.canceled && selected?.uri) {
       setter(selected.uri);
+      if (setter === setLogoUri) {
+        setLogoFileUri(selected.uri);
+      } else if (setter === setCoverUri) {
+        setCoverFileUri(selected.uri);
+      }
     }
   };
 
@@ -132,16 +195,63 @@ export default function DirectoryCreateScreen() {
         address: address.trim(),
         city,
         state: stateDivision,
+        country: country.trim() || undefined,
+        postalCode: postalCode.trim() || undefined,
         phone: phone.trim(),
-        logoUrl: logoUri || undefined,
-        coverImageUrl: coverUri || undefined,
+        email: email.trim() || undefined,
+        googleMapUrl: googleMapUrl.trim() || undefined,
+        logoUrl: !logoFileUri && logoUri ? logoUri : undefined,
+        coverImageUrl: !coverFileUri && coverUri ? coverUri : undefined,
         likesCount: 0,
         rating: 0,
         ratingCount: 0,
       };
 
-      await directoryService.createDirectory(listing);
-      SnackBar.Success(t.Text.directorySubmitSuccess);
+      const response = isEditing
+        ? await directoryService.updateDirectory(id, listing)
+        : await directoryService.createDirectory(listing);
+      if (!response.ok) {
+        SnackBar.Error('Error submitting directory. Invalid response from server.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson?.success) {
+        SnackBar.Error(responseJson?.message || 'Error submitting directory. Failed response.');
+        return;
+      }
+
+      const directoryId = responseJson.data?.id;
+      if (!directoryId) {
+        SnackBar.Error('Directory created but returned no identifier.');
+        return;
+      }
+
+      if (logoFileUri) {
+        const uploadLogoResponse = await directoryService.uploadDirectoryLogo(directoryId, {
+          uri: logoFileUri,
+          name: getFileName(logoFileUri),
+          type: getMimeType(logoFileUri),
+        });
+        if (!uploadLogoResponse.ok) {
+          SnackBar.Error(isEditing ? 'Directory updated but logo upload failed.' : 'Directory created but logo upload failed.');
+          return;
+        }
+      }
+
+      if (coverFileUri) {
+        const uploadCoverResponse = await directoryService.uploadDirectoryCoverImage(directoryId, {
+          uri: coverFileUri,
+          name: getFileName(coverFileUri),
+          type: getMimeType(coverFileUri),
+        });
+        if (!uploadCoverResponse.ok) {
+          SnackBar.Error(isEditing ? 'Directory updated but cover image upload failed.' : 'Directory created but cover image upload failed.');
+          return;
+        }
+      }
+
+      SnackBar.Success(isEditing ? t.Text.directoryUpdateSuccess ?? 'Directory updated successfully.' : t.Text.directorySubmitSuccess);
       router.replace('/directory/directory');
     } catch {
       SnackBar.Error('Unable to submit business. Please try again.');
@@ -203,26 +313,52 @@ export default function DirectoryCreateScreen() {
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city}</Text>
-          <TouchableOpacity
-            style={[styles.dropdown, { borderColor: errors.city ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
-            onPress={() => setActiveDropdown('city')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('city')}</Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
+          <TextInput
+            style={[styles.textInput, { borderColor: errors.city ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={city}
+            onChangeText={(text) => {
+              setCity(text);
+              if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
+            }}
+            placeholder={t.Title.city}
+            placeholderTextColor={colors.secondaryText}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.stateDivision}</Text>
-          <TouchableOpacity
-            style={[styles.dropdown, { borderColor: errors.stateDivision ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
-            onPress={() => setActiveDropdown('stateDivision')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('stateDivision')}</Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
+          <TextInput
+            style={[styles.textInput, { borderColor: errors.stateDivision ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={stateDivision}
+            onChangeText={(text) => {
+              setStateDivision(text);
+              if (errors.stateDivision) setErrors((prev) => ({ ...prev, stateDivision: undefined }));
+            }}
+            placeholder={t.Title.stateDivision}
+            placeholderTextColor={colors.secondaryText}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country}</Text>
+          <TextInput
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={country}
+            onChangeText={setCountry}
+            placeholder={t.Title.country}
+            placeholderTextColor={colors.secondaryText}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.postalCode}</Text>
+          <TextInput
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={postalCode}
+            onChangeText={setPostalCode}
+            placeholder={t.Title.postalCode}
+            placeholderTextColor={colors.secondaryText}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
@@ -238,10 +374,36 @@ export default function DirectoryCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.email}</Text>
+          <TextInput
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t.Title.email}
+            placeholderTextColor={colors.secondaryText}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.googleMapUrl}</Text>
+          <TextInput
+            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+            value={googleMapUrl}
+            onChangeText={setGoogleMapUrl}
+            placeholder={t.Title.googleMapUrl}
+            placeholderTextColor={colors.secondaryText}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
           <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.logoImage}</Text>
           <TouchableOpacity
             style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={() => void pickImage(setLogoUri)}
+            onPress={() => void pickImage(setLogoUri, [1, 1])}
             activeOpacity={0.8}
           >
             <Text style={[styles.uploadText, { color: colors.text }]}>
@@ -256,7 +418,7 @@ export default function DirectoryCreateScreen() {
           <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.coverImageUrl}</Text>
           <TouchableOpacity
             style={[styles.uploadButton, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={() => void pickImage(setCoverUri)}
+            onPress={() => void pickImage(setCoverUri, [16, 9])}
             activeOpacity={0.8}
           >
             <Text style={[styles.uploadText, { color: colors.text }]}>
@@ -268,7 +430,7 @@ export default function DirectoryCreateScreen() {
         </View>
 
         <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={handleSubmit} disabled={isSubmitting}>
-          <Text style={styles.submitText}>{t.Title.submit}</Text>
+          <Text style={styles.submitText}>{t.Title.submit} </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -284,16 +446,16 @@ export default function DirectoryCreateScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
-            {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option) => (
+            {activeDropdown === 'businessType' ? businessTypes.map((option) => (
               <TouchableOpacity
-                key={option}
+                key={option.id}
                 style={[styles.sheetItem, { borderBottomColor: colors.border }]}
-                onPress={() => activeDropdown && selectOption(option, activeDropdown)}
+                onPress={() => selectOption(option.code, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}> {option.value ?? option.code}</Text>
               </TouchableOpacity>
-            ))}
+            )) : null}
           </ScrollView>
         </View>
       </Modal>

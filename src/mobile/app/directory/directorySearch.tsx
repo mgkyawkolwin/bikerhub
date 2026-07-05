@@ -8,8 +8,16 @@ import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { ConfigServiceToken } from '@/services/configService';
 import type { ConfigService } from '@/services/configService';
+import SnackBar from '@/components/snackbar';
 
-type DropdownField = 'businessType' | 'city' | 'stateDivision' | null;
+type DropdownField = 'businessType' | null;
+
+type LookupItem = {
+  id: string;
+  category: string;
+  code: string;
+  value?: string;
+};
 
 const getParamValue = (value?: string | string[]) => {
   if (Array.isArray(value)) {
@@ -26,65 +34,57 @@ export default function DirectorySearchScreen() {
   const { colors } = useThemeContext();
   const configService = useMemo(() => container.resolve<ConfigService>(ConfigServiceToken), []);
 
-  const [businessTypes, setBusinessTypes] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-  const [stateDivisions, setStateDivisions] = useState<string[]>([]);
+  const [businessTypes, setBusinessTypes] = useState<LookupItem[]>([]);
   const [selectedBusinessType, setSelectedBusinessType] = useState<string>(() => getParamValue(params.businessType));
-  const [selectedCity, setSelectedCity] = useState<string>(() => getParamValue(params.city));
-  const [selectedStateDivision, setSelectedStateDivision] = useState<string>(() => getParamValue(params.stateDivision));
-
   const selectedBusinessTypeParam = getParamValue(params.businessType);
-  const selectedCityParam = getParamValue(params.city);
-  const selectedStateDivisionParam = getParamValue(params.stateDivision);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
 
   useEffect(() => {
     void (async () => {
-      const [types, cityList, states] = await Promise.all([
-        configService.getBusinessTypes(),
-        configService.getCities(),
-        configService.getStateDivisions(),
-      ]);
+      const response = await configService.getBusinessTypes();
+      if (!response.ok) {
+        SnackBar.Error("Failed to fetch business types");
+        return;
+      }
+      const responseJson = await response.json();
+      if (responseJson?.success !== true) {
+        SnackBar.Error("Failed to fetch business types");
+        return;
+      }
+      const types = responseJson.data ?? [];
       setBusinessTypes(types);
-      setCities(cityList);
-      setStateDivisions(states);
     })();
   }, [configService]);
 
   useEffect(() => {
     setSelectedBusinessType(selectedBusinessTypeParam);
-    setSelectedCity(selectedCityParam);
-    setSelectedStateDivision(selectedStateDivisionParam);
-  }, [selectedBusinessTypeParam, selectedCityParam, selectedStateDivisionParam]);
+  }, [selectedBusinessTypeParam]);
 
   const dropdownItems = useMemo(
     () => ({
       businessType: businessTypes,
-      city: cities,
-      stateDivision: stateDivisions,
     }),
-    [businessTypes, cities, stateDivisions],
+    [businessTypes],
   );
 
   const getDisplayText = (field: DropdownField) => {
-    if (field === 'businessType') return selectedBusinessType || t.Title.businessType;
-    if (field === 'city') return selectedCity || t.Title.city;
-    if (field === 'stateDivision') return selectedStateDivision || t.Title.stateDivision;
+    if (field === 'businessType') {
+      if (!selectedBusinessType) return t.Title.businessType;
+      const selected = businessTypes.find((item) => item.code === selectedBusinessType || item.id === selectedBusinessType);
+      return selected?.value || selected?.code || selectedBusinessType;
+    }
     return '';
   };
 
-  const selectOption = (option: string, field: DropdownField) => {
-    if (!field) return;
-    if (field === 'businessType') setSelectedBusinessType(option);
-    if (field === 'city') setSelectedCity(option);
-    if (field === 'stateDivision') setSelectedStateDivision(option);
+  const selectOption = (option: LookupItem, field: DropdownField) => {
+    if (field === 'businessType') {
+      setSelectedBusinessType(option.code);
+    }
     setActiveDropdown(null);
   };
 
   const clearFilters = () => {
     setSelectedBusinessType('');
-    setSelectedCity('');
-    setSelectedStateDivision('');
     router.replace({ pathname: '/directory/directory' });
   };
 
@@ -93,8 +93,6 @@ export default function DirectorySearchScreen() {
       pathname: '/directory/directory',
       params: {
         businessType: selectedBusinessType || undefined,
-        city: selectedCity || undefined,
-        stateDivision: selectedStateDivision || undefined,
       },
     });
   };
@@ -110,32 +108,24 @@ export default function DirectorySearchScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
-        {(
-          [
-            { label: t.Title.businessType, field: 'businessType' as const },
-            { label: t.Title.city, field: 'city' as const },
-            { label: t.Title.stateDivision, field: 'stateDivision' as const },
-          ] as const
-        ).map(({ label, field }) => (
-          <View key={field} style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{label}</Text>
-            <TouchableOpacity
-              style={[styles.dropdown, { borderColor: colors.border, backgroundColor: colors.card }]}
-              onPress={() => setActiveDropdown(field)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText(field)}</Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
-          </View>
-        ))}
+          <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessType}</Text>
+          <TouchableOpacity
+            style={[styles.dropdown, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={() => setActiveDropdown('businessType')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('businessType')}</Text>
+            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border }]} onPress={clearFilters} activeOpacity={0.8}>
-            <Text style={[styles.clearText, { color: colors.text }]}>{t.Title.clear}</Text>
+            <Text style={[styles.clearText, { color: colors.text }]}>{t.Title.clear} </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.applyButton, { backgroundColor: colors.accent }]} onPress={applyFilters} activeOpacity={0.8}>
-            <Text style={styles.applyText}>{t.Title.apply}</Text>
+            <Text style={styles.applyText}>{t.Title.apply} </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -152,14 +142,14 @@ export default function DirectorySearchScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
-            {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option) => (
+              {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option) => (
               <TouchableOpacity
-                key={option}
+                key={option.id}
                 style={[styles.sheetItem, { borderBottomColor: colors.border }]}
                 onPress={() => activeDropdown && selectOption(option, activeDropdown)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
+                <Text style={[styles.sheetItemText, { color: colors.text }]}>{option.value || option.code}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

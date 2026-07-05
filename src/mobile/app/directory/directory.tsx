@@ -9,6 +9,7 @@ import SearchInput from '@/components/searchInput';
 import { container } from '@/services';
 import { DirectoryServiceToken, type DirectoryFilter, type DirectoryService } from '@/services/directoryService';
 import Directory from '@/models/directory';
+import SnackBar from '@/components/snackbar';
 
 const getParamValue = (value?: string | string[]) => {
   if (Array.isArray(value)) {
@@ -25,8 +26,6 @@ export default function DirectoryScreen() {
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
   const params = useLocalSearchParams();
   const paramBusinessType = getParamValue(params.businessType);
-  const paramCity = getParamValue(params.city);
-  const paramStateDivision = getParamValue(params.stateDivision);
 
   const [items, setItems] = useState<Directory[]>([]);
   const [page, setPage] = useState(1);
@@ -39,24 +38,31 @@ export default function DirectoryScreen() {
 
   const routeFilters = useMemo<DirectoryFilter>(() => ({
     businessType: paramBusinessType || undefined,
-    city: paramCity || undefined,
-    stateDivision: paramStateDivision || undefined,
-  }), [paramBusinessType, paramCity, paramStateDivision]);
+  }), [paramBusinessType]);
 
   const loadItems = useCallback(
     async (pageNumber: number, reset = false, query = '', filters?: DirectoryFilter) => {
       setLoading(true);
       try {
-        const result = await directoryService.getDirectories(pageNumber, 10, query, filters);
-        setItems((prev) => (reset ? result.items : [...prev, ...result.items]));
-        setPage(result.page);
-        setTotal(result.total);
+        const response = await directoryService.getDirectories(pageNumber, 10, query, filters);
+        if (!response.ok) {
+          SnackBar.Error('Error loading data. Invalid response from server.');
+          return;
+        }
+        const responseJson = await response.json();
+        if (responseJson?.success !== true) {
+          SnackBar.Error(responseJson?.message || 'Error loading data. Failed response.');
+          return;
+        }
+        setItems((prev) => (reset ? responseJson.data.items : [...prev, ...responseJson.data.items]));
+        setPage(responseJson.data.page);
+        setTotal(responseJson.data.total);
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [directoryService],
+    [directoryService, t],
   );
 
   useEffect(() => {
@@ -82,7 +88,7 @@ export default function DirectoryScreen() {
   };
 
   const handleEndReached = () => {
-    if (!loading && items.length < total) {
+    if (!loading && items?.length < total) {
       void loadItems(page + 1, false, searchQuery || '', routeFilters);
     }
   };
@@ -93,24 +99,49 @@ export default function DirectoryScreen() {
       onPress={() => item.id && void router.push({ pathname: '/directory/[id]', params: { id: item.id } })}
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-        {item.coverImageUrl ? <Image source={{ uri: item.coverImageUrl }} style={styles.cardImage} /> : null}
-        <View style={styles.cardBody}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
-          <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={2}>
-            {item.businessType} · {item.city}
-          </Text>
-          <Text style={[styles.cardAddress, { color: colors.secondaryText }]} numberOfLines={2}>
-            {item.address}
-          </Text>
-        </View>
-        <View style={styles.cardFooter}>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="favorite" size={14} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.likesCount ?? 0}</Text>
+        <View style={styles.cardRow}>
+          <View style={[styles.cardImageContainer, { backgroundColor: colors.card }]}> 
+            {item.coverImageUrl ? (
+              <Image source={{ uri: item.coverImageUrl }} style={styles.cardImage} />
+            ) : (
+              <View style={[styles.placeholderImage, { backgroundColor: colors.background }]}> 
+                <MaterialIcons name="image" size={28} color={colors.secondaryText} />
+              </View>
+            )}
           </View>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="star" size={14} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
+
+          <View style={styles.cardBody}>
+            <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+            <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={1}>
+              {item.businessType} · {item.state} · {item.city} · {item.country}
+            </Text>
+            <Text style={[styles.cardDetail, { color: colors.secondaryText }]} numberOfLines={1}>
+              {item.address}{item.address && item.city ? ' · ' : ''}{item.city}{(item.city || item.address) && item.postalCode ? ' · ' : ''}{item.postalCode}
+            </Text>
+            <View style={styles.contactRow}>
+              {item.phone ? (
+                <View style={styles.contactItem}>
+                  <MaterialIcons name="phone" size={14} color={colors.secondaryText} />
+                  <Text style={[styles.cardDetail, { color: colors.secondaryText }]} numberOfLines={1}>{item.phone}</Text>
+                </View>
+              ) : null}
+              {item.email ? (
+                <View style={[styles.contactItem, item.phone ? styles.contactItemSpacing : undefined]}>
+                  <MaterialIcons name="email" size={14} color={colors.secondaryText} />
+                  <Text style={[styles.cardDetail, { color: colors.secondaryText }]} numberOfLines={1}>{item.email}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.cardFooter}>
+              <View style={styles.metaRow}>
+                <MaterialIcons name="favorite" size={14} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.likesCount ?? 0}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <MaterialIcons name="star" size={14} color={colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
+              </View>
+            </View>
           </View>
         </View>
       </View>
@@ -124,9 +155,12 @@ export default function DirectoryScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>{t.Title.directory}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t.Title.directory} </Text>
         </View>
         <View style={styles.headerRightIcons}>
+          <TouchableOpacity onPress={() => router.push('/directory/new')} style={styles.iconButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <MaterialIcons name="add" size={24} color={colors.text} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               if (showSearchBar) {
@@ -197,15 +231,21 @@ const styles = StyleSheet.create({
   searchBarRow: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   searchInputExpanded: { width: '100%' },
   list: { paddingHorizontal: 16, gap: 12 },
-  card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden' },
+  card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden', padding: 8 },
   searchInput: { width: 160 },
   filterButton: { padding: 6 },
-  cardImage: { width: '100%', height: 180 },
-  cardBody: { padding: 16, gap: 8 },
-  cardTitle: { fontSize: 18, fontWeight: '700' },
-  cardSummary: { fontSize: 14, lineHeight: 10 },
-  cardAddress: { fontSize: 13, lineHeight: 10 },
-  cardFooter: { paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  cardRow: { flexDirection: 'row', alignItems: 'stretch' },
+  cardImageContainer: { width: 100, minHeight: 100, justifyContent: 'center', alignItems: 'center' },
+  cardImage: { width: 100, height: 100 },
+  placeholderImage: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center' },
+  cardBody: { flex: 1, padding: 16, gap: 6 },
+  cardTitle: { fontSize: 16, fontWeight: '700' },
+  cardSummary: { fontSize: 13, lineHeight: 18 },
+  cardDetail: { fontSize: 12, lineHeight: 18 },
+  contactRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 2 },
+  contactItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  contactItemSpacing: { marginLeft: 12 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12 },
   emptyState: { paddingTop: 60, alignItems: 'center' },

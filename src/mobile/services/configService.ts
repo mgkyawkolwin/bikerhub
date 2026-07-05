@@ -10,14 +10,14 @@ export interface ConfigService {
 
 export class ConfigServiceClient implements ConfigService {
   async getBusinessTypes(): Promise<Response> {
-    return fetchApi('/api/config/business-types');
+    return fetchApi(`/lookup?category=${encodeURIComponent('BUSINESS TYPE')}`);
   }
 
   async getCities(): Promise<Response> {
-    return fetchApi('/api/config/cities');
+    return fetchApi(`/lookup?category=${encodeURIComponent('CITY')}`);
   }
 
   async getStateDivisions(): Promise<Response> {
-    return fetchApi('/api/config/state-divisions');
+    return fetchApi(`/lookup?category=${encodeURIComponent('STATE DIVISION')}`);
   }
 }
