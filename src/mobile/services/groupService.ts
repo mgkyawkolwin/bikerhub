@@ -11,15 +11,15 @@ export interface GroupService {
 
 export class GroupServiceClient implements GroupService {
   async getGroups(): Promise<Response> {
-    return fetchApi('/api/groups');
+    return fetchApi('/groups');
   }
 
   async getGroupById(id: string): Promise<Response> {
-    return fetchApi(`/api/groups/${encodeURIComponent(id)}`);
+    return fetchApi(`/groups/${encodeURIComponent(id)}`);
   }
 
   async createGroup(group: Group): Promise<Response> {
-    return authenticatedFetchApi('/api/groups', {
+    return authenticatedFetchApi('/groups', {
       method: 'POST',
       body: JSON.stringify(group),
     });

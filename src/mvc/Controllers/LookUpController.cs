@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using BikerHub.Services;
+using BikerHub.Exceptions;
+using System.Net;
 
 namespace BikerHub.Controllers;
 
@@ -22,7 +24,7 @@ public class LookUpController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED GetByCategory()");
+            _logger.LogDebug("CALLED: GetByCategory()");
             _logger.LogDebug("GetByCategory called with category {Category}", category);
 
             if (string.IsNullOrWhiteSpace(category))
@@ -33,10 +35,15 @@ public class LookUpController : ControllerBase
             var items = await _lookUpService.GetLookUpsByCategoryAsync(category);
             return Ok(new { Success = true, Data = items });
         }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetByCategory");
-            return StatusCode(500, new { Success = false, Message = "An unexpected error occurred." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 }

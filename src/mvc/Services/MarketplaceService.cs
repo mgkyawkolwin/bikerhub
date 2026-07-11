@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
+using BikerHub.Models;
 
 namespace BikerHub.Services;
 
@@ -12,6 +15,7 @@ public interface IMarketplaceService
     Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize);
     Task<BikeListingDto?> GetListingByIdAsync(int id);
     Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto);
+    Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file);
     Task ToggleFavoriteAsync(int listingId);
     Task ToggleLikeAsync(int listingId);
     Task<IEnumerable<BikeListingDto>> GetFavoritesAsync();
@@ -21,10 +25,14 @@ public interface IMarketplaceService
 public class MarketplaceService : IMarketplaceService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IStorageService? _storageService;
+    private readonly MinioSettings? _minioSettings;
 
-    public MarketplaceService(AppDbContext dbContext)
+    public MarketplaceService(AppDbContext dbContext, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
     {
         _dbContext = dbContext;
+        _storageService = storageService;
+        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize)
@@ -83,6 +91,35 @@ public class MarketplaceService : IMarketplaceService
         };
 
         _dbContext.BikeListings.Add(entity);
+        await _dbContext.SaveChangesAsync();
+        return Map(entity);
+    }
+
+    public async Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file)
+    {
+        if (_storageService is null || _minioSettings is null)
+            throw new InvalidOperationException("Storage service is not configured.");
+
+        var entity = await _dbContext.BikeListings.FindAsync(listingId);
+        if (entity is null)
+            throw new CustomException("Listing not found.");
+
+        var objectName = await _storageService.UploadFileAsync(file);
+        var url = BuildObjectUrl(objectName);
+
+        var images = string.IsNullOrWhiteSpace(entity.ImagesJson)
+            ? new List<string>()
+            : JsonSerializer.Deserialize<List<string>>(entity.ImagesJson) ?? new List<string>();
+
+        images.Add(url);
+        entity.ImagesJson = JsonSerializer.Serialize(images);
+
+        if (string.IsNullOrWhiteSpace(entity.ImageUrl))
+        {
+            entity.ImageUrl = url;
+        }
+
+        _dbContext.BikeListings.Update(entity);
         await _dbContext.SaveChangesAsync();
         return Map(entity);
     }
@@ -161,5 +198,16 @@ public class MarketplaceService : IMarketplaceService
             entity.ViewCount,
             entity.CreatedAt
         );
+    }
+
+    private string BuildObjectUrl(string objectName)
+    {
+        if (_minioSettings is null)
+            throw new InvalidOperationException("Minio settings are not configured.");
+
+        if (string.IsNullOrWhiteSpace(_minioSettings.ObjectAccessUrl))
+            return objectName;
+
+        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 }

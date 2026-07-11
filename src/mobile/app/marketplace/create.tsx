@@ -37,7 +37,7 @@ export default function MarketplaceCreateScreen() {
     [],
   );
 
-  const { colors } = useThemeContext();
+  const { colorScheme, colors } = useThemeContext();
 
   const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
@@ -88,6 +88,28 @@ export default function MarketplaceCreateScreen() {
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
   }, []);
+
+  const getFileName = (uri: string) => {
+    const parts = uri.split('/');
+    return parts[parts.length - 1] ?? `image-${Date.now()}`;
+  };
+
+  const getMimeType = (uri: string) => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'application/octet-stream';
+    }
+  };
 
   const requestCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -162,38 +184,68 @@ export default function MarketplaceCreateScreen() {
         make,
         model,
         year: Number(modelYear),
-        cc: Number(cc),
+        cc: cc,
         price: Number(price),
         km: km.trim(),
         vin: vin.trim(),
         type,
-        sellerName: 'You',
         location: 'Yangon',
-        images: photos,
         ratingCount: 0,
         favoritesCount: 0,
         likeCount: 0,
         viewCount: 0,
       };
 
-      await marketplaceService.createListing(listing);
+      const response = await marketplaceService.createListing(listing);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const createdListingId = responseJson.data?.id?.toString();
+      if (!createdListingId) {
+        SnackBar.Error('Unable to determine listing ID after creation.');
+        return;
+      }
+
+      if (photos.length > 0) {
+        for (const uri of photos) {
+          const uploadResponse = await marketplaceService.uploadListingImage(createdListingId, {
+            uri,
+            name: getFileName(uri),
+            type: getMimeType(uri),
+          });
+
+          if (!uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json().catch(() => null);
+            throw new Error(uploadResult?.message || 'Media upload failed.');
+          }
+        }
+      }
+
       SnackBar.Success(t.Text.postSuccess);
       setTimeout(() => router.replace('/marketplace'), 1000);
     } catch (error) {
-      SnackBar.Error('Unable to post listing. Please try again.');
+      SnackBar.Error('Unable to submit listing. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.black, paddingTop: insets.top }]}> 
-      <StatusBar style="light" backgroundColor={colors.black} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.black }]}> 
+    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}> 
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.card} />
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.white} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.white }]}>{t.Title.sellBike}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.sellBike}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -252,6 +304,26 @@ export default function MarketplaceCreateScreen() {
             <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
           {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
+
+          <View style={styles.fieldHalf}>
+          
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
+          <TouchableOpacity
+            style={[
+              styles.dropdown,
+              { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
+            ]}
+            onPress={() => setActiveDropdown('type')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.dropdownText, { color: colors.text }]}> 
+              {type || t.Title.selectOption}
+            </Text>
+            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
+          </TouchableOpacity>
+          {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
+        </View>
+
           <View style={styles.fieldHalf}>
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
             <TextInput
@@ -270,6 +342,7 @@ export default function MarketplaceCreateScreen() {
             />
             {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
           </View>
+
           <View style={styles.fieldHalf}>
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
             <TextInput
@@ -333,21 +406,7 @@ export default function MarketplaceCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('type')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {type || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
+          
           <View style={styles.photoHeader}>
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
             <View style={styles.photoActions}>

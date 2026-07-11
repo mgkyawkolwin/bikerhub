@@ -10,6 +10,7 @@ import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, MarketplaceFilter, BikeType } from '@/models/marketplace';
+import SnackBar from '@/components/snackbar';
 
 export default function MarketplaceScreen() {
   const insets = useSafeAreaInsets();
@@ -55,10 +56,25 @@ export default function MarketplaceScreen() {
       setIsLoading(true);
 
       try {
-        const result = await marketplaceService.getListings(filter, pageNumber, 10);
-        setListings((prev) => (reset ? result.items : [...prev, ...result.items]));
-        setPage(result.page);
-        setTotal(result.total);
+        const response = await marketplaceService.getListings(filter, pageNumber, 10);
+        if (!response.ok) {
+          // Handle error response
+          SnackBar.Error('Request failed. Please try again.');
+          return;
+        }
+        const responseJson = await response.json();
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+          return;
+        }
+        const responseData = responseJson.data as { items: BikeListing[]; page: number; total: number };
+        setListings((prev) => (reset ? responseData.items : [...prev, ...responseData.items]));
+        setPage(responseData.page);
+        setTotal(responseData.total);
+
+      } catch (error) {
+        console.error('Error loading listings:', error);
+        SnackBar.Error('Client exception occurred. Please try again.');
       } finally {
         setIsLoading(false);
         setRefreshing(false);
@@ -70,7 +86,17 @@ export default function MarketplaceScreen() {
   const loadListingById = useCallback(
     async (listingId: string) => {
       if (!listingId) return;
-      const updated = await marketplaceService.getListingById(listingId);
+      const response = await marketplaceService.getListingById(listingId);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again later.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again later.');
+        return;
+      }
+      const updated = responseJson.data as BikeListing;
       if (updated) {
         setListings((prev) => prev.map((item) => (item.id === listingId ? updated : item)));
       }
@@ -108,7 +134,7 @@ export default function MarketplaceScreen() {
   }
 
   function handleEndReached() {
-    if (!isLoading && listings.length < total) {
+    if (!isLoading && listings?.length < total) {
       void loadListings(page + 1);
     }
   }
@@ -148,7 +174,7 @@ export default function MarketplaceScreen() {
         activeOpacity={0.85}
         onPress={() => router.push(`/marketplace/${item.id}`)}
       >
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
             <View style={styles.favoriteWrapper}>
@@ -177,7 +203,7 @@ export default function MarketplaceScreen() {
                 <MaterialIcons name="visibility" size={16} color={colors.secondaryText} />
                 <Text style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</Text>
               </View>
-              <View style={styles.likeWrapper}> 
+              <View style={styles.likeWrapper}>
                 <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
                   <MaterialIcons
                     name={item.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
@@ -195,8 +221,8 @@ export default function MarketplaceScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerTopRow}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={22} color={colors.text} />

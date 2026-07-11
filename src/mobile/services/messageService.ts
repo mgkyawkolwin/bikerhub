@@ -12,15 +12,15 @@ export interface MessageService {
 
 export class MessageServiceClient implements MessageService {
   async getMessages(page: number, pageSize: number): Promise<Response> {
-    return authenticatedFetchApi(`/api/messages?page=${page}&pageSize=${pageSize}`);
+    return authenticatedFetchApi(`/messages?page=${page}&pageSize=${pageSize}`);
   }
 
   async getMessageById(messageId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/messages/${encodeURIComponent(messageId)}`);
+    return authenticatedFetchApi(`/messages/${encodeURIComponent(messageId)}`);
   }
 
   async markMessageAsRead(messageId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/messages/${encodeURIComponent(messageId)}/read`, {
+    return authenticatedFetchApi(`/messages/${encodeURIComponent(messageId)}/read`, {
       method: 'POST',
     });
   }

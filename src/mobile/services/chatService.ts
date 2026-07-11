@@ -14,22 +14,22 @@ export interface IChatService {
 
 export class ChatServiceClient implements IChatService {
   async getChatHeads(page: number, pageSize: number): Promise<Response> {
-    return authenticatedFetchApi(`/api/chat/heads?page=${page}&pageSize=${pageSize}`);
+    return authenticatedFetchApi(`/chat/heads?page=${page}&pageSize=${pageSize}`);
   }
 
   async getChatMessages(friendId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/chat/messages?friendId=${encodeURIComponent(friendId)}`);
+    return authenticatedFetchApi(`/chat/messages?friendId=${encodeURIComponent(friendId)}`);
   }
 
   async sendChatMessage(receiverId: string, textMessage: string): Promise<Response> {
-    return authenticatedFetchApi('/api/chat/messages', {
+    return authenticatedFetchApi('/chat/messages', {
       method: 'POST',
       body: JSON.stringify({ receiverId, textMessage }),
     });
   }
 
   async markChatMessageAsRead(messageId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/chat/messages/${encodeURIComponent(messageId)}/read`, {
+    return authenticatedFetchApi(`/chat/messages/${encodeURIComponent(messageId)}/read`, {
       method: 'POST',
     });
   }

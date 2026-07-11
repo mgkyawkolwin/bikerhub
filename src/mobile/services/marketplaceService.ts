@@ -9,6 +9,7 @@ export interface MarketplaceService {
   getListings(filter: MarketplaceFilter, page: number, pageSize: number): Promise<Response>;
   getListingById(id: string): Promise<Response>;
   createListing(listing: BikeListing): Promise<Response>;
+  uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   toggleFavorite(listingId: string): Promise<Response>;
   toggleLike(listingId: string): Promise<Response>;
   getFavorites(): Promise<Response>;
@@ -32,38 +33,52 @@ function buildMarketplaceQuery(filter: MarketplaceFilter, page: number, pageSize
 
 export class MarketplaceServiceClient implements MarketplaceService {
   async getListings(filter: MarketplaceFilter, page: number, pageSize: number): Promise<Response> {
-    return fetchApi(`/api/marketplace?${buildMarketplaceQuery(filter, page, pageSize)}`);
+    return fetchApi(`/marketplace?${buildMarketplaceQuery(filter, page, pageSize)}`);
   }
 
   async getListingById(id: string): Promise<Response> {
-    return fetchApi(`/api/marketplace/${encodeURIComponent(id)}`);
+    return fetchApi(`/marketplace/${encodeURIComponent(id)}`);
   }
 
   async createListing(listing: BikeListing): Promise<Response> {
-    return authenticatedFetchApi('/api/marketplace', {
+    return authenticatedFetchApi('/marketplace', {
       method: 'POST',
       body: JSON.stringify(listing),
     });
   }
 
+  async uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(listingId)}/media`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
   async toggleFavorite(listingId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/marketplace/${encodeURIComponent(listingId)}/favorite`, {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(listingId)}/favorite`, {
       method: 'POST',
     });
   }
 
   async toggleLike(listingId: string): Promise<Response> {
-    return authenticatedFetchApi(`/api/marketplace/${encodeURIComponent(listingId)}/like`, {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(listingId)}/like`, {
       method: 'POST',
     });
   }
 
   async getFavorites(): Promise<Response> {
-    return authenticatedFetchApi('/api/marketplace/favorites');
+    return authenticatedFetchApi('/marketplace/favorites');
   }
 
   async submitRating(listingId: string, rating: number): Promise<Response> {
-    return authenticatedFetchApi(`/api/marketplace/${encodeURIComponent(listingId)}/rating`, {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(listingId)}/rating`, {
       method: 'POST',
       body: JSON.stringify({ rating }),
     });

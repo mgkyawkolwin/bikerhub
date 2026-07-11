@@ -7,6 +7,7 @@ using BikerHub.Exceptions;
 using BikerHub.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace BikerHub.Controllers;
 
@@ -28,17 +29,19 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED GetDirectories()");
-            _logger.LogDebug(
-                "GetDirectories called with page {Page}, pageSize {PageSize}, query {Query}, businessType {BusinessType}, city {City}, stateDivision {StateDivision}",
-                page, pageSize, query, businessType, city, stateDivision);
+            _logger.LogDebug("CALLED: GetDirectories(page={Page}, pageSize={PageSize}, query={Query}, businessType={BusinessType}, city={City}, stateDivision={StateDivision})", page, pageSize, query, businessType, city, stateDivision);
 
             var result = await _directoryService.GetDirectoriesAsync(page, pageSize, query, businessType, city, stateDivision);
             return Ok(new { Success = true, Data = result });
         }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetDirectories");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -48,8 +51,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED GetDirectoryById()");
-            _logger.LogDebug("GetDirectoryById called with id {Id}", id);
+            _logger.LogDebug("CALLED: GetDirectoryById({Id})", id);
 
             var directory = await _directoryService.GetDirectoryByIdAsync(id);
             if (directory is null)
@@ -60,9 +62,14 @@ public class DirectoriesController : ControllerBase
 
             return Ok(new { Success = true, Data = directory });
         }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetDirectoryById");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -73,8 +80,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED CreateDirectory()");
-            _logger.LogDebug("CreateDirectory called with dto {@Dto}", dto);
+            _logger.LogDebug("CALLED: CreateDirectory(CreateDirectoryDto: {@Dto})", dto);
             var currentUserId = GetCurrentUserId();
             if (currentUserId is null)
             {
@@ -87,12 +93,12 @@ public class DirectoriesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in CreateDirectory");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in CreateDirectory");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -103,8 +109,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED UpdateDirectory()");
-            _logger.LogDebug("UpdateDirectory called with id {Id} and dto {@Dto}", id, dto);
+            _logger.LogDebug("CALLED: UpdateDirectory(id={Id}, dto={Dto})", id, JsonSerializer.Serialize(dto));
             var currentUserId = GetCurrentUserId();
             if (currentUserId is null)
             {
@@ -122,12 +127,12 @@ public class DirectoriesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UpdateDirectory");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UpdateDirectory");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -138,8 +143,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED DeleteDirectory()");
-            _logger.LogDebug("DeleteDirectory called with id {Id}", id);
+            _logger.LogDebug("CALLED: DeleteDirectory(id={Id})", id);
             var currentUserId = GetCurrentUserId();
             if (currentUserId is null)
             {
@@ -152,12 +156,12 @@ public class DirectoriesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeleteDirectory");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeleteDirectory");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -168,7 +172,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED UploadDirectoryLogo()");
+            _logger.LogDebug("CALLED: UploadDirectoryLogo(id={Id}, file={File})", id, JsonSerializer.Serialize(file));
             if (file is null)
             {
                 return BadRequest(new { Success = false, Message = "A logo file is required." });
@@ -179,12 +183,12 @@ public class DirectoriesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UploadDirectoryLogo");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UploadDirectoryLogo");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -195,7 +199,7 @@ public class DirectoriesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("CALLED UploadDirectoryCoverImage()");
+            _logger.LogDebug("CALLED: UploadDirectoryCoverImage(id={Id}, file={File})", id, JsonSerializer.Serialize(file));
             if (file is null)
             {
                 return BadRequest(new { Success = false, Message = "A cover image file is required." });
@@ -206,12 +210,12 @@ public class DirectoriesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UploadDirectoryCoverImage");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UploadDirectoryCoverImage");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

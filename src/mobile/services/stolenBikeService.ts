@@ -11,17 +11,17 @@ export interface StolenBikeService {
 
 export class StolenBikeServiceClient implements StolenBikeService {
   async createReport(report: StolenBikeReport): Promise<Response> {
-    return authenticatedFetchApi('/api/stolen-bikes', {
+    return authenticatedFetchApi('/stolen-bikes', {
       method: 'POST',
       body: JSON.stringify(report),
     });
   }
 
   async getReports(): Promise<Response> {
-    return fetchApi('/api/stolen-bikes');
+    return fetchApi('/stolen-bikes');
   }
 
   async getReportById(id: string): Promise<Response> {
-    return fetchApi(`/api/stolen-bikes/${encodeURIComponent(id)}`);
+    return fetchApi(`/stolen-bikes/${encodeURIComponent(id)}`);
   }
 }

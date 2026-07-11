@@ -1,7 +1,6 @@
 export { container } from './diContainer';
 export type { MarketplaceService } from './marketplaceService';
 export { MarketplaceServiceToken } from './marketplaceService';
-export { MockMarketPlaceService as MockServices } from './marketPlaceServiceMock';
 export type { StolenBikeService } from './stolenBikeService';
 export { StolenBikeServiceToken } from './stolenBikeService';
 export type { MessageService } from './messageService';

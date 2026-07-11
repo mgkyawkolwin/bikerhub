@@ -25,13 +25,10 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Attempting to register user {Name}", dto.UserName);
+            _logger.LogDebug("CALLED: Register(dto={Dto})", JsonSerializer.Serialize(dto));
             _logger.LogDebug("Register DTO: {Dto}", JsonSerializer.Serialize(dto));
 
             var response = await _authService.RegisterAsync(dto);
-
-            _logger.LogInformation("User registered successfully for {Name}", dto.UserName);
-            _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new {Success = true, Data = response});
         }
@@ -52,12 +49,11 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Login attempt for username {Username}", dto.Username);
-            _logger.LogDebug("Login DTO: {Dto}", JsonSerializer.Serialize(dto));
+            _logger.LogDebug("CALLED: Login(dto={Dto})", JsonSerializer.Serialize(dto));
 
             var response = await _authService.SignInAsync(dto);
 
-            _logger.LogInformation("Login successful for username {Username}", dto.Username);
+            _logger.LogDebug("Login successful for username {Username}", dto.Username);
             _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new {Success = true, Data = response});
@@ -79,12 +75,11 @@ public class AuthController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Google sign-in attempt");
-            _logger.LogDebug("GoogleLoginDto received");
+            _logger.LogDebug("CALLED: GoogleSignIn(dto={Dto})", JsonSerializer.Serialize(dto));
 
             var response = await _authService.SignInWithGoogleAsync(dto);
 
-            _logger.LogInformation("Google sign-in successful for user {Email}", response.User.Email);
+            _logger.LogDebug("Google sign-in successful for user {Email}", response.User.Email);
             _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
 
             return Ok(new { Success = true, Data = response });

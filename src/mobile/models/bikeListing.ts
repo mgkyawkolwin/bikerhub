@@ -1,4 +1,4 @@
-import type { BikeType } from '../mobile/constants/bikeType';
+import type { BikeType } from '../constants/bikeType';
 
 export class BikeListing {
   id?: string;
@@ -7,7 +7,7 @@ export class BikeListing {
   model?: string;
   year?: number;
   price?: number;
-  cc?: number;
+  cc?: string;
   type?: BikeType;
   sellerId?: string;
   sellerName?: string;

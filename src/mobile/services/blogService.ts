@@ -12,15 +12,15 @@ export interface BlogService {
 
 export class BlogServiceClient implements BlogService {
   async getBlogs(page: number, pageSize: number): Promise<Response> {
-    return fetchApi(`/api/blogs?page=${page}&pageSize=${pageSize}`);
+    return fetchApi(`/blogs?page=${page}&pageSize=${pageSize}`);
   }
 
   async getBlogById(id: string): Promise<Response> {
-    return fetchApi(`/api/blogs/${id}`);
+    return fetchApi(`/blogs/${id}`);
   }
 
   async createBlog(blog: Blog): Promise<Response> {
-    return authenticatedFetchApi('/api/blogs', {
+    return authenticatedFetchApi('/blogs', {
       method: 'POST',
       body: JSON.stringify(blog),
     });

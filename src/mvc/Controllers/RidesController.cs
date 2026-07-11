@@ -25,20 +25,20 @@ public class RidesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Fetching rides list: page={Page}, pageSize={PageSize}", page, pageSize);
+            _logger.LogDebug("CALLED: GetRides(page={Page}, pageSize={PageSize})", page, pageSize);
             var result = await _rideService.GetRidesAsync(page, pageSize);
             _logger.LogDebug("Rides list returned: {Result}", JsonSerializer.Serialize(result));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch rides list: page={Page}, pageSize={PageSize}", page, pageSize);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching rides list");
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while fetching rides." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -47,7 +47,7 @@ public class RidesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Fetching ride by id {RideId}", id);
+            _logger.LogDebug("CALLED: GetRideById({RideId})", id);
             var ride = await _rideService.GetRideByIdAsync(id);
 
             if (ride is null)
@@ -61,13 +61,13 @@ public class RidesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch ride by id {RideId}", id);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching ride by id {RideId}", id);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while fetching the ride." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -76,6 +76,8 @@ public class RidesController : ControllerBase
     {
         try
         {
+            _logger.LogDebug("CALLED: CreateRide()");
+            _logger.LogDebug("CreateRideDto: {Dto}", JsonSerializer.Serialize(dto));
             if (dto is null)
             {
                 _logger.LogWarning("CreateRide called with null body");
@@ -93,13 +95,13 @@ public class RidesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to create ride {Name}", dto?.Name);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while creating ride {Name}", dto?.Name);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while creating the ride." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -108,6 +110,8 @@ public class RidesController : ControllerBase
     {
         try
         {
+            _logger.LogDebug("CALLED: UpdateRide({RideId})", id);
+            _logger.LogDebug("UpdateRideDto: {Dto}", JsonSerializer.Serialize(dto));
             if (dto is null)
             {
                 _logger.LogWarning("UpdateRide called with null body for id {RideId}", id);
@@ -125,13 +129,13 @@ public class RidesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to update ride {RideId} {Name}", id, dto?.Name);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while updating ride {RideId} {Name}", id, dto?.Name);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating the ride." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 }

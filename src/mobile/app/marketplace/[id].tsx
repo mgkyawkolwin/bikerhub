@@ -1,15 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, View, TouchableOpacity, Image, Linking, Text } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { Rating } from '@/components/rating';
+import ImageCarousel from '@/components/imageCarousel';
+import ImageGallery from '@/components/imageGallery';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing } from '@/models/bikeListing';
+import SnackBar from '@/components/snackbar';
 
 export default function BikeDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -24,13 +27,25 @@ export default function BikeDetailScreen() {
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [listing, setListing] = useState<BikeListing | null>(null);
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
 
     let active = true;
     (async () => {
-      const item = await marketplaceService.getListingById(id);
+      const response = await marketplaceService.getListingById(id);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+      const item = responseJson.data as BikeListing;
       if (active) {
         setListing(item ?? null);
       }
@@ -48,23 +63,59 @@ export default function BikeDetailScreen() {
     Linking.openURL(`tel:${listing.phone}`);
   }
 
+  const handleOpenGallery = (index: number) => {
+    if (!images.length) return;
+    setGalleryIndex(index);
+    setGalleryVisible(true);
+  };
+
   const toggleFavorite = async () => {
     if (!listing?.id) return;
     await marketplaceService.toggleFavorite(listing.id);
-    const updated = await marketplaceService.getListingById(listing.id);
+    const updatedResponse = await marketplaceService.getListingById(listing.id);
+    if (!updatedResponse.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const updatedJson = await updatedResponse.json();
+    if (!updatedJson.success) {
+      SnackBar.Error(updatedJson.message || 'Failed response. Please try again.');
+      return;
+    }
+    const updated = updatedJson.data as BikeListing;
     if (updated) setListing(updated);
   };
 
   const toggleLike = async () => {
     if (!listing?.id) return;
     await marketplaceService.toggleLike(listing.id);
-    const updated = await marketplaceService.getListingById(listing.id);
+    const updatedResponse = await marketplaceService.getListingById(listing.id);
+    if (!updatedResponse.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const updatedJson = await updatedResponse.json();
+    if (!updatedJson.success) {
+      SnackBar.Error(updatedJson.message || 'Failed response. Please try again.');
+      return;
+    }
+    const updated = updatedJson.data as BikeListing;
     if (updated) setListing(updated);
   };
 
   const handleRate = async (value: number) => {
     if (!listing?.id) return;
-    const updated = await marketplaceService.submitRating(listing.id, value);
+    const updatedResponse = await marketplaceService.submitRating(listing.id, value);
+    if (!updatedResponse.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const updatedJson = await updatedResponse.json();
+    if (!updatedJson.success) {
+      SnackBar.Error(updatedJson.message || 'Failed response. Please try again.');
+      return;
+    }
+    const updated = updatedJson.data as BikeListing;
     if (updated) {
       setListing(updated);
     }
@@ -76,12 +127,12 @@ export default function BikeDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { backgroundColor: colors.text }]}> 
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>{t.Title.bikeDetail}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.bikeDetail}</Text>
         </View>
         <View style={styles.headerActions}>
           <View style={styles.statAction}>
@@ -110,23 +161,7 @@ export default function BikeDetailScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {listing ? (
           <>
-            <View style={styles.imageWrapper}>
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                style={styles.carousel}
-              >
-                {images.length ? (
-                images.map((source, index) => (
-                  <Image key={`${source}-${index}`} source={{ uri: source }} style={styles.carouselImage} />
-                ))
-              ) : (
-                <View style={[styles.carouselImage, { backgroundColor: colors.border }]} />
-              )}
-              </ScrollView>
-            </View>
-
+            <ImageCarousel images={images} imageHeight={260} onImagePress={handleOpenGallery} />
             <View style={styles.photoText}>
               <Text style={[styles.title, { color: colors.text }]}>{listing.title}</Text>
               <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
@@ -143,6 +178,10 @@ export default function BikeDetailScreen() {
                 <Text style={[styles.value, { color: colors.text }]}>{listing.model}</Text>
               </View>
               <View style={styles.row}>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.type}</Text>
+              </View>
+              <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.year}</Text>
               </View>
@@ -151,8 +190,8 @@ export default function BikeDetailScreen() {
                 <Text style={[styles.value, { color: colors.text }]}>{listing.cc}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{listing.type}</Text>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.km}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.km}</Text>
               </View>
             </View>
 
@@ -161,19 +200,19 @@ export default function BikeDetailScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.sellerInfo}</Text>
                 <Rating value={listing.rating ?? 0} onRate={handleRate} />
               </View>
-              <View style={styles.row}>
+              <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerInfo}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.sellerName}</Text>
               </View>
-              <View style={styles.row}>
+              <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.location}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.location}</Text>
               </View>
-              <View style={styles.row}>
+              <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.phone ?? '-'}</Text>
               </View>
-              <View style={styles.ratingRow}>
+              <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>Rating</Text>
                 <View style={styles.ratingValue}>
                   <Rating value={listing.rating ?? 0} />
@@ -199,6 +238,13 @@ export default function BikeDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      <ImageGallery
+        visible={galleryVisible}
+        images={images}
+        startIndex={galleryIndex}
+        onClose={() => setGalleryVisible(false)}
+      />
     </View>
   );
 }
@@ -214,7 +260,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#000000',
   },
   headerCenter: {
     flex: 1,
@@ -256,10 +301,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 8,
   },
-  imageWrapper: {
-    width: '100%',
-    height: 260,
-  },
   card: {
     borderRadius: 12,
     borderWidth: 1,
@@ -271,17 +312,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 16
   },
-  carousel: {
-    width: '100%',
-  },
-  carouselImage: {
-    width: Dimensions.get('window').width,
-    height: 260,
-    resizeMode: 'cover',
-  },
   photoText: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 2,
     paddingBottom: 12,
   },
   title: {
@@ -323,6 +356,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sellerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

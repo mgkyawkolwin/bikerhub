@@ -16,12 +16,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SocialController : ControllerBase
+public class SocialController : BaseController
 {
     private readonly ISocialService _socialService;
-    private readonly ILogger _logger;
+    private readonly ILogger<SocialController> _logger;
 
-    public SocialController(ISocialService socialService, ILogger<SocialController> logger)
+    public SocialController(ISocialService socialService, ILogger<SocialController> logger): base(logger)
     {
         _socialService = socialService;
         _logger = logger;
@@ -41,9 +41,14 @@ public class SocialController : ControllerBase
             var dto = await _socialService.UploadPostMediaAsync(postId, file);
             return Ok(new { Success = true, Data = dto });
         }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error in UploadPostMedia");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -61,9 +66,14 @@ public class SocialController : ControllerBase
             }
             return Ok(new { Success = true, Data = results });
         }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error in GetPostMedia");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -90,12 +100,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetPosts");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetPosts");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -124,12 +134,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in TogglePostLove");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in TogglePostLove");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -146,12 +156,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetPostComments");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetPostComments");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -180,12 +190,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in CreatePostComment");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in CreatePostComment");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -209,12 +219,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeletePostComment");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeletePostComment");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -232,12 +242,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in CreatePost");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in CreatePost");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -261,12 +271,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeletePost");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeletePost");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -290,12 +300,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeletePostMedia");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeletePostMedia");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -318,12 +328,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetPostById");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetPostById");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -372,12 +382,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetProfileById");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetProfileById");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -401,12 +411,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UpdateSocialLinks");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UpdateSocialLinks");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -430,12 +440,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UploadProfileCoverPhoto");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UploadProfileCoverPhoto");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -459,12 +469,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UploadProfilePhoto");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UploadProfilePhoto");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -485,12 +495,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeleteProfileCoverPhoto");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeleteProfileCoverPhoto");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -511,12 +521,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in DeleteProfilePhoto");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeleteProfilePhoto");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -539,12 +549,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in SearchProfiles");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in SearchProfiles");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -568,12 +578,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in FollowUser");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in FollowUser");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -597,12 +607,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in UnfollowUser");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UnfollowUser");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -626,12 +636,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in IsFollowing");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in IsFollowing");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -648,12 +658,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetFollowers");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetFollowers");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -670,12 +680,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetFollowing");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetFollowing");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -698,12 +708,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetFriends");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetFriends");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -727,12 +737,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in RemoveFriend");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in RemoveFriend");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -756,8 +766,13 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in SendFriendRequest");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -780,12 +795,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in CancelFriendRequest");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in CancelFriendRequest");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -809,12 +824,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in ApproveFriendRequest");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in ApproveFriendRequest");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -838,12 +853,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in RejectFriendRequest");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in RejectFriendRequest");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
@@ -866,12 +881,12 @@ public class SocialController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Custom exception occurred in GetPendingFriendRequests");
-            return BadRequest(new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetPendingFriendRequests");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BikerHub.Services;
+using BikerHub.Exceptions;
+using System.Net;
 
 namespace BikerHub.Controllers;
 
@@ -8,28 +10,58 @@ namespace BikerHub.Controllers;
 public class NewsController : ControllerBase
 {
     private readonly INewsService _newsService;
+    private readonly ILogger<NewsController> _logger;
 
-    public NewsController(INewsService newsService)
+    public NewsController(INewsService newsService, ILogger<NewsController> logger)
     {
         _newsService = newsService;
+        _logger = logger;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetNews([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _newsService.GetNewsAsync(page, pageSize);
-        return Ok(new { Success = true, Data = result });
+        try
+        {
+            _logger.LogDebug("CALLED: GetNews(page={Page}, pageSize={PageSize})", page, pageSize);
+            var result = await _newsService.GetNewsAsync(page, pageSize);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetNewsById(int id)
     {
-        var news = await _newsService.GetNewsByIdAsync(id);
-        if (news is null)
+        try
         {
-            return NotFound(new { Success = false, Message = "News item not found." });
-        }
+            _logger.LogDebug("CALLED: GetNewsById({NewsId})", id);
+            var news = await _newsService.GetNewsByIdAsync(id);
+            if (news is null)
+            {
+                return NotFound(new { Success = false, Message = "News item not found." });
+            }
 
-        return Ok(new { Success = true, Data = news });
+            return Ok(new { Success = true, Data = news });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
     }
 }

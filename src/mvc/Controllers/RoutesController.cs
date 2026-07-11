@@ -26,20 +26,20 @@ public class RoutesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Fetching routes list: page={Page}, pageSize={PageSize}", page, pageSize);
+            _logger.LogDebug("CALLED: GetRoutes(page={Page}, pageSize={PageSize})", page, pageSize);
             var result = await _routeService.GetRoutesAsync(page, pageSize);
             _logger.LogDebug("Routes list returned: {Result}", JsonSerializer.Serialize(result));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch routes list: page={Page}, pageSize={PageSize}", page, pageSize);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching routes list");
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while fetching routes." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -48,7 +48,7 @@ public class RoutesController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Fetching route by id {RouteId}", id);
+            _logger.LogDebug("CALLED: GetRouteById({RouteId})", id);
             var route = await _routeService.GetRouteByIdAsync(id);
 
             if (route is null)
@@ -62,13 +62,13 @@ public class RoutesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch route by id {RouteId}", id);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while fetching route by id {RouteId}", id);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while fetching the route." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -77,6 +77,8 @@ public class RoutesController : ControllerBase
     {
         try
         {
+            _logger.LogDebug("CALLED: CreateRoute()");
+            _logger.LogDebug("CreateRouteDto: {Dto}", JsonSerializer.Serialize(dto));
             if (dto is null)
             {
                 _logger.LogWarning("CreateRoute called with null body");
@@ -96,13 +98,13 @@ public class RoutesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to create route {Name}", dto?.Name);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while creating route {Name}", dto?.Name);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while creating the route." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
@@ -111,6 +113,8 @@ public class RoutesController : ControllerBase
     {
         try
         {
+            _logger.LogDebug("CALLED: UpdateRoute({RouteId})", id);
+            _logger.LogDebug("UpdateRouteDto: {Dto}", JsonSerializer.Serialize(dto));
             if (dto is null)
             {
                 _logger.LogWarning("UpdateRoute called with null body for id {RouteId}", id);
@@ -128,13 +132,13 @@ public class RoutesController : ControllerBase
         }
         catch (CustomException ex)
         {
-            _logger.LogWarning(ex, "Failed to update route {RouteId} {Name}", id, dto?.Name);
-            return StatusCode((int)HttpStatusCode.BadRequest, new { Success = false, Message = ex.Message });
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while updating route {RouteId} {Name}", id, dto?.Name);
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating the route." });
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 }

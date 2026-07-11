@@ -19,13 +19,14 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
+        _logger.LogDebug("CALLED: Index()");
+
         _logger.LogInformation("Retrieving application version from configuration.");
 
         _logger.LogInformation("Retrieving application version from assembly/project.");
 
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
-        var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                      ?? assembly?.GetName()?.Version?.ToString()
+        var version = assembly?.GetName()?.Version?.ToString()
                       ?? _configuration["Version"]
                       ?? "unknown";
 

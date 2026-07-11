@@ -10,6 +10,6 @@ export interface UserService {
 
 export class UserServiceClient implements UserService {
   async getFavoriteListings(page: number, pageSize: number): Promise<Response> {
-    return authenticatedFetchApi(`/api/users/me/favorites?page=${page}&pageSize=${pageSize}`);
+    return authenticatedFetchApi(`/users/me/favorites?page=${page}&pageSize=${pageSize}`);
   }
 }

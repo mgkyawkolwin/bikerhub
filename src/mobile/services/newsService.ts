@@ -11,10 +11,10 @@ export interface NewsService {
 
 export class NewsServiceClient implements NewsService {
   async getNews(page: number, pageSize: number): Promise<Response> {
-    return fetchApi(`/api/news?page=${page}&pageSize=${pageSize}`);
+    return fetchApi(`/news?page=${page}&pageSize=${pageSize}`);
   }
 
   async getNewsById(id: string): Promise<Response> {
-    return fetchApi(`/api/news/${encodeURIComponent(id)}`);
+    return fetchApi(`/news/${encodeURIComponent(id)}`);
   }
 }

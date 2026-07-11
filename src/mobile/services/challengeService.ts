@@ -10,10 +10,10 @@ export interface ChallengeService {
 
 export class ChallengeServiceClient implements ChallengeService {
   async getCurrentChallenges(): Promise<Response> {
-    return fetchApi('/api/challenges/current');
+    return fetchApi('/challenges/current');
   }
 
   async getChallengeById(id: string): Promise<Response> {
-    return fetchApi(`/api/challenges/${id}`);
+    return fetchApi(`/challenges/${id}`);
   }
 }
