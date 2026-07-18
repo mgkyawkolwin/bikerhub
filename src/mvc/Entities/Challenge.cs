@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Challenge : EntityBase<int>
+public class Challenge : EntityBase<Guid>
 {
     [Required]
     [MaxLength(200)]
@@ -16,7 +16,12 @@ public class Challenge : EntityBase<int>
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
 
-    public string LeaderboardJson { get; set; } = "[]";
+    public int NoOfParticipants { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsEnded { get; set; }
+    public bool IsStarted { get; set; }
+
+    public virtual ICollection<ChallengeParticipantEntity> Participants { get; set; } = [];
 }

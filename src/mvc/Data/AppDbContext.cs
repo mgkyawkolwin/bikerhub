@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
+    public DbSet<ChallengeParticipantEntity> ChallengeParticipants => Set<ChallengeParticipantEntity>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<BikerHub.Entities.DirectoryEntity> Directories => Set<BikerHub.Entities.DirectoryEntity>();
     public DbSet<Group> Groups => Set<Group>();
@@ -114,6 +115,22 @@ public class AppDbContext : DbContext
                 .HasMany(post => post.Medias)
                 .WithOne(media => media.Post)
                 .HasForeignKey(media => media.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChallengeParticipantEntity>(entity =>
+        {
+            entity.HasIndex(participant => new { participant.ChallengeId, participant.UserId })
+                .IsUnique();
+
+            entity.HasOne(participant => participant.Challenge)
+                .WithMany(challenge => challenge.Participants)
+                .HasForeignKey(participant => participant.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(participant => participant.User)
+                .WithMany()
+                .HasForeignKey(participant => participant.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

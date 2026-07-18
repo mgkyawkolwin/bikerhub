@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -15,17 +15,57 @@ export default function ChallengeDetailScreen() {
   const params = useLocalSearchParams();
   const challengeService = useMemo(() => container.resolve<ChallengeService>(ChallengeServiceToken), []);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const isCurrentChallenge = Boolean(challenge?.isStarted && !challenge?.isEnded);
 
   const loadChallenge = useCallback(async () => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) return;
-    const result = await challengeService.getChallengeById(id);
-    setChallenge(result ?? null);
+    setLoading(true);
+    try {
+      const response = await challengeService.getChallengeById(id);
+      const payload = await response.json().catch(() => null) as { success?: boolean; data?: Challenge } | null;
+      setChallenge(payload?.data ?? null);
+    } finally {
+      setLoading(false);
+    }
   }, [challengeService, params.id]);
+
+  const handleJoin = useCallback(async () => {
+    if (!challenge?.id || joining) return;
+    setJoining(true);
+    try {
+      const response = await challengeService.joinChallenge(challenge.id);
+      const payload = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
+      if (response.ok && payload?.success) {
+        setChallenge((current) => current ? { ...current, isJoined: true } : current);
+      }
+    } finally {
+      setJoining(false);
+    }
+  }, [challenge?.id, challengeService, joining]);
 
   React.useEffect(() => {
     void loadChallenge();
   }, [loadChallenge]);
+
+  if (loading && !challenge) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
+        <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+          <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Challenge detail</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </View>
+    );
+  }
 
   if (!challenge) {
     return (
@@ -51,14 +91,43 @@ export default function ChallengeDetailScreen() {
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{challenge.title}</Text>
-        <TouchableOpacity style={[styles.joinButton, { borderColor: colors.accent }]} activeOpacity={0.8} onPress={() => {}}>
-          <MaterialIcons name="group-add" size={18} color={colors.accent} />
-          <Text style={[styles.joinButtonText, { color: colors.accent }]}>Join</Text>
-        </TouchableOpacity>
+        {isCurrentChallenge ? (
+          <TouchableOpacity
+            style={[styles.joinButton, { borderColor: challenge.isJoined ? colors.border : colors.accent }]}
+            activeOpacity={0.8}
+            onPress={handleJoin}
+            disabled={joining || challenge.isJoined}
+          >
+            {joining ? (
+              <ActivityIndicator size="small" color={challenge.isJoined ? colors.secondaryText : colors.accent} />
+            ) : (
+              <MaterialIcons name={challenge.isJoined ? 'check-circle' : 'group-add'} size={18} color={challenge.isJoined ? colors.secondaryText : colors.accent} />
+            )}
+            <Text style={[styles.joinButtonText, { color: challenge.isJoined ? colors.secondaryText : colors.accent }]}>
+              {challenge.isJoined ? 'Joined' : 'Join'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
-        <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} />
+        {challenge.coverImageUrl ? <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} /> : null}
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Participants & dates</Text>
+          <View style={styles.metaRow}>
+            <MaterialIcons name="people" size={16} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{challenge.noOfParticipants ?? 0} participants</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <MaterialIcons name="event" size={16} color={colors.secondaryText} />
+            <Text style={[styles.metaText, { color: colors.secondaryText }]}> 
+              {challenge.startDate ? new Date(challenge.startDate).toLocaleDateString() : 'TBD'} - {challenge.endDate ? new Date(challenge.endDate).toLocaleDateString() : 'TBD'}
+            </Text>
+          </View>
+        </View>
+
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
           <Text style={[styles.sectionText, { color: colors.secondaryText }]}>{challenge.description}</Text>
@@ -67,7 +136,7 @@ export default function ChallengeDetailScreen() {
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Leaderboard</Text>
           <FlatList
-            data={challenge.leaderboard}
+            data={challenge.leaderboard ?? []}
             keyExtractor={(item) => item.rank.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
@@ -144,6 +213,14 @@ const styles = StyleSheet.create({
   sectionText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metaText: {
+    fontSize: 13,
   },
   leaderRow: {
     flexDirection: 'row',

@@ -7,14 +7,18 @@ public sealed record ChallengeLeaderboardEntryDto(
 );
 
 public sealed record ChallengeDto(
-    int? Id = null,
+    Guid? Id = null,
     string? Title = null,
     string? Description = null,
     string? CoverImageUrl = null,
     string? ImageUrl = null,
     IEnumerable<ChallengeLeaderboardEntryDto>? Leaderboard = null,
-    int? CreatedById = null,
+    int? NoOfParticipants = null,
+    bool? IsStarted = null,
+    bool? IsEnded = null,
+    DateTime? StartDate = null,
+    DateTime? EndDate = null,
+    bool? IsJoined = null,
     DateTime? CreatedAtUTC = null,
-    DateTime? UpdatedAtUTC = null,
-    int? UpdatedById = null
+    DateTime? UpdatedAtUTC = null
 );

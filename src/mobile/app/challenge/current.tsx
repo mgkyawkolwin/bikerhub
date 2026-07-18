@@ -18,9 +18,23 @@ export default function ChallengeCurrentScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState<'past' | 'current' | 'future'>('current');
 
   const loadChallenges = useCallback(async () => {
-    const result = await challengeService.getCurrentChallenges();
-    setChallenges(result);
-  }, [challengeService]);
+    let response: Response;
+    switch (selectedPeriod) {
+      case 'past':
+        response = await challengeService.getPastChallenges();
+        break;
+      case 'future':
+        response = await challengeService.getFutureChallenges();
+        break;
+      case 'current':
+      default:
+        response = await challengeService.getCurrentChallenges();
+        break;
+    }
+
+    const payload = await response.json().catch(() => null) as { success?: boolean; data?: Challenge[] } | null;
+    setChallenges(payload?.data ?? []);
+  }, [challengeService, selectedPeriod]);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,7 +48,7 @@ export default function ChallengeCurrentScreen() {
       onPress={() => router.push({ pathname: '/challenge/detail', params: { id: item.id } })}
     >
       <View style={[styles.challengeCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-        <Image source={{ uri: item.imageUrl }} style={styles.challengeImage} />
+        <Image source={{ uri: item.coverImageUrl ?? item.imageUrl }} style={styles.challengeImage} />
         <View style={styles.challengeInfo}>
           <Text style={[styles.challengeTitle, { color: colors.text }]}>{item.title}</Text>
           <Text style={[styles.challengeSubtitle, { color: colors.secondaryText }]} numberOfLines={2}>{item.description}</Text>
