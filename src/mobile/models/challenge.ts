@@ -1,7 +1,8 @@
 export interface ChallengeLeaderboardEntry {
   rank: number;
   riderName: string;
-  score: number;
+  profileImageUrl?: string;
+  km: number;
 }
 
 export default interface Challenge {

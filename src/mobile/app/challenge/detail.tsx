@@ -8,6 +8,7 @@ import { container } from '@/services';
 import { ChallengeServiceToken } from '@/services/challengeService';
 import type { ChallengeService } from '@/services/challengeService';
 import type Challenge from '@/models/challenge';
+import SnackBar from '@/components/snackbar';
 
 export default function ChallengeDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -25,26 +26,44 @@ export default function ChallengeDetailScreen() {
     setLoading(true);
     try {
       const response = await challengeService.getChallengeById(id);
-      const payload = await response.json().catch(() => null) as { success?: boolean; data?: Challenge } | null;
-      setChallenge(payload?.data ?? null);
+      if (!response.ok) {
+        SnackBar.Error(`(${response.status}): Request failed. Please try again.`);
+        return;
+      }
+      const responseJson = await response.json();
+      if(responseJson?.success === false) {
+        SnackBar.Error(responseJson?.message ?? "Request failed. Please try again.");
+        return;
+      }
+      setChallenge(responseJson?.data ?? null);
     } finally {
       setLoading(false);
     }
   }, [challengeService, params.id]);
 
-  const handleJoin = useCallback(async () => {
+  const handleToggleMembership = useCallback(async () => {
     if (!challenge?.id || joining) return;
     setJoining(true);
     try {
-      const response = await challengeService.joinChallenge(challenge.id);
+      const response = challenge.isJoined
+        ? await challengeService.leaveChallenge(challenge.id)
+        : await challengeService.joinChallenge(challenge.id);
       const payload = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
       if (response.ok && payload?.success) {
-        setChallenge((current) => current ? { ...current, isJoined: true } : current);
+        setChallenge((current) => {
+          if (!current) return current;
+          const nextJoined = !current.isJoined;
+          return {
+            ...current,
+            isJoined: nextJoined,
+            noOfParticipants: Math.max(0, (current.noOfParticipants ?? 0) + (nextJoined ? 1 : -1)),
+          };
+        });
       }
     } finally {
       setJoining(false);
     }
-  }, [challenge?.id, challengeService, joining]);
+  }, [challenge?.id, challenge?.isJoined, challengeService, joining]);
 
   React.useEffect(() => {
     void loadChallenge();
@@ -95,8 +114,8 @@ export default function ChallengeDetailScreen() {
           <TouchableOpacity
             style={[styles.joinButton, { borderColor: challenge.isJoined ? colors.border : colors.accent }]}
             activeOpacity={0.8}
-            onPress={handleJoin}
-            disabled={joining || challenge.isJoined}
+            onPress={handleToggleMembership}
+            disabled={joining}
           >
             {joining ? (
               <ActivityIndicator size="small" color={challenge.isJoined ? colors.secondaryText : colors.accent} />
@@ -104,7 +123,7 @@ export default function ChallengeDetailScreen() {
               <MaterialIcons name={challenge.isJoined ? 'check-circle' : 'group-add'} size={18} color={challenge.isJoined ? colors.secondaryText : colors.accent} />
             )}
             <Text style={[styles.joinButtonText, { color: challenge.isJoined ? colors.secondaryText : colors.accent }]}>
-              {challenge.isJoined ? 'Joined' : 'Join'}
+              {challenge.isJoined ? 'Leave' : 'Join'}
             </Text>
           </TouchableOpacity>
         ) : (
@@ -113,18 +132,24 @@ export default function ChallengeDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
-        {challenge.coverImageUrl ? <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} /> : null}
-        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Participants & dates</Text>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="people" size={16} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{challenge.noOfParticipants ?? 0} participants</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="event" size={16} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}> 
-              {challenge.startDate ? new Date(challenge.startDate).toLocaleDateString() : 'TBD'} - {challenge.endDate ? new Date(challenge.endDate).toLocaleDateString() : 'TBD'}
-            </Text>
+        <View style={[styles.challengeCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+          {challenge.coverImageUrl ? <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} /> : null}
+          <View style={styles.challengeInfo}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{challenge.title}</Text>
+            <View style={styles.metaRow}>
+              <View style={styles.metaColumn}>
+                <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>Start</Text>
+                <Text style={[styles.metaValue, { color: colors.text }]}>{challenge.startDate ? new Date(challenge.startDate).toLocaleDateString() : 'TBD'}</Text>
+              </View>
+              <View style={styles.metaColumn}>
+                <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>End</Text>
+                <Text style={[styles.metaValue, { color: colors.text }]}>{challenge.endDate ? new Date(challenge.endDate).toLocaleDateString() : 'TBD'}</Text>
+              </View>
+              <View style={styles.metaColumn}>
+                <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>Participants</Text>
+                <Text style={[styles.metaValue, { color: colors.text }]}>{challenge.noOfParticipants ?? 0}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -142,9 +167,18 @@ export default function ChallengeDetailScreen() {
             renderItem={({ item }) => (
               <View style={styles.leaderRow}>
                 <Text style={[styles.leaderRank, { color: colors.accent }]}>{item.rank}</Text>
+                {item.profileImageUrl ? (
+                  <Image source={{ uri: item.profileImageUrl }} style={styles.leaderAvatar} />
+                ) : (
+                  <View style={[styles.leaderAvatar, styles.leaderAvatarFallback, { borderColor: colors.border }]}> 
+                    <MaterialIcons name="account-circle" size={24} color={colors.secondaryText} />
+                  </View>
+                )}
                 <View style={styles.leaderTextBlock}>
                   <Text style={[styles.leaderName, { color: colors.text }]}>{item.riderName}</Text>
-                  <Text style={[styles.leaderScore, { color: colors.secondaryText }]}>{`${item.score} pts`}</Text>
+                </View>
+                <View style={styles.leaderDistanceBlock}>
+                  <Text style={[styles.leaderScore, { color: colors.secondaryText }]}>{`${item.km ?? 0} km`}</Text>
                 </View>
               </View>
             )}
@@ -190,19 +224,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingTop: 14,
     gap: 14,
+  },
+  challengeCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   coverImage: {
     width: '100%',
     height: 220,
-    borderRadius: 18,
-    marginBottom: 14,
+  },
+  challengeInfo: {
+    padding: 16,
+    gap: 10,
   },
   section: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 8,
     padding: 16,
     gap: 10,
   },
@@ -216,11 +257,22 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
   },
-  metaText: {
-    fontSize: 13,
+  metaColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  metaLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  metaValue: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
   },
   leaderRow: {
     flexDirection: 'row',
@@ -231,18 +283,32 @@ const styles = StyleSheet.create({
   leaderRank: {
     fontSize: 18,
     fontWeight: '700',
-    width: 32,
+    width: 18,
     textAlign: 'center',
   },
   leaderTextBlock: {
     flex: 1,
+  },
+  leaderDistanceBlock: {
+    maxWidth: 50,
+  },
+  leaderAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  leaderAvatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   leaderName: {
     fontSize: 15,
     fontWeight: '600',
   },
   leaderScore: {
-    fontSize: 13,
+    fontSize: 15,
+    fontWeight: '600',
   },
   separator: {
     height: StyleSheet.hairlineWidth,

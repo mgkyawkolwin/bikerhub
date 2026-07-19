@@ -124,7 +124,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BikeListings");
+                    b.ToTable("BikeListings", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Blog", b =>
@@ -172,7 +172,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Blogs");
+                    b.ToTable("Blogs", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Challenge", b =>
@@ -226,7 +226,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Challenges");
+                    b.ToTable("Challenges", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.ChallengeParticipantEntity", b =>
@@ -263,7 +263,7 @@ namespace BikerHub.Migrations
                     b.HasIndex("ChallengeId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("ChallengeParticipants");
+                    b.ToTable("ChallengeParticipants", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.ChatMessage", b =>
@@ -323,7 +323,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatMessages");
+                    b.ToTable("ChatMessages", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.DirectoryEntity", b =>
@@ -410,7 +410,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Directories");
+                    b.ToTable("Directories", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
@@ -449,7 +449,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("ToUserId");
 
-                    b.ToTable("FriendRequests");
+                    b.ToTable("FriendRequests", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Group", b =>
@@ -501,7 +501,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Groups");
+                    b.ToTable("Groups", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.LookUpEntity", b =>
@@ -538,7 +538,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LookUps");
+                    b.ToTable("LookUps", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Message", b =>
@@ -579,7 +579,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.News", b =>
@@ -627,7 +627,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("News");
+                    b.ToTable("News", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.RideEntity", b =>
@@ -670,7 +670,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Rides");
+                    b.ToTable("Rides", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.RouteEntity", b =>
@@ -710,7 +710,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Routes");
+                    b.ToTable("Routes", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
@@ -752,7 +752,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SocialPostComments");
+                    b.ToTable("SocialPostComments", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostEntity", b =>
@@ -797,7 +797,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SocialPosts");
+                    b.ToTable("SocialPosts", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostLikeEntity", b =>
@@ -833,7 +833,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SocialPostLikes");
+                    b.ToTable("SocialPostLikes", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostMediaEntity", b =>
@@ -879,7 +879,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("SocialPostMedias");
+                    b.ToTable("SocialPostMedias", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialProfileEntity", b =>
@@ -952,7 +952,7 @@ namespace BikerHub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SocialProfiles");
+                    b.ToTable("SocialProfiles", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.StolenBikeReport", b =>
@@ -1020,7 +1020,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("StolenBikeReports");
+                    b.ToTable("StolenBikeReports", (string)null);
                 });
 
             modelBuilder.Entity("BikerHub.Entities.UserEntity", b =>
@@ -1080,7 +1080,7 @@ namespace BikerHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("SocialProfileFollowers", b =>

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BikerHub.src.mvc.Migrations
+namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260705084804_m-abc")]
-    partial class mabc
+    [Migration("20260719062034_Ver_1.0.0")]
+    partial class Ver_100
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -180,35 +180,41 @@ namespace BikerHub.src.mvc.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.Challenge", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("CoverImageUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<string>("LeaderboardJson")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<bool>("IsEnded")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsStarted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("NoOfParticipants")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -218,12 +224,49 @@ namespace BikerHub.src.mvc.Migrations
                     b.Property<DateTime>("UpdatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Challenges");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.ChallengeParticipantEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<decimal>("DistanceInKm")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<DateTime>("UpdatedAtUTC")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChallengeId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ChallengeParticipants");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.ChatMessage", b =>
@@ -466,11 +509,9 @@ namespace BikerHub.src.mvc.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.LookUpEntity", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -485,14 +526,14 @@ namespace BikerHub.src.mvc.Migrations
                     b.Property<DateTime>("CreatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("UpdatedAtUTC")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Value")
                         .HasMaxLength(256)
@@ -1090,6 +1131,25 @@ namespace BikerHub.src.mvc.Migrations
                     b.ToTable("SocialProfileFriends", (string)null);
                 });
 
+            modelBuilder.Entity("BikerHub.Entities.ChallengeParticipantEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.Challenge", "Challenge")
+                        .WithMany("Participants")
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BikerHub.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Challenge");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BikerHub.Entities.FriendRequestEntity", b =>
                 {
                     b.HasOne("BikerHub.Entities.UserEntity", "FromUser")
@@ -1233,6 +1293,11 @@ namespace BikerHub.src.mvc.Migrations
                         .HasForeignKey("SocialProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.Challenge", b =>
+                {
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>

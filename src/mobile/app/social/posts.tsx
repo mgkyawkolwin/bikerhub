@@ -336,7 +336,7 @@ export default function SocialPostsScreen() {
               <TouchableOpacity
                 style={[styles.tabButton]}
                 activeOpacity={0.85}
-                onPress={() => router.push('/challenge/current')}
+                onPress={() => router.push('/challenge/list')}
               >
                 <MaterialIcons name="emoji-events" size={22} color={colors.secondaryText} />
                 <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Challenge</Text>

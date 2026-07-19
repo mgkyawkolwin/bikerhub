@@ -9,6 +9,7 @@ import { container } from '@/services';
 import { ChallengeServiceToken } from '@/services/challengeService';
 import type { ChallengeService } from '@/services/challengeService';
 import type Challenge from '@/models/challenge';
+import SnackBar from '@/components/snackbar';
 
 export default function ChallengeCurrentScreen() {
   const insets = useSafeAreaInsets();
@@ -31,9 +32,17 @@ export default function ChallengeCurrentScreen() {
         response = await challengeService.getCurrentChallenges();
         break;
     }
+    if (!response.ok) {
+      SnackBar.Error(`(${response.status}): Request failed. Please try again.`);
+      return;
+    }
 
-    const payload = await response.json().catch(() => null) as { success?: boolean; data?: Challenge[] } | null;
-    setChallenges(payload?.data ?? []);
+    const responseJson = await response.json();
+    if(responseJson?.success === false) {
+      SnackBar.Error(responseJson?.message ?? "Request failed. Please try again.");
+      return;
+    }
+    setChallenges(responseJson?.data ?? []);
   }, [challengeService, selectedPeriod]);
 
   useFocusEffect(
@@ -51,7 +60,20 @@ export default function ChallengeCurrentScreen() {
         <Image source={{ uri: item.coverImageUrl ?? item.imageUrl }} style={styles.challengeImage} />
         <View style={styles.challengeInfo}>
           <Text style={[styles.challengeTitle, { color: colors.text }]}>{item.title}</Text>
-          <Text style={[styles.challengeSubtitle, { color: colors.secondaryText }]} numberOfLines={2}>{item.description}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaColumn}>
+              <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>Start</Text>
+              <Text style={[styles.metaValue, { color: colors.text }]}>{item.startDate ? new Date(item.startDate).toLocaleDateString() : 'TBD'}</Text>
+            </View>
+            <View style={styles.metaColumn}>
+              <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>End</Text>
+              <Text style={[styles.metaValue, { color: colors.text }]}>{item.endDate ? new Date(item.endDate).toLocaleDateString() : 'TBD'}</Text>
+            </View>
+            <View style={styles.metaColumn}>
+              <Text style={[styles.metaLabel, { color: colors.secondaryText }]}>Participants</Text>
+              <Text style={[styles.metaValue, { color: colors.text }]}>{item.noOfParticipants ?? 0}</Text>
+            </View>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -138,7 +160,7 @@ const styles = StyleSheet.create({
   },
   periodButton: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#CCCCCC',
     paddingVertical: 10,
@@ -157,7 +179,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   challengeCard: {
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -172,10 +194,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  challengeSubtitle: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 18,
+  metaRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  metaColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  metaLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  metaValue: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
   },
   emptyState: {
     marginTop: 32,

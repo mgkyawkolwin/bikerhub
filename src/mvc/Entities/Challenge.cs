@@ -22,6 +22,5 @@ public class Challenge : EntityBase<Guid>
 
     public bool IsEnded { get; set; }
     public bool IsStarted { get; set; }
-
     public virtual ICollection<ChallengeParticipantEntity> Participants { get; set; } = [];
 }

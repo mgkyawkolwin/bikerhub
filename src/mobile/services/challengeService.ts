@@ -1,4 +1,3 @@
-import type Challenge from '@/models/challenge';
 import { authenticatedFetchApi, fetchApi } from './apiClient';
 
 export const ChallengeServiceToken = Symbol('ChallengeService');
@@ -9,28 +8,35 @@ export interface ChallengeService {
   getFutureChallenges(): Promise<Response>;
   getChallengeById(id: string): Promise<Response>;
   joinChallenge(id: string): Promise<Response>;
+  leaveChallenge(id: string): Promise<Response>;
 }
 
 export class ChallengeServiceClient implements ChallengeService {
   async getPastChallenges(): Promise<Response> {
-    return fetchApi('/challenges/past');
+    return authenticatedFetchApi('/challenges/past');
   }
 
   async getCurrentChallenges(): Promise<Response> {
-    return fetchApi('/challenges/current');
+    return authenticatedFetchApi('/challenges/current');
   }
 
   async getFutureChallenges(): Promise<Response> {
-    return fetchApi('/challenges/future');
+    return authenticatedFetchApi('/challenges/future');
   }
 
   async getChallengeById(id: string): Promise<Response> {
-    return fetchApi(`/challenges/${id}`);
+    return authenticatedFetchApi(`/challenges/${id}`);
   }
 
   async joinChallenge(id: string): Promise<Response> {
     return authenticatedFetchApi(`/challenges/${id}/join`, {
-      method: 'POST',
+      method: 'GET',
+    });
+  }
+
+  async leaveChallenge(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/challenges/${id}/leave`, {
+      method: 'GET',
     });
   }
 }

@@ -3,7 +3,8 @@ namespace BikerHub.Dtos;
 public sealed record ChallengeLeaderboardEntryDto(
     int Rank,
     string RiderName,
-    int Score
+    string? ProfileImageUrl,
+    decimal Km
 );
 
 public sealed record ChallengeDto(
