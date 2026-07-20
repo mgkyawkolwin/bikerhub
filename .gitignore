@@ -154,3 +154,5 @@ web/
 # .Net
 bin/
 obj/
+
+*.apk

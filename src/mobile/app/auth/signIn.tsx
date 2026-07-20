@@ -113,6 +113,7 @@ export default function SignInScreen() {
       </View>
       <View style={styles.versionContainer}>
         <Text style={[styles.version, { color: colors.secondaryText }]}>Version {appJson.expo.version}</Text>
+        <Text>API: {process.env.EXPO_PUBLIC_API_URL}</Text>
       </View>
     </View>
   );
