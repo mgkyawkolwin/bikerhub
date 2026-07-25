@@ -176,7 +176,7 @@ public class DirectoryService : IDirectoryService
         }
 
         directory.UpdatedById = dto.UserId.Value;
-        directory.UpdatedAtUTC = DateTime.UtcNow;
+        directory.UpdatedAtUtc = DateTime.UtcNow;
 
         _dbContext.Directories.Update(directory);
         await _dbContext.SaveChangesAsync();

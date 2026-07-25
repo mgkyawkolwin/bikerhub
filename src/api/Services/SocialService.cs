@@ -88,7 +88,7 @@ public class SocialService : ISocialService
             .Include(p => p.User)
             .Include(p => p.Likes)
             .Include(p => p.Medias)
-            .OrderByDescending(post => post.CreatedAtUTC)
+            .OrderByDescending(post => post.CreatedAtUtc)
             .Select(post => new
             {
                 post,
@@ -137,7 +137,7 @@ public class SocialService : ISocialService
             .Include(p => p.Likes)
             .Include(p => p.Medias)
             .Where(post => post.UserId == filterDto.UserId)
-            .OrderByDescending(post => post.CreatedAtUTC)
+            .OrderByDescending(post => post.CreatedAtUtc)
             .Select(post => new
             {
                 post,
@@ -474,7 +474,7 @@ public class SocialService : ISocialService
         var comments = await _dbContext.SocialPostComments
             .Include(c => c.User)
             .Where(c => c.PostId == postId)
-            .OrderBy(c => c.CreatedAtUTC)
+            .OrderBy(c => c.CreatedAtUtc)
             .ToListAsync();
 
         var commentDtos = comments
@@ -484,7 +484,7 @@ public class SocialService : ISocialService
                 PostId = comment.PostId,
                 ParentCommentId = comment.ParentCommentId,
                 Content = comment.Content,
-                CreatedAtUTC = comment.CreatedAtUTC,
+                CreatedAtUTC = comment.CreatedAtUtc,
                 CreatedById = comment.UserId,
                 CreatedByName = comment.User.UserName
             })
@@ -554,7 +554,7 @@ public class SocialService : ISocialService
             UserId = currentUserId,
             ParentCommentId = createPostCommentDto.ParentCommentId,
             Content = createPostCommentDto.Content,
-            CreatedAtUTC = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow
         };
         _logger.LogTrace("Adding new comment entity to database.");
         _dbContext.SocialPostComments.Add(commentEntity);
@@ -570,7 +570,7 @@ public class SocialService : ISocialService
             PostId = commentEntity.PostId,
             ParentCommentId = commentEntity.ParentCommentId,
             Content = commentEntity.Content,
-            CreatedAtUTC = commentEntity.CreatedAtUTC,
+            CreatedAtUTC = commentEntity.CreatedAtUtc,
             CreatedById = commentEntity.UserId,
             CreatedByName = commentEntity.User.UserName,
             Replies = new List<SocialPostCommentDto>()
@@ -656,7 +656,7 @@ public class SocialService : ISocialService
             CommentCount = post.CommentCount,
             ShareCount = post.ShareCount,
             IsLikedByCurrentUser = post.Likes?.Any(like => like.UserId == currentProfileId) == true,
-            CreatedAtUTC = post.CreatedAtUTC,
+            CreatedAtUTC = post.CreatedAtUtc,
             CreatedByUserId = post.UserId,
             CreatedByDisplayName = post.User?.DisplayName ?? string.Empty,
             CreatedByUserName = post.User?.UserName ?? string.Empty,
@@ -1249,7 +1249,7 @@ public class SocialService : ISocialService
             FromUserId = fromProfile.UserId,
             ToUserId = toProfile.UserId,
             Status = FriendRequestStatus.Pending,
-            CreatedAtUTC = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
             CreatedById = Guid.Empty
         };
 
@@ -1516,7 +1516,7 @@ public class SocialService : ISocialService
         var requests = await _dbContext.FriendRequests
             .Include(r => r.FromUser)
             .Where(r => r.ToUserId == profile.UserId && r.Status == FriendRequestStatus.Pending)
-            .OrderByDescending(r => r.CreatedAtUTC)
+            .OrderByDescending(r => r.CreatedAtUtc)
             .ToListAsync();
 
         var result = requests.Select(r => new PendingFriendRequestDto
@@ -1529,7 +1529,7 @@ public class SocialService : ISocialService
             FromProfilePictureUrl = r.FromUser.ProfilePictureUrl,
             FromCoverPhotoUrl = "",
             FromBio = "",
-            CreatedAtUTC = r.CreatedAtUTC
+            CreatedAtUTC = r.CreatedAtUtc
         }).ToList();
 
         _logger.LogInformation("Retrieved {Count} pending friend requests for user {UserId}", result.Count, userId);

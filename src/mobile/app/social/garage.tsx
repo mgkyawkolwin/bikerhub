@@ -5,80 +5,79 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
-import { MarketplaceServiceToken } from '@/services/marketplaceService';
-import type { MarketplaceService } from '@/services/marketplaceService';
-import type { BikeListing, MarketplaceFilter } from '@/models/marketplace';
+import { GarageBikeServiceToken } from '@/services/garageBikeService';
+import type { GarageBikeService } from '@/services/garageBikeService';
+import type { GarageBike } from '@/models/garageBike';
 import SnackBar from '@/components/snackbar';
 
 export default function SocialGarageScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeContext();
+  const { authUser } = useAuthContext();
   const params = useLocalSearchParams();
-  const marketplaceService = useMemo(
-    () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
+  const garageBikeService = useMemo(
+    () => container.resolve<GarageBikeService>(GarageBikeServiceToken),
     [],
   );
-  const [bikes, setBikes] = useState<BikeListing[]>([]);
+  const [garageBikes, setGarageBikes] = useState<GarageBike[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const currentUserId = authUser?.id;
+  const isOwnGarage = Boolean(!userId || (currentUserId && userId === currentUserId));
 
-  const filter = useMemo<MarketplaceFilter>(() => ({
-    make: '',
-    model: '',
-    modelYear: '',
-    priceMin: undefined,
-    priceMax: undefined,
-    cc: '',
-    type: undefined,
-    location: '',
-  }), []);
-
-  const loadGarage = useCallback(async () => {
+  const loadGarageBikes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await marketplaceService.getListings(filter, 1, 50);
+      const response = await garageBikeService.getGarageBikes(userId);
       if (!response.ok) {
-        SnackBar.Error('Failed to load garage. Please try again later.');
+        SnackBar.Error(`${response.status}: ${response.statusText}. Request failed. Please try again.`);
         return;
       }
       const responseJson = await response.json();
-      if (!responseJson.Success) {
-        SnackBar.Error(responseJson.Message || 'Failed to load garage. Please try again later.');
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Unknown error occurred. Please try again later.');
         return;
       }
-      const result = responseJson.Data as { items: BikeListing[]; totalCount: number };
-      const items = result.items.filter((item: any) => (userId ? item.sellerId === userId : true));
-      setBikes(items);
+
+      const items = Array.isArray(responseJson.Data) ? responseJson.Data : [];
+      setGarageBikes(items);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filter, marketplaceService, userId]);
+  }, [garageBikeService, userId]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadGarage();
-    }, [loadGarage]),
+      void loadGarageBikes();
+    }, [loadGarageBikes]),
   );
 
   const handleRefresh = () => {
     setRefreshing(true);
-    void loadGarage();
+    void loadGarageBikes();
   };
 
-  const renderBike = ({ item }: { item: BikeListing }) => (
+  const renderGarageBike = ({ item }: { item: GarageBike }) => (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.bikeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => router.push(`/marketplace/${item.id}`)}
+      onPress={() => {}}
     >
-      <Image source={{ uri: item.imageUrl }} style={styles.bikeImage} />
+      <Image
+        source={{ uri: item.images?.[0] || 'https://placehold.co/600x400/png?text=No+Image' }}
+        style={styles.bikeImage}
+      />
       <View style={styles.bikeInfo}>
         <Text style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
           {item.title}
+        </Text>
+        <Text style={[styles.bikeMeta, { color: colors.secondaryText }]} numberOfLines={1}>
+          {item.make} {item.model}
         </Text>
       </View>
     </TouchableOpacity>
@@ -92,14 +91,25 @@ export default function SocialGarageScreen() {
             <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Garage</Text>
-          <View style={styles.headerSpacer} />
+          {isOwnGarage ? (
+            <TouchableOpacity
+              style={[styles.addButton, { borderColor: colors.accent }]}
+              activeOpacity={0.8}
+              onPress={() => router.push('/social/addGarageBike' as never)}
+            >
+              <MaterialIcons name="add" size={16} color={colors.accent} />
+              <Text style={[styles.addButtonText, { color: colors.accent }]}>Add Bike</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerSpacer} />
+          )}
         </View>
       </View>
 
       <FlatList
-        data={bikes}
+        data={garageBikes}
         keyExtractor={(item) => item.id ?? ''}
-        renderItem={renderBike}
+        renderItem={renderGarageBike}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
         ListEmptyComponent={!loading ? (
@@ -132,6 +142,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  addButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   list: {
     paddingHorizontal: 16,
@@ -156,6 +181,10 @@ const styles = StyleSheet.create({
   bikeTitle: {
     fontSize: 17,
     fontWeight: '700',
+  },
+  bikeMeta: {
+    fontSize: 13,
+    marginTop: 4,
   },
   emptyState: {
     marginTop: 40,

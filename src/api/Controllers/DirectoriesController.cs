@@ -13,12 +13,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DirectoriesController : ControllerBase
+public class DirectoriesController : BaseController
 {
     private readonly IDirectoryService _directoryService;
     private readonly ILogger<DirectoriesController> _logger;
 
-    public DirectoriesController(IDirectoryService directoryService, ILogger<DirectoriesController> logger)
+    public DirectoriesController(IDirectoryService directoryService, ILogger<DirectoriesController> logger) : base(logger)
     {
         _directoryService = directoryService;
         _logger = logger;
@@ -218,12 +218,5 @@ public class DirectoriesController : ControllerBase
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
-    }
-    private Guid? GetCurrentUserId()
-    {
-        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return Guid.TryParse(userId, out var parsed) ? parsed : null;
     }
 }

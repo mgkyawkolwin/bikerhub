@@ -1,6 +1,6 @@
 namespace BikerHub.Dtos;
 
 public sealed record SendChatMessageDto(
-    string ReceiverId,
+    Guid ReceiverId,
     string TextMessage
 );

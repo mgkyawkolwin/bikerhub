@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -106,5 +108,13 @@ public class BaseController : Controller  // Use a custom name, not ControllerBa
         }
 
         base.OnActionExecuted(context);
+    }
+
+    public Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }

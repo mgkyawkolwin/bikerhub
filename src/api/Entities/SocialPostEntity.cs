@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace BikerHub.Entities;
 
 [Table("SocialPosts")]
-public class SocialPostEntity : EntityBase<Guid>
+public class SocialPostEntity : BaseEntity<Guid>
 {
     public string? Content { get; set; }
     public int LoveCount { get; set; }

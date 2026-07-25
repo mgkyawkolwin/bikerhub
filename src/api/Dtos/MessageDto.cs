@@ -1,12 +1,12 @@
 namespace BikerHub.Dtos;
 
 public sealed record MessageDto(
-    int? Id = null,
+    Guid Id,
     string? Title = null,
     string? Body = null,
     DateTime? CreatedAtUTC = null,
     bool Read = false,
-    int? CreatedById = null,
+    Guid? CreatedById = null,
     DateTime? UpdatedAtUTC = null,
-    int? UpdatedById = null
+    Guid? UpdatedById = null
 );

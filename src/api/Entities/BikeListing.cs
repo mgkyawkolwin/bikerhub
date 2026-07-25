@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class BikeListing : EntityBase<int>
+public class BikeListing : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(200)]
@@ -36,5 +36,4 @@ public class BikeListing : EntityBase<int>
     public bool IsLiked { get; set; }
     public int LikeCount { get; set; }
     public int ViewCount { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,6 +1,8 @@
 export { container } from './diContainer';
 export type { MarketplaceService } from './marketplaceService';
 export { MarketplaceServiceToken } from './marketplaceService';
+export type { GarageBikeService } from './garageBikeService';
+export { GarageBikeServiceToken } from './garageBikeService';
 export type { StolenBikeService } from './stolenBikeService';
 export { StolenBikeServiceToken } from './stolenBikeService';
 export type { MessageService } from './messageService';

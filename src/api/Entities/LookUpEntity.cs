@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class LookUpEntity : EntityBase<Guid>
+public class LookUpEntity : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(100)]

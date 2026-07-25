@@ -10,12 +10,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GroupsController : ControllerBase
+public class GroupsController : BaseController
 {
     private readonly IGroupService _groupService;
     private readonly ILogger<GroupsController> _logger;
 
-    public GroupsController(IGroupService groupService, ILogger<GroupsController> logger)
+    public GroupsController(IGroupService groupService, ILogger<GroupsController> logger) : base(logger)
     {
         _groupService = groupService;
         _logger = logger;

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace BikerHub.Entities;
 
 [Table("SocialPostComments")]
-public class SocialPostCommentEntity : EntityBase<Guid>
+public class SocialPostCommentEntity : BaseEntity<Guid>
 {
     public required Guid PostId { get; set; }
     public required Guid UserId { get; set; }

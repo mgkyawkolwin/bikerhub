@@ -82,7 +82,7 @@ public class AuthService : IAuthService
             UserName = normalizedName,
             DisplayName = dto.DisplayName,
             Email = normalizedEmail,
-            CreatedAtUTC = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
@@ -210,7 +210,7 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
                 UserName = tokenInfo.Name ?? tokenInfo.Email,
                 Email = normalizedEmail,
                 ProfilePictureUrl = tokenInfo.Picture,
-                CreatedAtUTC = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
             };
             user.PasswordHash = _passwordHasher.HashPassword(user, Guid.NewGuid().ToString("N"));
 

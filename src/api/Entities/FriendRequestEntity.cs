@@ -11,7 +11,7 @@ public enum FriendRequestStatus
 }
 
 [Table("FriendRequests")]
-public class FriendRequestEntity : EntityBase<Guid>
+public class FriendRequestEntity : BaseEntity<Guid>
 {
     [Required]
     public required Guid FromUserId { get; set; }

@@ -890,12 +890,4 @@ public class SocialController : BaseController
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
-
-    private Guid? GetCurrentUserId()
-    {
-        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return Guid.TryParse(userId, out var parsed) ? parsed : null;
-    }
 }

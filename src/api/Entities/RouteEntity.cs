@@ -2,9 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class RouteEntity : EntityBase<Guid>
+public class RouteEntity : BaseEntity<Guid>
 {
-    public RouteEntity() => Id = Guid.NewGuid();
 
     [Required]
     [MaxLength(200)]

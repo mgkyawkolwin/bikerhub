@@ -9,12 +9,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RidesController : ControllerBase
+public class RidesController : BaseController
 {
     private readonly IRideService _rideService;
     private readonly ILogger<RidesController> _logger;
 
-    public RidesController(IRideService rideService, ILogger<RidesController> logger)
+    public RidesController(IRideService rideService, ILogger<RidesController> logger) : base(logger)
     {
         _rideService = rideService;
         _logger = logger;

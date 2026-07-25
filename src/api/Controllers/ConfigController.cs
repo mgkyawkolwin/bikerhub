@@ -7,12 +7,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ConfigController : ControllerBase
+public class ConfigController : BaseController
 {
     private readonly IConfigService _configService;
     private readonly ILogger<ConfigController> _logger;
 
-    public ConfigController(IConfigService configService, ILogger<ConfigController> logger)
+    public ConfigController(IConfigService configService, ILogger<ConfigController> logger) : base(logger)
     {
         _configService = configService;
         _logger = logger;

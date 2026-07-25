@@ -24,7 +24,7 @@ public class GroupService : IGroupService
 
     public async Task<IEnumerable<GroupDto>> GetGroupsAsync()
     {
-        var groups = await _dbContext.Groups.OrderByDescending(g => g.CreatedAt).ToListAsync();
+        var groups = await _dbContext.Groups.OrderByDescending(g => g.CreatedAtUtc).ToListAsync();
         return groups.Select(MapGroup);
     }
 

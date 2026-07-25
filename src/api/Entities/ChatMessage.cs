@@ -2,13 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class ChatMessage : EntityBase<int>
+public class ChatMessage : BaseEntity<Guid>
 {
     [Required]
-    public string SenderId { get; set; } = string.Empty;
+    public Guid SenderId { get; set; } = Guid.Empty;
 
     [Required]
-    public string ReceiverId { get; set; } = string.Empty;
+    public Guid ReceiverId { get; set; } = Guid.Empty;
 
     public string? SenderName { get; set; }
     public string? SenderProfilePictureUrl { get; set; }

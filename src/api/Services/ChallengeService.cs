@@ -40,7 +40,7 @@ public class ChallengeService : IChallengeService
             .AsNoTracking()
             .Include(c => c.Participants)
                 .ThenInclude(p => p.User)
-            .OrderByDescending(c => c.CreatedAtUTC)
+            .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync();
 
         var filteredChallenges = challenges.Where(challenge => MatchesPeriod(challenge, period));
@@ -142,7 +142,7 @@ public class ChallengeService : IChallengeService
         var participantCount = challenge.Participants.Count > 0 ? challenge.Participants.Count : challenge.NoOfParticipants;
         var leaderboard = challenge.Participants
             .OrderByDescending(participant => participant.DistanceInKm)
-            .ThenBy(participant => participant.CreatedAtUTC)
+            .ThenBy(participant => participant.CreatedAtUtc)
             .Select((participant, index) =>
             {
                 var profilePhotoUrl = profilePhotoUrls?.GetValueOrDefault(participant.UserId);
@@ -171,8 +171,8 @@ public class ChallengeService : IChallengeService
             challenge.StartDate,
             challenge.EndDate,
             isJoined,
-            challenge.CreatedAtUTC,
-            challenge.UpdatedAtUTC
+            challenge.CreatedAtUtc,
+            challenge.UpdatedAtUtc
         );
     }
 

@@ -1,10 +1,9 @@
-import { StyleSheet, View, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Switch, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
-import { Label } from '@react-navigation/elements';
 import appJson from '../app.json';
 
 export default function SettingsScreen() {
@@ -22,7 +21,7 @@ export default function SettingsScreen() {
         <TouchableOpacity hitSlop={14} onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Label style={[$.title, { color: colors.text }]}>{t.Title.settings}</Label>
+        <Text style={[$.title, { color: colors.text }]}>{t.Title.settings}</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -34,11 +33,11 @@ export default function SettingsScreen() {
         <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={$.cardHead}>
             <MaterialIcons name="translate" size={18} color={colors.secondaryText} />
-            <Label style={[$.cardTitle, { color: colors.text }]}>{t.Title.language}</Label>
+            <Text style={[$.cardTitle, { color: colors.text }]}>{t.Title.language}</Text>
           </View>
           <View style={[$.divider, { backgroundColor: colors.border }]} />
           <View style={$.cardBody}>
-            <Label style={[$.desc, { color: colors.secondaryText }]}>{t.Text.selectLanguage}</Label>
+            <Text style={[$.desc, { color: colors.secondaryText }]}>{t.Text.selectLanguage}</Text>
             <View style={$.langRow}>
               {(['en', 'my'] as const).map((code) => {
                 const active = locale === code;
@@ -53,9 +52,9 @@ export default function SettingsScreen() {
                       { borderColor: active ? colors.accent : colors.border, backgroundColor: active ? colors.accent + '0C' : 'transparent' },
                     ]}>
                     {active && <MaterialIcons name="check" size={14} color={colors.accent} />}
-                    <Label style={[$.langText, { color: active ? colors.accent : colors.secondaryText }]}>
+                    <Text style={[$.langText, { color: active ? colors.accent : colors.secondaryText }]}>
                       {label}
-                    </Label>
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -67,7 +66,7 @@ export default function SettingsScreen() {
         <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[$.cardBody, $.switchRow]}>
             <MaterialIcons name={isDark ? 'dark-mode' : 'light-mode'} size={18} color={colors.secondaryText} />
-            <Label style={[$.cardTitle, { color: colors.text, flex: 1 }]}>{t.Title.darkMode}</Label>
+            <Text style={[$.cardTitle, { color: colors.text, flex: 1 }]}>{t.Title.darkMode}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -78,7 +77,7 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
       <View style={[$.versionContainer, { bottom: ins.bottom + 16 }]}> 
-        <Label style={[$.version, { color: colors.secondaryText }]}>Version {appVersion}</Label>
+        <Text style={[$.version, { color: colors.secondaryText }]}>Version {appVersion}</Text>
       </View>
     </View>
   );

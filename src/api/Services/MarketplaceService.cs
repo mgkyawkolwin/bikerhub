@@ -52,7 +52,7 @@ public class MarketplaceService : IMarketplaceService
         if (!string.IsNullOrWhiteSpace(location)) query = query.Where(x => x.Location == location);
 
         var total = await query.CountAsync();
-        var items = await query.OrderByDescending(x => x.CreatedAt)
+        var items = await query.OrderByDescending(x => x.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -87,7 +87,7 @@ public class MarketplaceService : IMarketplaceService
             Km = dto.Km,
             Vin = dto.Vin,
             Description = dto.Description,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         _dbContext.BikeListings.Add(entity);
@@ -148,7 +148,7 @@ public class MarketplaceService : IMarketplaceService
 
     public async Task<IEnumerable<BikeListingDto>> GetFavoritesAsync()
     {
-        var favorites = await _dbContext.BikeListings.Where(x => x.IsFavorite).OrderByDescending(x => x.CreatedAt).ToListAsync();
+        var favorites = await _dbContext.BikeListings.Where(x => x.IsFavorite).OrderByDescending(x => x.CreatedAtUtc).ToListAsync();
         return favorites.Select(Map);
     }
 
@@ -196,7 +196,7 @@ public class MarketplaceService : IMarketplaceService
             entity.IsLiked,
             entity.LikeCount,
             entity.ViewCount,
-            entity.CreatedAt
+            entity.CreatedAtUtc
         );
     }
 

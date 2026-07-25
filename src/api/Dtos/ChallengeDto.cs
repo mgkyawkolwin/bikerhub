@@ -8,7 +8,7 @@ public sealed record ChallengeLeaderboardEntryDto(
 );
 
 public sealed record ChallengeDto(
-    Guid? Id = null,
+    Guid Id,
     string? Title = null,
     string? Description = null,
     string? CoverImageUrl = null,

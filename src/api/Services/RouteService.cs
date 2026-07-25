@@ -26,7 +26,7 @@ public class RouteService : IRouteService
 
     public async Task<PaginatedResultDto<RouteDto>> GetRoutesAsync(int page, int pageSize)
     {
-        var query = _dbContext.Routes.OrderByDescending(r => r.CreatedAtUTC);
+        var query = _dbContext.Routes.OrderByDescending(r => r.CreatedAtUtc);
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
@@ -51,7 +51,7 @@ public class RouteService : IRouteService
             Duration = dto.Duration,
             CreatedById = dto.CreatedById,
             OsrmResponseJson = dto.OsrmResponseJson,
-            CreatedAtUTC = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         _dbContext.Routes.Add(entity);
@@ -83,14 +83,13 @@ public class RouteService : IRouteService
     private static RouteDto MapRoute(RouteEntity route)
     {
         return new RouteDto{
-            Id = route.Id,
             Name = route.Name,
             Description = route.Description,
             Distance = route.Distance,
             Duration = route.Duration,
             OsrmResponseJson = route.OsrmResponseJson,
             CreatedById = route.CreatedById,
-            CreatedAtUTC = route.CreatedAtUTC
+            CreatedAtUTC = route.CreatedAtUtc
         };
     }
 }

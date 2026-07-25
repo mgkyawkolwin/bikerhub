@@ -7,9 +7,9 @@ namespace BikerHub.Services;
 
 public interface IMessageService
 {
-    Task<PaginatedResultDto<MessageDto>> GetMessagesAsync(int page, int pageSize, string currentUserId);
-    Task<MessageDto?> GetMessageByIdAsync(int messageId, string currentUserId);
-    Task MarkMessageAsReadAsync(int messageId, string currentUserId);
+    Task<PaginatedResultDto<MessageDto>> GetMessagesAsync(int page, int pageSize, Guid currentUserId);
+    Task<MessageDto?> GetMessageByIdAsync(Guid messageId, Guid currentUserId);
+    Task MarkMessageAsReadAsync(Guid messageId, Guid currentUserId);
 }
 
 public class MessageService : IMessageService
@@ -21,7 +21,7 @@ public class MessageService : IMessageService
         _dbContext = dbContext;
     }
 
-    public async Task<PaginatedResultDto<MessageDto>> GetMessagesAsync(int page, int pageSize, string currentUserId)
+    public async Task<PaginatedResultDto<MessageDto>> GetMessagesAsync(int page, int pageSize, Guid currentUserId)
     {
         var query = _dbContext.Messages
             .Where(m => m.UserId == null || m.UserId == currentUserId)
@@ -33,7 +33,7 @@ public class MessageService : IMessageService
         return new PaginatedResultDto<MessageDto>(items.Select(MapMessage).ToList(), page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
-    public async Task<MessageDto?> GetMessageByIdAsync(int messageId, string currentUserId)
+    public async Task<MessageDto?> GetMessageByIdAsync(Guid messageId, Guid currentUserId)
     {
         var message = await _dbContext.Messages.FindAsync(messageId);
         if (message == null || (message.UserId != null && message.UserId != currentUserId))
@@ -44,7 +44,7 @@ public class MessageService : IMessageService
         return MapMessage(message);
     }
 
-    public async Task MarkMessageAsReadAsync(int messageId, string currentUserId)
+    public async Task MarkMessageAsReadAsync(Guid messageId, Guid currentUserId)
     {
         var message = await _dbContext.Messages.FindAsync(messageId);
         if (message == null || (message.UserId != null && message.UserId != currentUserId))

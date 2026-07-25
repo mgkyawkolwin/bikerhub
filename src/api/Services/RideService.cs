@@ -26,7 +26,7 @@ public class RideService : IRideService
 
     public async Task<PaginatedResultDto<RideDto>> GetRidesAsync(int page, int pageSize)
     {
-        var query = _dbContext.Rides.OrderByDescending(r => r.CreatedAt);
+        var query = _dbContext.Rides.OrderByDescending(r => r.CreatedAtUtc);
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
@@ -51,7 +51,7 @@ public class RideService : IRideService
             Duration = dto.Duration,
             CreatedById = dto.CreatedById,
             LocationsJson = dto.Locations is null ? null : JsonSerializer.Serialize(dto.Locations),
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         _dbContext.Rides.Add(entity);
@@ -104,8 +104,8 @@ public class RideService : IRideService
             ride.Duration,
             ride.CreatedById,
             locations,
-            ride.CreatedAt,
-            ride.UpdatedAtUTC,
+            ride.CreatedAtUtc,
+            ride.UpdatedAtUtc,
             ride.UpdatedById
         );
     }

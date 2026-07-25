@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260719062034_Ver_1.0.0")]
-    partial class Ver_100
+    [Migration("20260725111919_asd")]
+    partial class asd
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,23 +27,18 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.BikeListing", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Cc")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -96,6 +91,10 @@ namespace BikerHub.Migrations
                     b.Property<int>("RatingCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("SellerId")
                         .HasColumnType("longtext");
 
@@ -110,11 +109,11 @@ namespace BikerHub.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<int>("ViewCount")
                         .HasColumnType("int");
@@ -132,11 +131,9 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.Blog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Author")
                         .HasMaxLength(100)
@@ -145,18 +142,19 @@ namespace BikerHub.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Summary")
                         .HasMaxLength(500)
@@ -167,11 +165,11 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -188,7 +186,7 @@ namespace BikerHub.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -213,6 +211,10 @@ namespace BikerHub.Migrations
                     b.Property<int>("NoOfParticipants")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime(6)");
 
@@ -221,7 +223,7 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -241,7 +243,7 @@ namespace BikerHub.Migrations
                     b.Property<Guid>("ChallengeId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -250,7 +252,11 @@ namespace BikerHub.Migrations
                     b.Property<decimal>("DistanceInKm")
                         .HasColumnType("decimal(65,30)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -271,17 +277,15 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.ChatMessage", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("char(36)");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<bool>("Delivered")
                         .HasColumnType("tinyint(1)");
@@ -289,9 +293,8 @@ namespace BikerHub.Migrations
                     b.Property<bool>("Read")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("ReceiverId")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("ReceiverName")
                         .HasColumnType("longtext");
@@ -299,9 +302,12 @@ namespace BikerHub.Migrations
                     b.Property<string>("ReceiverProfilePictureUrl")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("SenderId")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("SenderName")
                         .HasColumnType("longtext");
@@ -318,11 +324,11 @@ namespace BikerHub.Migrations
                     b.Property<string>("TextMessage")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -355,7 +361,7 @@ namespace BikerHub.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -401,11 +407,15 @@ namespace BikerHub.Migrations
                     b.Property<int?>("RatingCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("State")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -422,7 +432,7 @@ namespace BikerHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -434,13 +444,17 @@ namespace BikerHub.Migrations
                     b.Property<DateTime?>("RespondedAtUTC")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("ToUserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -455,25 +469,81 @@ namespace BikerHub.Migrations
                     b.ToTable("FriendRequests");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.Group", b =>
+            modelBuilder.Entity("BikerHub.Entities.GarageBike", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Cc")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ImagesJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Km")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Make")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Mileage")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Vin")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("Year")
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    b.HasKey("Id");
+
+                    b.ToTable("GarageBikes");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("CoverPhotoUrl")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -491,16 +561,20 @@ namespace BikerHub.Migrations
                     b.Property<int>("MembersCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -523,13 +597,17 @@ namespace BikerHub.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -546,20 +624,18 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.Message", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Body")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("DateTimeUTC")
                         .HasColumnType("datetime(6)");
@@ -567,18 +643,22 @@ namespace BikerHub.Migrations
                     b.Property<bool>("Read")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("longtext");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -587,20 +667,18 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.News", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("DateTimeUTC")
                         .HasColumnType("datetime(6)");
@@ -614,6 +692,10 @@ namespace BikerHub.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Source")
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
@@ -622,11 +704,11 @@ namespace BikerHub.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
@@ -639,10 +721,7 @@ namespace BikerHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -665,7 +744,11 @@ namespace BikerHub.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -682,7 +765,7 @@ namespace BikerHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -705,7 +788,11 @@ namespace BikerHub.Migrations
                     b.Property<string>("OsrmResponseJson")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -726,7 +813,7 @@ namespace BikerHub.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -738,7 +825,11 @@ namespace BikerHub.Migrations
                     b.Property<Guid>("PostId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -770,7 +861,7 @@ namespace BikerHub.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -779,13 +870,17 @@ namespace BikerHub.Migrations
                     b.Property<int>("LoveCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<int>("ShareCount")
                         .HasColumnType("int");
 
                     b.Property<Guid?>("SocialProfileEntityId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -809,7 +904,7 @@ namespace BikerHub.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -821,7 +916,11 @@ namespace BikerHub.Migrations
                     b.Property<Guid>("PostId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -849,7 +948,7 @@ namespace BikerHub.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -869,10 +968,14 @@ namespace BikerHub.Migrations
                     b.Property<Guid>("PostId")
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -898,7 +1001,7 @@ namespace BikerHub.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -938,11 +1041,15 @@ namespace BikerHub.Migrations
                     b.Property<int>("RidesCount")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("SocialLinksJson")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")
@@ -960,20 +1067,18 @@ namespace BikerHub.Migrations
 
             modelBuilder.Entity("BikerHub.Entities.StolenBikeReport", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Cc")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
@@ -1001,6 +1106,10 @@ namespace BikerHub.Migrations
                     b.Property<DateTime>("ReportedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1009,11 +1118,11 @@ namespace BikerHub.Migrations
                     b.Property<string>("Type")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UpdatedById")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Vin")
                         .HasColumnType("longtext");
@@ -1040,7 +1149,7 @@ namespace BikerHub.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateTime>("CreatedAtUTC")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("CreatedById")
@@ -1070,7 +1179,11 @@ namespace BikerHub.Migrations
                     b.Property<int?>("RatingCount")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAtUTC")
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("UpdatedById")

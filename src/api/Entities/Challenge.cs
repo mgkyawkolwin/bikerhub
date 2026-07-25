@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Challenge : EntityBase<Guid>
+public class Challenge : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(200)]

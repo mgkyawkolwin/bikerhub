@@ -1,7 +1,7 @@
 namespace BikerHub.Dtos;
 
 public sealed record GroupDto(
-    int? Id = null,
+    Guid Id,
     string? Title = null,
     string? Icon = null,
     string? Description = null,

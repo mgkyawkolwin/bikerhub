@@ -8,10 +8,10 @@ namespace BikerHub.Services;
 
 public interface IChatService
 {
-    Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, string currentUserId);
-    Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(string friendId, string currentUserId);
-    Task<ChatMessageDto> SendChatMessageAsync(string currentUserId, SendChatMessageDto dto);
-    Task MarkChatMessageAsReadAsync(int messageId, string currentUserId);
+    Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, Guid currentUserId);
+    Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId, Guid currentUserId);
+    Task<ChatMessageDto> SendChatMessageAsync(Guid currentUserId, SendChatMessageDto dto);
+    Task MarkChatMessageAsReadAsync(int messageId, Guid currentUserId);
 }
 
 public class ChatService : IChatService
@@ -23,7 +23,7 @@ public class ChatService : IChatService
         _dbContext = dbContext;
     }
 
-    public async Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, string currentUserId)
+    public async Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, Guid currentUserId)
     {
         var query = _dbContext.ChatMessages
             .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId);
@@ -37,7 +37,7 @@ public class ChatService : IChatService
                 var unreadCount = g.Count(m => m.ReceiverId == currentUserId && !m.Read);
                 return new ChatHeadDto(
                     latest.Id,
-                    g.Key ?? string.Empty,
+                    g.Key,
                     latest.SenderId == currentUserId ? latest.ReceiverName : latest.SenderName,
                     latest.SenderId == currentUserId ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
                     latest.TextMessage,
@@ -54,7 +54,7 @@ public class ChatService : IChatService
         return new PaginatedResultDto<ChatHeadDto>(paged, page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
-    public async Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(string friendId, string currentUserId)
+    public async Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId, Guid currentUserId)
     {
         var messages = await _dbContext.ChatMessages
             .Where(m => (m.SenderId == currentUserId && m.ReceiverId == friendId) || (m.SenderId == friendId && m.ReceiverId == currentUserId))
@@ -65,9 +65,9 @@ public class ChatService : IChatService
         return new PaginatedResultDto<ChatMessageDto>(items, 1, items.Count, items.Count, 1);
     }
 
-    public async Task<ChatMessageDto> SendChatMessageAsync(string currentUserId, SendChatMessageDto dto)
+    public async Task<ChatMessageDto> SendChatMessageAsync(Guid currentUserId, SendChatMessageDto dto)
     {
-        DtoValidationHelper.ValidateRequiredString(dto.ReceiverId, "ReceiverId");
+        DtoValidationHelper.ValidateGuid(dto.ReceiverId, "ReceiverId");
         DtoValidationHelper.ValidateRequiredString(dto.TextMessage, "TextMessage");
 
         var message = new ChatMessage
@@ -86,7 +86,7 @@ public class ChatService : IChatService
         return MapMessage(message);
     }
 
-    public async Task MarkChatMessageAsReadAsync(int messageId, string currentUserId)
+    public async Task MarkChatMessageAsReadAsync(int messageId, Guid currentUserId)
     {
         var message = await _dbContext.ChatMessages.FindAsync(messageId);
         if (message == null || message.ReceiverId != currentUserId)

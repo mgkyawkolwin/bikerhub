@@ -12,12 +12,12 @@ namespace BikerHub.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ChatController : ControllerBase
+public class ChatController : BaseController
 {
     private readonly IChatService _chatService;
     private readonly ILogger<ChatController> _logger;
 
-    public ChatController(IChatService chatService, ILogger<ChatController> logger)
+    public ChatController(IChatService chatService, ILogger<ChatController> logger) : base(logger)
     {
         _chatService = chatService;
         _logger = logger;
@@ -29,8 +29,7 @@ public class ChatController : ControllerBase
         try
         {
             _logger.LogDebug("CALLED: GetChatHeads(page={Page}, pageSize={PageSize})", page, pageSize);
-            var currentUserId = GetCurrentUserId();
-            var result = await _chatService.GetChatHeadsAsync(page, pageSize, currentUserId);
+            var result = await _chatService.GetChatHeadsAsync(page, pageSize, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -46,12 +45,12 @@ public class ChatController : ControllerBase
     }
 
     [HttpGet("messages")]
-    public async Task<IActionResult> GetChatMessages([FromQuery] string friendId)
+    public async Task<IActionResult> GetChatMessages([FromQuery] Guid friendId)
     {
         try
         {
             _logger.LogDebug("CALLED: GetChatMessages(friendId={FriendId})", friendId);
-            var result = await _chatService.GetChatMessagesAsync(friendId, GetCurrentUserId());
+            var result = await _chatService.GetChatMessagesAsync(friendId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -72,7 +71,7 @@ public class ChatController : ControllerBase
         try
         {
             _logger.LogDebug("CALLED: SendChatMessage(dto={Dto})", JsonSerializer.Serialize(dto));
-            var message = await _chatService.SendChatMessageAsync(GetCurrentUserId(), dto);
+            var message = await _chatService.SendChatMessageAsync(GetCurrentUserId() ?? throw new CustomException("Invalid session user."), dto);
             return Ok(new { Success = true, Data = message });
         }
         catch (CustomException ex)
@@ -93,7 +92,7 @@ public class ChatController : ControllerBase
         try
         {
             _logger.LogDebug("CALLED: MarkMessageAsRead(messageId={MessageId})", messageId);
-            await _chatService.MarkChatMessageAsReadAsync(messageId, GetCurrentUserId());
+            await _chatService.MarkChatMessageAsReadAsync(messageId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -106,10 +105,5 @@ public class ChatController : ControllerBase
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
-    }
-
-    private string GetCurrentUserId()
-    {
-        return User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
     }
 }

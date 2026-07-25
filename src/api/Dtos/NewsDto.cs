@@ -1,7 +1,7 @@
 namespace BikerHub.Dtos;
 
 public sealed record NewsDto(
-    int? Id = null,
+    Guid Id,
     string? Headline = null,
     string? Summary = null,
     string? Content = null,

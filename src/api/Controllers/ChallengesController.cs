@@ -11,12 +11,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ChallengesController : ControllerBase
+public class ChallengesController : BaseController
 {
     private readonly IChallengeService _challengeService;
     private readonly ILogger<ChallengesController> _logger;
 
-    public ChallengesController(IChallengeService challengeService, ILogger<ChallengesController> logger)
+    public ChallengesController(IChallengeService challengeService, ILogger<ChallengesController> logger) : base(logger)
     {
         _challengeService = challengeService;
         _logger = logger;
@@ -191,13 +191,5 @@ public class ChallengesController : ControllerBase
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }

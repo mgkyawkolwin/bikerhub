@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Group : EntityBase<int>
+public class Group : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(200)]
@@ -16,5 +16,4 @@ public class Group : EntityBase<int>
     public string? CoverPhotoUrl { get; set; }
     public bool IsPrivate { get; set; }
     public int MembersCount { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

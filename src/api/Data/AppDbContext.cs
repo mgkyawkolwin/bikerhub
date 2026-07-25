@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();
     public DbSet<FriendRequestEntity> FriendRequests => Set<FriendRequestEntity>();
     public DbSet<LookUpEntity> LookUps => Set<LookUpEntity>();
+    public DbSet<GarageBike> GarageBikes => Set<GarageBike>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

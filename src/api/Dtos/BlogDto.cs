@@ -1,7 +1,7 @@
 namespace BikerHub.Dtos;
 
 public sealed record BlogDto(
-    int? Id = null,
+    Guid Id,
     string? Title = null,
     string? Summary = null,
     string? Content = null,

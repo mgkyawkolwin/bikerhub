@@ -8,12 +8,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LookUpController : ControllerBase
+public class LookUpController : BaseController
 {
     private readonly ILookUpService _lookUpService;
     private readonly ILogger<LookUpController> _logger;
 
-    public LookUpController(ILookUpService lookUpService, ILogger<LookUpController> logger)
+    public LookUpController(ILookUpService lookUpService, ILogger<LookUpController> logger) : base(logger)
     {
         _lookUpService = lookUpService;
         _logger = logger;

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BikerHub.Entities;
 
-public class Blog : EntityBase<int>
+public class Blog : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(200)]
@@ -18,6 +18,4 @@ public class Blog : EntityBase<int>
 
     [MaxLength(100)]
     public string? Author { get; set; }
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

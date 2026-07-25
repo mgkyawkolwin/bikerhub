@@ -24,7 +24,7 @@ public class BlogService : IBlogService
 
     public async Task<PaginatedResultDto<BlogDto>> GetBlogsAsync(int page, int pageSize)
     {
-        var query = _dbContext.Blogs.OrderByDescending(blog => blog.CreatedAt);
+        var query = _dbContext.Blogs.OrderByDescending(blog => blog.CreatedAtUtc);
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
@@ -54,7 +54,7 @@ public class BlogService : IBlogService
             Content = dto.Content,
             ImageUrl = dto.ImageUrl,
             Author = dto.Author,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         _dbContext.Blogs.Add(blog);
@@ -71,7 +71,7 @@ public class BlogService : IBlogService
             blog.Content,
             blog.ImageUrl,
             blog.Author,
-            blog.CreatedAt
+            blog.CreatedAtUtc
         );
     }
 }

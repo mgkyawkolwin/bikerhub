@@ -10,12 +10,12 @@ namespace BikerHub.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class MessagesController : ControllerBase
+public class MessagesController : BaseController
 {
     private readonly IMessageService _messageService;
     private readonly ILogger<MessagesController> _logger;
 
-    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger) : base(logger)
     {
         _messageService = messageService;
         _logger = logger;
@@ -27,8 +27,7 @@ public class MessagesController : ControllerBase
         try
         {
             _logger.LogDebug("CALLED: GetMessages(page={Page}, pageSize={PageSize})", page, pageSize);
-            var currentUserId = GetCurrentUserId();
-            var result = await _messageService.GetMessagesAsync(page, pageSize, currentUserId);
+            var result = await _messageService.GetMessagesAsync(page, pageSize, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -44,13 +43,12 @@ public class MessagesController : ControllerBase
     }
 
     [HttpGet("{messageId}")]
-    public async Task<IActionResult> GetMessageById(int messageId)
+    public async Task<IActionResult> GetMessageById(Guid messageId)
     {
         try
         {
             _logger.LogDebug("CALLED: GetMessageById({MessageId})", messageId);
-            var currentUserId = GetCurrentUserId();
-            var message = await _messageService.GetMessageByIdAsync(messageId, currentUserId);
+            var message = await _messageService.GetMessageByIdAsync(messageId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             if (message is null)
             {
                 return NotFound(new { Success = false, Message = "Message not found." });
@@ -71,12 +69,12 @@ public class MessagesController : ControllerBase
     }
 
     [HttpPost("{messageId}/read")]
-    public async Task<IActionResult> MarkAsRead(int messageId)
+    public async Task<IActionResult> MarkAsRead(Guid messageId)
     {
         try
         {
             _logger.LogDebug("CALLED: MarkAsRead({MessageId})", messageId);
-            await _messageService.MarkMessageAsReadAsync(messageId, GetCurrentUserId());
+            await _messageService.MarkMessageAsReadAsync(messageId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -89,10 +87,5 @@ public class MessagesController : ControllerBase
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
-    }
-
-    private string GetCurrentUserId()
-    {
-        return User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
     }
 }

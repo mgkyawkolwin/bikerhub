@@ -7,12 +7,12 @@ namespace BikerHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NewsController : ControllerBase
+public class NewsController : BaseController
 {
     private readonly INewsService _newsService;
     private readonly ILogger<NewsController> _logger;
 
-    public NewsController(INewsService newsService, ILogger<NewsController> logger)
+    public NewsController(INewsService newsService, ILogger<NewsController> logger) : base(logger)
     {
         _newsService = newsService;
         _logger = logger;

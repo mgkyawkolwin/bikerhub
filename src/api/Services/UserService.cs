@@ -21,7 +21,7 @@ public class UserService : IUserService
 
     public async Task<PaginatedResultDto<BikeListingDto>> GetFavoriteListingsAsync(int page, int pageSize, string currentUserId)
     {
-        var query = _dbContext.BikeListings.Where(x => x.IsFavorite).OrderByDescending(x => x.CreatedAt);
+        var query = _dbContext.BikeListings.Where(x => x.IsFavorite).OrderByDescending(x => x.CreatedAtUtc);
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return new PaginatedResultDto<BikeListingDto>(items.Select(Map).ToList(), page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
@@ -59,7 +59,7 @@ public class UserService : IUserService
             entity.IsLiked,
             entity.LikeCount,
             entity.ViewCount,
-            entity.CreatedAt
+            entity.CreatedAtUtc
         );
     }
 }

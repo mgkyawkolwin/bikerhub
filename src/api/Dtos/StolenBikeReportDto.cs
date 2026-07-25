@@ -1,7 +1,7 @@
 namespace BikerHub.Dtos;
 
 public sealed record StolenBikeReportDto(
-    int? Id = null,
+    Guid Id,
     string? Title = null,
     string? Make = null,
     string? Model = null,

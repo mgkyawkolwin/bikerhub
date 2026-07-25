@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace BikerHub.Entities;
 
 [Table("Users")]
-public class UserEntity : EntityBase<Guid>
+public class UserEntity : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(20)]

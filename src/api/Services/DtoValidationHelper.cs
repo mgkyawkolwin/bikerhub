@@ -13,6 +13,14 @@ public static class DtoValidationHelper
         }
     }
 
+    public static void ValidateGuid(Guid? value, string fieldName)
+    {
+        if (value == null || value == Guid.Empty)
+        {
+            throw new CustomException($"{fieldName} is required.");
+        }
+    }
+
     public static void ValidateEmail(string? email, string fieldName = "Email")
     {
         ValidateRequiredString(email, fieldName);

@@ -12,7 +12,7 @@ public sealed record RideLocationDto(
 );
 
 public sealed record RideDto(
-    Guid? Id = null,
+    Guid Id,
     string? Name = null,
     string? Description = null,
     decimal? Distance = null,

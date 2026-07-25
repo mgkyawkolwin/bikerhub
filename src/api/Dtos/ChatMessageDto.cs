@@ -1,15 +1,15 @@
 namespace BikerHub.Dtos;
 
 public sealed record ChatMessageDto(
-    int? Id,
-    string? SenderId,
+    Guid Id,
+    Guid SenderId,
     string? SenderName,
     string? SenderProfilePictureUrl,
-    string? ReceiverId,
+    Guid ReceiverId,
     string? ReceiverName,
     string? ReceiverProfilePictureUrl,
     string? TextMessage,
-    DateTime? MessageDateTimeUTC,
+    DateTime MessageDateTimeUTC,
     bool Sent,
     bool Delivered,
     bool Read
