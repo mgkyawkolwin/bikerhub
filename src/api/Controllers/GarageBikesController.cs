@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
 using BikerHub.Services;
@@ -28,8 +29,9 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetGarageBikes(userId={UserId})", userId);
-
             var garageBikes = await _garageBikeService.GetGarageBikesAsync(userId);
+            _logger.LogTrace("Bikes Count: {Count}", garageBikes.Count());
+            _logger.LogTrace("Sample Data: {Data}", JsonSerializer.Serialize(garageBikes.FirstOrDefault()));
             return Ok(new { Success = true, Data = garageBikes });
         }
         catch (CustomException ex)
@@ -73,7 +75,7 @@ public class GarageBikesController : BaseController
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateGarageBike([FromBody] GarageBike garageBike)
+    public async Task<IActionResult> CreateGarageBike([FromBody] GarageBikeDto garageBike)
     {
         try
         {
@@ -95,7 +97,7 @@ public class GarageBikesController : BaseController
 
     [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateGarageBike(Guid id, [FromBody] GarageBike updatedGarageBike)
+    public async Task<IActionResult> UpdateGarageBike(Guid id, [FromBody] GarageBikeDto updatedGarageBike)
     {
         try
         {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   Alert,
   Image,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
@@ -21,7 +21,7 @@ import SnackBar from '@/components/snackbar';
 import { container } from '@/services';
 import { GarageBikeServiceToken } from '@/services/garageBikeService';
 import type { GarageBikeService } from '@/services/garageBikeService';
-import type { BikeListing, BikeType } from '@/models/marketplace';
+import type { BikeType } from '@/models/marketplace';
 import { GarageBike } from '@/models/garageBike';
 
 const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
@@ -33,6 +33,7 @@ type DropdownField = 'make' | 'model' | 'type' | null;
 export default function AddGarageBikeScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const params = useLocalSearchParams();
   const garageBikeService = useMemo(
     () => container.resolve<GarageBikeService>(GarageBikeServiceToken),
     [],
@@ -40,9 +41,9 @@ export default function AddGarageBikeScreen() {
 
   const { colorScheme, colors } = useThemeContext();
 
-  const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
+  const [editingGarageBike, setEditingGarageBike] = useState<GarageBike | null>(null);
   const [modelYear, setModelYear] = useState('');
   const [cc, setCc] = useState('');
   const [km, setKm] = useState('');
@@ -53,6 +54,51 @@ export default function AddGarageBikeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'title' | 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
 
+  const garageBikeId = Array.isArray(params.garageBikeId) ? params.garageBikeId[0] : params.garageBikeId;
+  const isEditMode = params.mode === 'edit';
+
+  const loadGarageBikeForEdit = useCallback(async () => {
+    if (!isEditMode || !garageBikeId) {
+      setEditingGarageBike(null);
+      return;
+    }
+
+    try {
+      const response = await garageBikeService.getGarageBikeById(garageBikeId);
+      if (!response.ok) {
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        return;
+      }
+
+      const parsedGarageBike = responseJson.data as GarageBike;
+      setEditingGarageBike(parsedGarageBike);
+      setMake(parsedGarageBike.make ?? '');
+      setModel(parsedGarageBike.model ?? '');
+      setModelYear(parsedGarageBike.year?.toString() ?? '');
+      setCc(parsedGarageBike.cc ?? '');
+      setKm(parsedGarageBike.km ?? '');
+      setVin(parsedGarageBike.vin ?? '');
+      setType(parsedGarageBike.type);
+    } catch {
+      setEditingGarageBike(null);
+    }
+  }, [garageBikeId, garageBikeService, isEditMode]);
+
+  useEffect(() => {
+    void loadGarageBikeForEdit();
+  }, [loadGarageBikeForEdit]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isEditMode && garageBikeId) {
+        void loadGarageBikeForEdit();
+      }
+    }, [garageBikeId, isEditMode, loadGarageBikeForEdit]),
+  );
 
   const dropdownItems = useMemo(
     () => ({
@@ -62,28 +108,6 @@ export default function AddGarageBikeScreen() {
     }),
     [],
   );
-
-  const getDropdownLabel = (field: DropdownField) => {
-    if (!field) return t.Title.selectOption;
-
-    if (field === 'type') {
-      return type || t.Title.selectOption;
-    }
-
-    if (field === 'make') {
-      return make || t.Title.selectOption;
-    }
-
-    if (field === 'model') {
-      return model || t.Title.selectOption;
-    }
-
-    return t.Title.selectOption;
-  };
-
-  const addPhoto = useCallback((uri: string) => {
-    setPhotos((prev) => [uri, ...prev]);
-  }, []);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
@@ -132,7 +156,6 @@ export default function AddGarageBikeScreen() {
   const validateForm = () => {
     const nextErrors: typeof errors = {};
 
-    if (!title.trim()) nextErrors.title = `${t.Title.bikeTitle} is required.`;
     if (!make) nextErrors.make = `${t.Title.make} is required.`;
     if (!model) nextErrors.model = `${t.Title.model} is required.`;
     if (!modelYear.trim()) nextErrors.year = `${t.Title.modelYear} is required.`;
@@ -141,8 +164,8 @@ export default function AddGarageBikeScreen() {
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-        SnackBar.Error(t.Text.requiredFields);
-        return false;
+      SnackBar.Error(t.Text.requiredFields);
+      return false;
     }
 
     return true;
@@ -155,11 +178,11 @@ export default function AddGarageBikeScreen() {
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: false })
       : await ImagePicker.launchImageLibraryAsync({
-          quality: 0.6,
-          allowsEditing: false,
-          allowsMultipleSelection: true,
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        });
+        quality: 0.6,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
 
     const imageResult = result as ImagePicker.ImagePickerResult;
     const assets = Array.isArray(imageResult.assets) ? imageResult.assets : [];
@@ -179,7 +202,6 @@ export default function AddGarageBikeScreen() {
 
     try {
       const garageBike: GarageBike = {
-        title: title.trim(),
         make,
         model,
         year: Number(modelYear),
@@ -188,6 +210,18 @@ export default function AddGarageBikeScreen() {
         vin: vin.trim(),
         type,
       };
+
+      if (isEditMode && editingGarageBike?.id) {
+        const response = await garageBikeService.updateGarageBike(editingGarageBike.id, garageBike);
+        if (!response.ok) {
+          SnackBar.Error(`${response.status}: ${response.statusText}. Request failed. Please try again.`);
+          return;
+        }
+
+        SnackBar.Success('Garage bike updated successfully.');
+        setTimeout(() => router.back(), 1000);
+        return;
+      }
 
       const response = await garageBikeService.createGarageBike(garageBike);
       if (!response.ok) {
@@ -224,7 +258,7 @@ export default function AddGarageBikeScreen() {
 
       SnackBar.Success(t.Text.postSuccess);
       setTimeout(() => router.back(), 1000);
-    } catch (error) {
+    } catch {
       SnackBar.Error('Unable to submit listing. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -232,208 +266,191 @@ export default function AddGarageBikeScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}> 
+    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.card} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}> 
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.sellBike}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditMode ? 'Edit Bike' : t.Title.sellBike}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={[styles.body, { backgroundColor: colors.background }]}> 
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
           showsVerticalScrollIndicator={false}
         >
+
           <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.bikeTitle || 'Title'}</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              { borderColor: errors.title ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
-            ]}
-            value={title}
-            onChangeText={(value) => {
-              setTitle(value);
-              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
-            }}
-            placeholder={t.Title.bikeTitle || 'Title'}
-            placeholderTextColor={colors.placeholder}
-          />
-          {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.make ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('make')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {make || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.model ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('model')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {model || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
-
-          <View style={styles.fieldHalf}>
-          
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('type')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {type || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
-        </View>
-
-          <View style={styles.fieldHalf}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
-            <TextInput
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
+            <TouchableOpacity
               style={[
-                styles.textInput,
-                { borderColor: errors.year ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                styles.dropdown,
+                { borderColor: errors.make ? '#E85D04' : colors.border, backgroundColor: colors.card },
               ]}
-              value={modelYear}
-              onChangeText={(text) => {
-                setModelYear(text.replace(/[^0-9]/g, ''));
-                if (errors.year) setErrors((prev) => ({ ...prev, year: undefined }));
-              }}
-              placeholder={t.Title.modelYear}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-            {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
-          </View>
-
-          <View style={styles.fieldHalf}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
-            <TextInput
+              onPress={() => setActiveDropdown('make')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.dropdownText, { color: colors.text }]}>
+                {make || t.Title.selectOption}
+              </Text>
+              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
+            </TouchableOpacity>
+            {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
+            <TouchableOpacity
               style={[
-                styles.textInput,
-                { borderColor: errors.cc ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                styles.dropdown,
+                { borderColor: errors.model ? '#E85D04' : colors.border, backgroundColor: colors.card },
               ]}
-              value={cc}
-              onChangeText={(text) => {
-                setCc(text.replace(/[^0-9]/g, ''));
-                if (errors.cc) setErrors((prev) => ({ ...prev, cc: undefined }));
-              }}
-              placeholder={t.Title.cc}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-            {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
-          </View>
-        </View>
+              onPress={() => setActiveDropdown('model')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.dropdownText, { color: colors.text }]}>
+                {model || t.Title.selectOption}
+              </Text>
+              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
+            </TouchableOpacity>
+            {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-            value={km}
-            onChangeText={setKm}
-            placeholder={t.Title.km}
-            placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-          />
-        </View>
+            <View style={styles.fieldHalf}>
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-            value={vin}
-            onChangeText={setVin}
-            placeholder={t.Title.vin}
-            placeholderTextColor={colors.placeholder}
-          />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          
-          <View style={styles.photoHeader}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
-            <View style={styles.photoActions}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
               <TouchableOpacity
-                style={[styles.photoActionButton, { borderColor: colors.border }]}
-                onPress={() => void handleImagePick(true)}
+                style={[
+                  styles.dropdown,
+                  { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
+                ]}
+                onPress={() => setActiveDropdown('type')}
+                activeOpacity={0.8}
               >
-                <MaterialIcons name="photo-camera" size={20} color={colors.text} />
-                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</Text>
+                <Text style={[styles.dropdownText, { color: colors.text }]}>
+                  {type || t.Title.selectOption}
+                </Text>
+                <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.photoActionButton, { borderColor: colors.border }]}
-                onPress={() => void handleImagePick(false)}
-              >
-                <MaterialIcons name="photo-library" size={20} color={colors.text} />
-                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</Text>
-              </TouchableOpacity>
+              {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
+            </View>
+
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: errors.year ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={modelYear}
+                onChangeText={(text) => {
+                  setModelYear(text.replace(/[^0-9]/g, ''));
+                  if (errors.year) setErrors((prev) => ({ ...prev, year: undefined }));
+                }}
+                placeholder={t.Title.modelYear}
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+              />
+              {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
+            </View>
+
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: errors.cc ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={cc}
+                onChangeText={(text) => {
+                  setCc(text.replace(/[^0-9]/g, ''));
+                  if (errors.cc) setErrors((prev) => ({ ...prev, cc: undefined }));
+                }}
+                placeholder={t.Title.cc}
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+              />
+              {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
             </View>
           </View>
 
-          {photos.length ? (
-            <View style={styles.photoGrid}>
-              {photos.map((uri, index) => (
-                <View
-                  key={`${uri}-${index}`}
-                  style={[
-                    styles.photoGridItem,
-                    { backgroundColor: colors.card },
-                    (index + 1) % 3 === 0 ? { marginRight: 0 } : undefined,
-                  ]}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={km}
+              onChangeText={setKm}
+              placeholder={t.Title.km}
+              placeholderTextColor={colors.placeholder}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={vin}
+              onChangeText={setVin}
+              placeholder={t.Title.vin}
+              placeholderTextColor={colors.placeholder}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+
+            <View style={styles.photoHeader}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
+              <View style={styles.photoActions}>
+                <TouchableOpacity
+                  style={[styles.photoActionButton, { borderColor: colors.border }]}
+                  onPress={() => void handleImagePick(true)}
                 >
-                  <Image source={{ uri }} style={styles.photoThumb} />
-                  <TouchableOpacity style={styles.photoRemove} onPress={() => removePhoto(index)} hitSlop={10}>
-                    <MaterialIcons name="close" size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                  <MaterialIcons name="photo-camera" size={20} color={colors.text} />
+                  <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.photoActionButton, { borderColor: colors.border }]}
+                  onPress={() => void handleImagePick(false)}
+                >
+                  <MaterialIcons name="photo-library" size={20} color={colors.text} />
+                  <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : (
-            <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}> 
-              <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
-            </View>
-          )}
-        </View>
+
+            {photos.length ? (
+              <View style={styles.photoGrid}>
+                {photos.map((uri, index) => (
+                  <View
+                    key={`${uri}-${index}`}
+                    style={[
+                      styles.photoGridItem,
+                      { backgroundColor: colors.card },
+                      (index + 1) % 3 === 0 ? { marginRight: 0 } : undefined,
+                    ]}
+                  >
+                    <Image source={{ uri }} style={styles.photoThumb} />
+                    <TouchableOpacity style={styles.photoRemove} onPress={() => removePhoto(index)} hitSlop={10}>
+                      <MaterialIcons name="close" size={16} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}>
+                <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
+              </View>
+            )}
+          </View>
         </ScrollView>
 
-        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}> 
+        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity
             style={[styles.postButton, { backgroundColor: colors.button }]}
             onPress={handlePost}
             disabled={isSubmitting}
           >
-            <Text style={[styles.postButtonText, { color: colors.buttonText }]}>{t.Title.post}</Text>
+            <Text style={[styles.postButtonText, { color: colors.buttonText }]}>{isEditMode ? 'Update' : t.Title.post}</Text>
           </TouchableOpacity>
         </View>
 
@@ -441,7 +458,7 @@ export default function AddGarageBikeScreen() {
 
       <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
         <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} onPress={() => setActiveDropdown(null)} />
-        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}> 
+        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}>
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>

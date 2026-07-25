@@ -1,8 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
@@ -43,7 +42,7 @@ export default function SocialGarageScreen() {
         return;
       }
 
-      const items = Array.isArray(responseJson.Data) ? responseJson.Data : [];
+      const items = Array.isArray(responseJson.data) ? responseJson.data : [];
       setGarageBikes(items);
     } finally {
       setLoading(false);
@@ -62,22 +61,39 @@ export default function SocialGarageScreen() {
     void loadGarageBikes();
   };
 
+  const handleOpenGarageBike = (item: GarageBike) => {
+    router.push({
+      pathname: '/social/garagebike' as never,
+      params: {
+        garageBikeId: item.id,
+      } as never,
+    });
+  };
+
+  const getPrimaryImageUri = (item: GarageBike) => {
+    const firstImage = item.images?.[0];
+    if (typeof firstImage === 'string') {
+      return firstImage;
+    }
+    if (firstImage && typeof firstImage === 'object' && 'url' in firstImage) {
+      return String((firstImage as { url?: string }).url || '');
+    }
+    return 'https://placehold.co/600x400/png?text=No+Image';
+  };
+
   const renderGarageBike = ({ item }: { item: GarageBike }) => (
     <TouchableOpacity
       activeOpacity={0.8}
       style={[styles.bikeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => {}}
+      onPress={() => handleOpenGarageBike(item)}
     >
       <Image
-        source={{ uri: item.images?.[0] || 'https://placehold.co/600x400/png?text=No+Image' }}
+        source={{ uri: getPrimaryImageUri(item) }}
         style={styles.bikeImage}
       />
       <View style={styles.bikeInfo}>
         <Text style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={[styles.bikeMeta, { color: colors.secondaryText }]} numberOfLines={1}>
-          {item.make} {item.model}
+          {item.make} {item.model} {item.year}
         </Text>
       </View>
     </TouchableOpacity>
@@ -93,12 +109,12 @@ export default function SocialGarageScreen() {
           <Text style={[styles.title, { color: colors.text }]}>Garage</Text>
           {isOwnGarage ? (
             <TouchableOpacity
-              style={[styles.addButton, { borderColor: colors.accent }]}
+              style={[styles.addButton, { backgroundColor: colors.accent }]}
               activeOpacity={0.8}
               onPress={() => router.push('/social/addGarageBike' as never)}
             >
-              <MaterialIcons name="add" size={16} color={colors.accent} />
-              <Text style={[styles.addButtonText, { color: colors.accent }]}>Add Bike</Text>
+              <MaterialIcons name="add" size={16} color={colors.text} />
+              <Text style={[styles.addButtonText, { color: colors.text }]}>Add Bike</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.headerSpacer} />
@@ -150,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
+    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
@@ -166,7 +182,7 @@ const styles = StyleSheet.create({
   bikeCard: {
     width: '100%',
     marginBottom: 12,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },

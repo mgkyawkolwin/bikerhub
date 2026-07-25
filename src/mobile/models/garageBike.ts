@@ -1,15 +1,15 @@
 import type { BikeType } from '../constants/bikeType';
+import { Media } from './media';
 
 export class GarageBike {
   id?: string;
-  title?: string;
   make?: string;
   model?: string;
   year?: number;
   cc?: string;
   type?: BikeType;
-  images?: string[];
-  mileage?: string;
+  images?: Media[];
   km?: string;
   vin?: string;
+  createdById?: string;
 }

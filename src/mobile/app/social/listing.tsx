@@ -47,13 +47,15 @@ export default function SocialListingScreen() {
       try {
         const response = await marketplaceService.getListings(filter, 1, 10);
         if (!response.ok) {
-          SnackBar.Error(
-            'Failed to load listings.'
-          );
+          SnackBar.Error(`${response.status}: ${response.statusText}. Request failed. Please try again.`);
           return;
         }
-        const result = await response.json() as { items: BikeListing[]; totalCount: number };
-        setListings(result.items.filter((item) => item.sellerId === userId));
+        const responseJson = await response.json() as { items: BikeListing[]; totalCount: number };
+        if (!responseJson.items || !Array.isArray(responseJson.items)) {
+          SnackBar.Error('Invalid response from server. Please try again.');
+          return;
+        }
+        setListings(responseJson.items.filter((item) => item.sellerId === userId));
       } catch (error) {
         SnackBar.Error(
           'Failed to load listings.'

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BikerHub.Data;
+using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
 using BikerHub.Models;
@@ -11,12 +12,12 @@ namespace BikerHub.Services;
 
 public interface IGarageBikeService
 {
-    Task<IEnumerable<GarageBike>> GetGarageBikesAsync(Guid userId);
-    Task<GarageBike?> GetGarageBikeByIdAsync(Guid id);
-    Task<GarageBike> CreateGarageBikeAsync(GarageBike garageBike, Guid currentUserId);
-    Task<GarageBike?> UpdateGarageBikeAsync(Guid id, GarageBike updatedGarageBike, Guid currentUserId);
-    Task<GarageBike?> DeleteGarageBikeAsync(Guid id);
-    Task<GarageBike?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId);
+    Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId);
+    Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id);
+    Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId);
+    Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId);
+    Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id);
+    Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId);
 }
 
 public class GarageBikeService : IGarageBikeService
@@ -32,31 +33,42 @@ public class GarageBikeService : IGarageBikeService
         _minioSettings = minioOptions?.Value;
     }
 
-    public async Task<IEnumerable<GarageBike>> GetGarageBikesAsync(Guid userId)
+    public async Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId)
     {
-        IQueryable<GarageBike> query = _dbContext.GarageBikes.AsNoTracking();
-
+        IQueryable<GarageBikeEntity> query = _dbContext.GarageBikes.Include(bike => bike.Images).AsNoTracking();
         query = query.Where(x => x.CreatedById == userId);
-
-        return await query.OrderByDescending(x => x.CreatedAtUtc).ToListAsync();
+        var garageBikes = await query.ToListAsync();
+        return [.. garageBikes.Select(MapToDto)];
     }
 
-    public async Task<GarageBike?> GetGarageBikeByIdAsync(Guid id)
+    public async Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id)
     {
-        return await _dbContext.GarageBikes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        return MapToDto(await _dbContext.GarageBikes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id));
     }
 
-    public async Task<GarageBike> CreateGarageBikeAsync(GarageBike garageBike, Guid currentUserId)
+    public async Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId)
     {
-        garageBike.CreatedAtUtc = DateTime.UtcNow;
-        garageBike.UpdatedAtUtc = DateTime.UtcNow;
-        // garageBike.CreatedById = currentUserId;
-        _dbContext.GarageBikes.Add(garageBike);
+        var garageBikeEntity = new GarageBikeEntity
+        {
+            Id = garageBike.Id != Guid.Empty ? garageBike.Id : Guid.NewGuid(),
+            Make = garageBike.Make,
+            Model = garageBike.Model,
+            Year = garageBike.Year,
+            Cc = garageBike.Cc,
+            Type = garageBike.Type,
+            Km = garageBike.Km,
+            Vin = garageBike.Vin,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = currentUserId,
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = currentUserId
+        };
+        _dbContext.GarageBikes.Add(garageBikeEntity);
         await _dbContext.SaveChangesAsync();
-        return garageBike;
+        return MapToDto(garageBikeEntity);
     }
 
-    public async Task<GarageBike?> UpdateGarageBikeAsync(Guid id, GarageBike updatedGarageBike, Guid currentUserId)
+    public async Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == id);
         if (garageBike is null)
@@ -64,23 +76,20 @@ public class GarageBikeService : IGarageBikeService
             return null;
         }
 
-        garageBike.Title = updatedGarageBike.Title;
         garageBike.Make = updatedGarageBike.Make;
         garageBike.Model = updatedGarageBike.Model;
         garageBike.Year = updatedGarageBike.Year;
         garageBike.Cc = updatedGarageBike.Cc;
         garageBike.Type = updatedGarageBike.Type;
-        garageBike.ImagesJson = updatedGarageBike.ImagesJson;
-        garageBike.Mileage = updatedGarageBike.Mileage;
         garageBike.Km = updatedGarageBike.Km;
         garageBike.Vin = updatedGarageBike.Vin;
         garageBike.UpdatedAtUtc = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync();
-        return garageBike;
+        return MapToDto(garageBike);
     }
 
-    public async Task<GarageBike?> DeleteGarageBikeAsync(Guid id)
+    public async Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == id);
         if (garageBike is null)
@@ -90,37 +99,33 @@ public class GarageBikeService : IGarageBikeService
 
         _dbContext.GarageBikes.Remove(garageBike);
         await _dbContext.SaveChangesAsync();
-        return garageBike;
+        return MapToDto(garageBike);
     }
 
-    public async Task<GarageBike?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId)
+    public async Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId)
     {
         if (_storageService is null || _minioSettings is null)
         {
             throw new InvalidOperationException("Storage service is not configured.");
         }
 
-        var garageBike = await _dbContext.GarageBikes.FindAsync(garageBikeId);
-        if (garageBike is null)
-        {
-            throw new CustomException("Garage bike not found.");
-        }
-
+        var garageBike = await _dbContext.GarageBikes.FindAsync(garageBikeId) ?? throw new CustomException("Garage bike not found.");
         var objectName = await _storageService.UploadFileAsync(file);
-        var url = BuildObjectUrl(objectName);
 
-        var images = string.IsNullOrWhiteSpace(garageBike.ImagesJson)
-            ? new List<string>()
-            : JsonSerializer.Deserialize<List<string>>(garageBike.ImagesJson) ?? new List<string>();
-
-        images.Add(url);
-        garageBike.ImagesJson = JsonSerializer.Serialize(images);
-        garageBike.UpdatedAtUtc = DateTime.UtcNow;
-        // garageBike.UpdatedById = currentUserId;
-
-        _dbContext.GarageBikes.Update(garageBike);
+        var media = new MediaEntity
+        {
+            OwnerId = garageBike.Id,
+            ObjectName = objectName,
+            ContentType = file.ContentType,
+            Size = file.Length,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = currentUserId,
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = currentUserId
+        };
+        _dbContext.Medias.Add(media);
         await _dbContext.SaveChangesAsync();
-        return garageBike;
+        return MapToDto(garageBike);
     }
 
     private string BuildObjectUrl(string objectName)
@@ -136,5 +141,34 @@ public class GarageBikeService : IGarageBikeService
         }
 
         return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
+    }
+
+    private GarageBikeDto MapToDto(GarageBikeEntity? garageBike)
+    {
+        if (garageBike is null)
+        {
+            return null!;
+        }
+        return new GarageBikeDto
+        {
+            Id = garageBike.Id,
+            Make = garageBike.Make,
+            Model = garageBike.Model,
+            Year = garageBike.Year,
+            Cc = garageBike.Cc,
+            Type = garageBike.Type,
+            Km = garageBike.Km,
+            Vin = garageBike.Vin,
+            CreatedById = garageBike.CreatedById,
+            Images = [.. garageBike.Images.Select(image => new MediaDto
+            {
+                Id = image.Id,
+                OwnerId = image.OwnerId,
+                ObjectName = image.ObjectName,
+                ContentType = image.ContentType,
+                Size = image.Size,
+                Url = BuildObjectUrl(image.ObjectName),
+            })]
+        };
     }
 }

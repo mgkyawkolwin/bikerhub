@@ -30,7 +30,8 @@ public class AppDbContext : DbContext
     public DbSet<StolenBikeReport> StolenBikeReports => Set<StolenBikeReport>();
     public DbSet<FriendRequestEntity> FriendRequests => Set<FriendRequestEntity>();
     public DbSet<LookUpEntity> LookUps => Set<LookUpEntity>();
-    public DbSet<GarageBike> GarageBikes => Set<GarageBike>();
+    public DbSet<GarageBikeEntity> GarageBikes => Set<GarageBikeEntity>();
+    public DbSet<MediaEntity> Medias => Set<MediaEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,7 +42,7 @@ public class AppDbContext : DbContext
             entity.HasOne(profile => profile.User)
                 .WithMany()
                 .HasForeignKey(profile => profile.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Followers relationship - SocialProfile has many User followers
             entity
@@ -53,12 +54,12 @@ public class AppDbContext : DbContext
                         .HasOne<UserEntity>()
                         .WithMany()
                         .HasForeignKey("FollowerUserId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join => join
                         .HasOne<SocialProfileEntity>()
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join =>
                     {
                         join.HasKey("SocialProfileId", "FollowerUserId");
@@ -75,12 +76,12 @@ public class AppDbContext : DbContext
                         .HasOne<UserEntity>()
                         .WithMany()
                         .HasForeignKey("FollowingUserId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join => join
                         .HasOne<SocialProfileEntity>()
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join =>
                     {
                         join.HasKey("SocialProfileId", "FollowingUserId");
@@ -97,12 +98,12 @@ public class AppDbContext : DbContext
                         .HasOne<UserEntity>()
                         .WithMany()
                         .HasForeignKey("FriendUserId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join => join
                         .HasOne<SocialProfileEntity>()
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade),
+                        .OnDelete(DeleteBehavior.NoAction),
                     join =>
                     {
                         join.HasKey("SocialProfileId", "FriendUserId");
@@ -116,7 +117,7 @@ public class AppDbContext : DbContext
                 .HasMany(post => post.Medias)
                 .WithOne(media => media.Post)
                 .HasForeignKey(media => media.PostId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<ChallengeParticipantEntity>(entity =>
@@ -127,12 +128,21 @@ public class AppDbContext : DbContext
             entity.HasOne(participant => participant.Challenge)
                 .WithMany(challenge => challenge.Participants)
                 .HasForeignKey(participant => participant.ChallengeId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(participant => participant.User)
                 .WithMany()
                 .HasForeignKey(participant => participant.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<GarageBikeEntity>(entity =>
+        {
+            entity
+                .HasMany(bike => bike.Images)
+                .WithOne()
+                .HasForeignKey(media => media.OwnerId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
