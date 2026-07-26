@@ -14,6 +14,7 @@ public class HomeController : BaseController
     public HomeController(ILogger<HomeController> logger, IConfiguration configuration) : base(logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     public IActionResult Index()
