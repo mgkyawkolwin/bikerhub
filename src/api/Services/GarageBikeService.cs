@@ -18,6 +18,7 @@ public interface IGarageBikeService
     Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId);
     Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id);
     Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId);
+    Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId, Guid currentUserId);
 }
 
 public class GarageBikeService : IGarageBikeService
@@ -43,7 +44,12 @@ public class GarageBikeService : IGarageBikeService
 
     public async Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id)
     {
-        return MapToDto(await _dbContext.GarageBikes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id));
+        var garageBike = await _dbContext.GarageBikes
+            .AsNoTracking()
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        return MapToDto(garageBike);
     }
 
     public async Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId)
@@ -126,6 +132,43 @@ public class GarageBikeService : IGarageBikeService
         _dbContext.Medias.Add(media);
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBike);
+    }
+
+    public async Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId, Guid currentUserId)
+    {
+        var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == garageBikeId);
+        if (garageBike is null)
+        {
+            throw new CustomException("Garage bike not found.");
+        }
+
+        if (garageBike.CreatedById != currentUserId)
+        {
+            throw new CustomException("Not authorized to delete this media.");
+        }
+
+        var media = await _dbContext.Medias.FirstOrDefaultAsync(x => x.Id == mediaId && x.OwnerId == garageBike.Id);
+        if (media is null)
+        {
+            throw new CustomException("Media not found.");
+        }
+
+        if (_storageService is not null)
+        {
+            try
+            {
+                await _storageService.DeleteObjectAsync(media.ObjectName);
+            }
+            catch (Exception ex)
+            {
+                // Best effort: continue to remove the DB record even if storage deletion fails.
+                Console.WriteLine($"Failed to delete media object {media.ObjectName}: {ex.Message}");
+            }
+        }
+
+        _dbContext.Medias.Remove(media);
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 
     private string BuildObjectUrl(string objectName)

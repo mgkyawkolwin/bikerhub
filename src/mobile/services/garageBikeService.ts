@@ -10,6 +10,7 @@ export interface GarageBikeService {
   updateGarageBike(id: string, bike: GarageBike): Promise<Response>;
   uploadGarageBikeImage(garageBikeId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   deleteGarageBike(id: string): Promise<Response>;
+  deleteGarageBikeMedia(garageBikeId: string, mediaId: string): Promise<Response>;
 }
 
 function buildGarageQuery(userId?: string): string {
@@ -58,6 +59,12 @@ export class GarageBikeServiceClient implements GarageBikeService {
 
   async deleteGarageBike(id: string): Promise<Response> {
     return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteGarageBikeMedia(garageBikeId: string, mediaId: string): Promise<Response> {
+    return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(garageBikeId)}/media/${encodeURIComponent(mediaId)}`, {
       method: 'DELETE',
     });
   }

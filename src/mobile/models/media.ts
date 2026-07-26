@@ -1,7 +1,6 @@
-import type { BikeType } from '../constants/bikeType';
-
 export class Media {
-  id?: string;
-  objectName?: string;
-  url?: string;
+  id!: string;
+  objectName!: string;
+  url!: string;
+  contentType!: string;
 }

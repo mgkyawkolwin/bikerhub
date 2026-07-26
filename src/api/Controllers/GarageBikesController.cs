@@ -54,6 +54,7 @@ public class GarageBikesController : BaseController
         {
             _logger.LogDebug("CALLED: GetGarageBikeById({GarageBikeId})", id);
             var garageBike = await _garageBikeService.GetGarageBikeByIdAsync(id);
+            _logger.LogDebug("Garage Bike Data: {Data}", JsonSerializer.Serialize(garageBike));
             if (garageBike is null)
             {
                 return NotFound(new { Success = false, Message = "Garage bike not found." });
@@ -173,6 +174,28 @@ public class GarageBikesController : BaseController
         {
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while deleting the garage bike.", Details = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id:guid}/media/{mediaId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteGarageBikeMedia(Guid id, Guid mediaId)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteGarageBikeMedia({GarageBikeId}, {MediaId})", id, mediaId);
+            await _garageBikeService.DeleteGarageBikeMediaAsync(id, mediaId, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while deleting the garage bike media.", Details = ex.Message });
         }
     }
 }

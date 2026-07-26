@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,6 +10,7 @@ import { GarageBikeServiceToken } from '@/services/garageBikeService';
 import type { GarageBikeService } from '@/services/garageBikeService';
 import type { GarageBike } from '@/models/garageBike';
 import SnackBar from '@/components/snackbar';
+import MediaGallery from '@/components/mediaGallery';
 
 export default function GarageBikeDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -95,6 +96,41 @@ export default function GarageBikeDetailScreen() {
     });
   };
 
+  const handleDeleteMedia = async (item: { id?: string; uri?: string; url?: string; contentType?: string; objectName?: string }, index: number) => {
+    if (!garageBike?.id || !item.id) {
+      SnackBar.Error('Unable to delete this photo.');
+      return;
+    }
+
+    Alert.alert('Delete photo', 'Are you sure you want to delete this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const response = await garageBikeService.deleteGarageBikeMedia(garageBike.id!, item.id!);
+            if (!response.ok) {
+              SnackBar.Error('Unable to delete this photo.');
+              return;
+            }
+
+            const responseJson = await response.json();
+            if (!responseJson.success) {
+              SnackBar.Error(responseJson.message || 'Unable to delete this photo.');
+              return;
+            }
+
+            setGarageBike((prev) => prev ? ({ ...prev, images: (prev.images ?? []).filter((_, imageIndex) => imageIndex !== index) }) : prev);
+            SnackBar.Success('Photo deleted.');
+          } catch {
+            SnackBar.Error('Unable to delete this photo.');
+          }
+        },
+      },
+    ]);
+  };
+
   if (!garageBike) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -112,17 +148,6 @@ export default function GarageBikeDetailScreen() {
     );
   }
 
-  const imageUri = (() => {
-    const firstImage = garageBike.images?.[0];
-    if (typeof firstImage === 'string') {
-      return firstImage;
-    }
-    if (firstImage && typeof firstImage === 'object' && 'url' in firstImage) {
-      return String((firstImage as { url?: string }).url || '');
-    }
-    return 'https://placehold.co/600x400/png?text=No+Image';
-  })();
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
@@ -133,7 +158,16 @@ export default function GarageBikeDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}> 
-        <Image source={{ uri: imageUri }} style={styles.image} />
+        <MediaGallery
+          medias={garageBike.images?.map((image) => ({
+            id: image.id,
+            url: image.url,
+            contentType: image.contentType,
+            objectName: image.objectName,
+          })) ?? []}
+          canDelete={isOwner}
+          onDelete={handleDeleteMedia}
+        />
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Bike details</Text>
@@ -204,12 +238,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     gap: 16,
-  },
-  image: {
-    width: '100%',
-    height: 260,
-    borderRadius: 18,
-    backgroundColor: '#E0E0E0',
   },
   card: {
     borderRadius: 18,
