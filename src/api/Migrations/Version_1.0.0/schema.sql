@@ -477,3 +477,4 @@ INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('20260726122343_Ver_1.0.0', '9.0.0');
 
 COMMIT;
+
