@@ -76,7 +76,7 @@ public class MarketplaceController : BaseController
         try
         {
             _logger.LogDebug("CALLED: CreateListing(CreateBikeListingDto: {Dto})", JsonSerializer.Serialize(dto));
-            var listing = await _marketplaceService.CreateListingAsync(dto);
+            var listing = await _marketplaceService.CreateListingAsync(dto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
             return Ok(new { Success = true, Data = listing });
         }
         catch (CustomException ex)
@@ -103,7 +103,7 @@ public class MarketplaceController : BaseController
                 return BadRequest(new { Success = false, Message = "A media file is required." });
             }
 
-            var listing = await _marketplaceService.UploadListingMediaAsync(id, file);
+            var listing = await _marketplaceService.UploadListingMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
             return Ok(new { Success = true, Data = listing });
         }
         catch (CustomException ex)

@@ -11,6 +11,7 @@ import type { AuthService } from '@/services';
 import { GoogleAuthConfig } from '@/services/googleAuthConfig';
 import SnackBar from '@/components/snackbar';
 import appJson from '../../app.json';
+import LoadingOverlay from '@/components/loadingOverlay';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -69,6 +70,7 @@ export default function SignInScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}> 
+      <LoadingOverlay isLoading={loading} />
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <Text style={[styles.title, { color: colors.text }]}>Sign In</Text>
       </View>
@@ -93,7 +95,7 @@ export default function SignInScreen() {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={[styles.buttonText, { color: colors.buttonText }]}>Sign In</Text>
           )}
         </TouchableOpacity>
         {/* <TouchableOpacity
@@ -142,38 +144,35 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
   button: {
     height: 50,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
   googleButton: {
     height: 50,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
-    backgroundColor: '#4285F4',
   },
   registerButton: {
     height: 50,
-    borderRadius: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     backgroundColor: 'transparent',
   },
   registerButtonText: {
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   googleButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Biker Hub",
     "slug": "ride-hub",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "bikerhub",
@@ -44,10 +44,8 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0",
-            "ndkVersion": "30.0.15729638"
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
           },
           "ios": {
             "deploymentTarget": "15.1"

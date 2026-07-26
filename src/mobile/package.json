@@ -1,7 +1,7 @@
 {
   "name": "ride-hub",
   "main": "expo-router/entry",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -31,7 +31,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-location": "~19.0.8",
-    "expo-media-library": "^57.0.3",
+    "expo-media-library": "~18.2.1",
     "expo-module-scripts": "^55.0.2",
     "expo-router": "~6.0.24",
     "expo-screen-orientation": "~9.0.9",

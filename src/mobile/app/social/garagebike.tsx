@@ -154,6 +154,7 @@ export default function GarageBikeDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
+        <Text style={[{ color: colors.accent }]}></Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -162,8 +163,7 @@ export default function GarageBikeDetailScreen() {
           medias={garageBike.images?.map((image) => ({
             id: image.id,
             url: image.url,
-            contentType: image.contentType,
-            objectName: image.objectName,
+            contentType: image.contentType
           })) ?? []}
           canDelete={isOwner}
           onDelete={handleDeleteMedia}
@@ -171,27 +171,27 @@ export default function GarageBikeDetailScreen() {
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Bike details</Text>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>Make</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.make || '—'}</Text>
           </View>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>Model</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.model || '—'}</Text>
           </View>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>Year</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.year || '—'}</Text>
           </View>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>CC</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.cc || '—'}</Text>
           </View>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>Type</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.type || '—'}</Text>
           </View>
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
             <Text style={[styles.label, { color: colors.secondaryText }]}>VIN</Text>
             <Text style={[styles.value, { color: colors.text }]}>{garageBike.vin || '—'}</Text>
           </View>
@@ -240,28 +240,28 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    borderRadius: 18,
-    borderWidth: 1,
+    borderRadius: 8,
     padding: 16,
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
     marginBottom: 4,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 4,
   },
   label: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '600',
     flex: 1,
   },
   value: {
-    fontSize: 14,
+    fontSize: 18,
     flex: 1,
     textAlign: 'right',
   },

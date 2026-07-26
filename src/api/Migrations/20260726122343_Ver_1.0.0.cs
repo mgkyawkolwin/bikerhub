@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BikerHub.Migrations
 {
     /// <inheritdoc />
-    public partial class asd : Migration
+    public partial class Ver_100 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -470,6 +470,34 @@ namespace BikerHub.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Medias",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    OwnerId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    ObjectName = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ContentType = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Size = table.Column<long>(type: "bigint", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    CreatedById = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedById = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    RowVersion = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Medias", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Medias_GarageBikes_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "GarageBikes",
+                        principalColumn: "Id");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "ChallengeParticipants",
                 columns: table => new
                 {
@@ -490,14 +518,12 @@ namespace BikerHub.Migrations
                         name: "FK_ChallengeParticipants_Challenges_ChallengeId",
                         column: x => x.ChallengeId,
                         principalTable: "Challenges",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ChallengeParticipants_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -577,8 +603,7 @@ namespace BikerHub.Migrations
                         name: "FK_SocialProfiles_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -631,14 +656,12 @@ namespace BikerHub.Migrations
                         name: "FK_SocialProfileFollowers_SocialProfiles_SocialProfileId",
                         column: x => x.SocialProfileId,
                         principalTable: "SocialProfiles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_SocialProfileFollowers_Users_FollowerUserId",
                         column: x => x.FollowerUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -656,14 +679,12 @@ namespace BikerHub.Migrations
                         name: "FK_SocialProfileFollowing_SocialProfiles_SocialProfileId",
                         column: x => x.SocialProfileId,
                         principalTable: "SocialProfiles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_SocialProfileFollowing_Users_FollowingUserId",
                         column: x => x.FollowingUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -681,14 +702,12 @@ namespace BikerHub.Migrations
                         name: "FK_SocialProfileFriends_SocialProfiles_SocialProfileId",
                         column: x => x.SocialProfileId,
                         principalTable: "SocialProfiles",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_SocialProfileFriends_Users_FriendUserId",
                         column: x => x.FriendUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -790,8 +809,7 @@ namespace BikerHub.Migrations
                         name: "FK_SocialPostMedias_SocialPosts_PostId",
                         column: x => x.PostId,
                         principalTable: "SocialPosts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -815,6 +833,11 @@ namespace BikerHub.Migrations
                 name: "IX_FriendRequests_ToUserId",
                 table: "FriendRequests",
                 column: "ToUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Medias_OwnerId",
+                table: "Medias",
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SocialPostComments_ParentCommentId",
@@ -899,13 +922,13 @@ namespace BikerHub.Migrations
                 name: "FriendRequests");
 
             migrationBuilder.DropTable(
-                name: "GarageBikes");
-
-            migrationBuilder.DropTable(
                 name: "Groups");
 
             migrationBuilder.DropTable(
                 name: "LookUps");
+
+            migrationBuilder.DropTable(
+                name: "Medias");
 
             migrationBuilder.DropTable(
                 name: "Messages");
@@ -942,6 +965,9 @@ namespace BikerHub.Migrations
 
             migrationBuilder.DropTable(
                 name: "Challenges");
+
+            migrationBuilder.DropTable(
+                name: "GarageBikes");
 
             migrationBuilder.DropTable(
                 name: "SocialPosts");

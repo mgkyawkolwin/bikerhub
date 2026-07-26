@@ -176,7 +176,7 @@ export default function MarketplaceScreen() {
       >
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.make} {item.model} {item.year}</Text>
             <View style={styles.favoriteWrapper}>
               <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
                 <MaterialIcons

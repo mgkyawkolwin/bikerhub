@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -18,16 +18,19 @@ import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import SnackBar from '@/components/snackbar';
+import AutoCompleteTextInput from '@/components/autoCompleteTextInput';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, BikeType } from '@/models/marketplace';
+import { LookupService, LookupServiceToken } from '@/services/lookupService';
+import Lookup from '@/models/lookup';
 
-const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
+// const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
 const MODELS = ['MT-15', 'CB500X', 'Classic 350', 'Z650', 'R NineT', 'V-Strom 650', 'Monster 797', 'CB300R', '390 Duke', 'Tiger 900'] as const;
 const TYPES: BikeType[] = ['Cruiser', 'Sport', 'Standard', 'Adventure', 'Touring', 'Custom'];
 
-type DropdownField = 'make' | 'model' | 'type' | null;
+type DropdownField = 'model' | 'type' | null;
 
 export default function MarketplaceCreateScreen() {
   const insets = useSafeAreaInsets();
@@ -36,10 +39,14 @@ export default function MarketplaceCreateScreen() {
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
   );
+  const lookupService = useMemo(
+    () => container.resolve<LookupService>(LookupServiceToken),
+    [],
+  );
 
   const { colorScheme, colors } = useThemeContext();
 
-  const [title, setTitle] = useState('');
+  const [title] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [modelYear, setModelYear] = useState('');
@@ -51,39 +58,19 @@ export default function MarketplaceCreateScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<'title' | 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [types, setTypes] = useState<BikeType[]>([]);
 
 
   const dropdownItems = useMemo(
     () => ({
-      make: MAKES,
       model: MODELS,
       type: TYPES,
     }),
     [],
   );
-
-  const getDropdownLabel = (field: DropdownField) => {
-    if (!field) return t.Title.selectOption;
-
-    if (field === 'type') {
-      return type || t.Title.selectOption;
-    }
-
-    if (field === 'make') {
-      return make || t.Title.selectOption;
-    }
-
-    if (field === 'model') {
-      return model || t.Title.selectOption;
-    }
-
-    return t.Title.selectOption;
-  };
-
-  const addPhoto = useCallback((uri: string) => {
-    setPhotos((prev) => [uri, ...prev]);
-  }, []);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
@@ -132,7 +119,6 @@ export default function MarketplaceCreateScreen() {
   const validateForm = () => {
     const nextErrors: typeof errors = {};
 
-    if (!title.trim()) nextErrors.title = `${t.Title.bikeTitle} is required.`;
     if (!make) nextErrors.make = `${t.Title.make} is required.`;
     if (!model) nextErrors.model = `${t.Title.model} is required.`;
     if (!modelYear.trim()) nextErrors.year = `${t.Title.modelYear} is required.`;
@@ -142,8 +128,8 @@ export default function MarketplaceCreateScreen() {
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-        SnackBar.Error(t.Text.requiredFields);
-        return false;
+      SnackBar.Error(t.Text.requiredFields);
+      return false;
     }
 
     return true;
@@ -156,11 +142,11 @@ export default function MarketplaceCreateScreen() {
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: false })
       : await ImagePicker.launchImageLibraryAsync({
-          quality: 0.6,
-          allowsEditing: false,
-          allowsMultipleSelection: true,
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        });
+        quality: 0.6,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
 
     const imageResult = result as ImagePicker.ImagePickerResult;
     const assets = Array.isArray(imageResult.assets) ? imageResult.assets : [];
@@ -231,17 +217,68 @@ export default function MarketplaceCreateScreen() {
 
       SnackBar.Success(t.Text.postSuccess);
       setTimeout(() => router.replace('/marketplace'), 1000);
-    } catch (error) {
+    } catch {
       SnackBar.Error('Unable to submit listing. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleMakeTextChange = async (text: string) => {
+    setMake(text);
+    const response = await lookupService.getLookup('MAKE', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setMakes(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleModelTextChange = async (text: string) => {
+    setModel(text);
+    const response = await lookupService.getLookup(make, '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setModels(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleTypeTextChange = async (text: string) => {
+    setType(text);
+    const response = await lookupService.getLookup('BIKE_TYPE', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setTypes(lookups.map((lookup) => lookup.value));
+  }
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}> 
+    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.card} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}> 
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
@@ -249,211 +286,199 @@ export default function MarketplaceCreateScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={[styles.body, { backgroundColor: colors.background }]}> 
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.bikeTitle || 'Title'}</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              { borderColor: errors.title ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
-            ]}
-            value={title}
-            onChangeText={(value) => {
-              setTitle(value);
-              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
-            }}
-            placeholder={t.Title.bikeTitle || 'Title'}
-            placeholderTextColor={colors.placeholder}
-          />
-          {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.make ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('make')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {make || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.model ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('model')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {model || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
-
-          <View style={styles.fieldHalf}>
-          
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdown,
-              { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
-            ]}
-            onPress={() => setActiveDropdown('type')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}> 
-              {type || t.Title.selectOption}
-            </Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-          {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
-        </View>
-
-          <View style={styles.fieldHalf}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
-            <TextInput
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make} *</Text>
+            <AutoCompleteTextInput
+              value={make}
+              onBlur={() => setMakes([])}
+              onTextChange={(text) => {
+                handleMakeTextChange(text);
+                if (errors.make) setErrors((prev) => ({ ...prev, make: undefined }));
+              }}
+              suggestions={makes}
+              placeholder={t.Title.make}
+              placeholderTextColor={colors.placeholder}
               style={[
                 styles.textInput,
-                { borderColor: errors.year ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                { borderColor: errors.make ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              value={modelYear}
-              onChangeText={(text) => {
-                setModelYear(text.replace(/[^0-9]/g, ''));
-                if (errors.year) setErrors((prev) => ({ ...prev, year: undefined }));
-              }}
-              placeholder={t.Title.modelYear}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
             />
-            {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
-          </View>
-
-          <View style={styles.fieldHalf}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
-            <TextInput
+            {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model} *</Text>
+            <AutoCompleteTextInput
+              value={model}
+              onBlur={() => setModels([])}
+              onTextChange={(text) => {
+                handleModelTextChange(text);
+                if (errors.model) setErrors((prev) => ({ ...prev, model: undefined }));
+              }}
+              suggestions={models}
+              placeholder={t.Title.model}
+              placeholderTextColor={colors.placeholder}
               style={[
                 styles.textInput,
-                { borderColor: errors.cc ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                { borderColor: errors.model ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              value={cc}
-              onChangeText={(text) => {
-                setCc(text.replace(/[^0-9]/g, ''));
-                if (errors.cc) setErrors((prev) => ({ ...prev, cc: undefined }));
-              }}
-              placeholder={t.Title.cc}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
             />
-            {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
-          </View>
-        </View>
+            {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.price}</Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              { borderColor: errors.price ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
-            ]}
-            value={price}
-            onChangeText={(text) => {
-              setPrice(text.replace(/[^0-9]/g, ''));
-              if (errors.price) setErrors((prev) => ({ ...prev, price: undefined }));
-            }}
-            placeholder={t.Title.price}
-            placeholderTextColor={colors.placeholder}
-            keyboardType="number-pad"
-          />
-          {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
-        </View>
+            <View style={styles.fieldHalf}>
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-            value={km}
-            onChangeText={setKm}
-            placeholder={t.Title.km}
-            placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-          />
-        </View>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type} *</Text>
+              <AutoCompleteTextInput
+              value={type}
+              onBlur={() => setTypes([])}
+              onTextChange={(text) => {
+                handleTypeTextChange(text);
+                if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }));
+              }}
+              suggestions={types}
+              placeholder={t.Title.type}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.type ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
+              {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
+            </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-            value={vin}
-            onChangeText={setVin}
-            placeholder={t.Title.vin}
-            placeholderTextColor={colors.placeholder}
-          />
-        </View>
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear} *</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: errors.year ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={modelYear}
+                onChangeText={(text) => {
+                  setModelYear(text.replace(/[^0-9]/g, ''));
+                  if (errors.year) setErrors((prev) => ({ ...prev, year: undefined }));
+                }}
+                placeholder={t.Title.modelYear}
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+              />
+              {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
+            </View>
 
-        <View style={styles.fieldGroup}>
-          
-          <View style={styles.photoHeader}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
-            <View style={styles.photoActions}>
-              <TouchableOpacity
-                style={[styles.photoActionButton, { borderColor: colors.border }]}
-                onPress={() => void handleImagePick(true)}
-              >
-                <MaterialIcons name="photo-camera" size={20} color={colors.text} />
-                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.photoActionButton, { borderColor: colors.border }]}
-                onPress={() => void handleImagePick(false)}
-              >
-                <MaterialIcons name="photo-library" size={20} color={colors.text} />
-                <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</Text>
-              </TouchableOpacity>
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc} *</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: errors.cc ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={cc}
+                onChangeText={(text) => {
+                  setCc(text.replace(/[^0-9]/g, ''));
+                  if (errors.cc) setErrors((prev) => ({ ...prev, cc: undefined }));
+                }}
+                placeholder={t.Title.cc}
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+              />
+              {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
             </View>
           </View>
 
-          {photos.length ? (
-            <View style={styles.photoGrid}>
-              {photos.map((uri, index) => (
-                <View
-                  key={`${uri}-${index}`}
-                  style={[
-                    styles.photoGridItem,
-                    { backgroundColor: colors.card },
-                    (index + 1) % 3 === 0 ? { marginRight: 0 } : undefined,
-                  ]}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.price} *</Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                { borderColor: errors.price ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+              value={price}
+              onChangeText={(text) => {
+                setPrice(text.replace(/[^0-9]/g, ''));
+                if (errors.price) setErrors((prev) => ({ ...prev, price: undefined }));
+              }}
+              placeholder={t.Title.price}
+              placeholderTextColor={colors.placeholder}
+              keyboardType="number-pad"
+            />
+            {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={km}
+              onChangeText={setKm}
+              placeholder={t.Title.km}
+              placeholderTextColor={colors.placeholder}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={vin}
+              onChangeText={setVin}
+              placeholder={t.Title.vin}
+              placeholderTextColor={colors.placeholder}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+
+            <View style={styles.photoHeader}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
+              <View style={styles.photoActions}>
+                <TouchableOpacity
+                  style={[styles.photoActionButton, { borderColor: colors.border }]}
+                  onPress={() => void handleImagePick(true)}
                 >
-                  <Image source={{ uri }} style={styles.photoThumb} />
-                  <TouchableOpacity style={styles.photoRemove} onPress={() => removePhoto(index)} hitSlop={10}>
-                    <MaterialIcons name="close" size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                  <MaterialIcons name="photo-camera" size={20} color={colors.text} />
+                  <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.camera}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.photoActionButton, { borderColor: colors.border }]}
+                  onPress={() => void handleImagePick(false)}
+                >
+                  <MaterialIcons name="photo-library" size={20} color={colors.text} />
+                  <Text style={[styles.photoActionLabel, { color: colors.text }]}>{t.Title.gallery}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : (
-            <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}> 
-              <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
-            </View>
-          )}
-        </View>
+
+            {photos.length ? (
+              <View style={styles.photoGrid}>
+                {photos.map((uri, index) => (
+                  <View
+                    key={`${uri}-${index}`}
+                    style={[
+                      styles.photoGridItem,
+                      { backgroundColor: colors.card },
+                      (index + 1) % 3 === 0 ? { marginRight: 0 } : undefined,
+                    ]}
+                  >
+                    <Image source={{ uri }} style={styles.photoThumb} />
+                    <TouchableOpacity style={styles.photoRemove} onPress={() => removePhoto(index)} hitSlop={10}>
+                      <MaterialIcons name="close" size={16} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}>
+                <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
+              </View>
+            )}
+          </View>
         </ScrollView>
 
-        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}> 
+        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity
             style={[styles.postButton, { backgroundColor: colors.button }]}
             onPress={handlePost}
@@ -467,7 +492,7 @@ export default function MarketplaceCreateScreen() {
 
       <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
         <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} onPress={() => setActiveDropdown(null)} />
-        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}> 
+        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}>
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
@@ -480,7 +505,6 @@ export default function MarketplaceCreateScreen() {
                 key={option}
                 style={[styles.sheetItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
-                  if (activeDropdown === 'make') setMake(option as string);
                   if (activeDropdown === 'model') setModel(option as string);
                   if (activeDropdown === 'type') setType(option as BikeType);
                   setActiveDropdown(null);

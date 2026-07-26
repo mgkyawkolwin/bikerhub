@@ -14,8 +14,8 @@ public interface IMarketplaceService
 {
     Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize);
     Task<BikeListingDto?> GetListingByIdAsync(int id);
-    Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto);
-    Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file);
+    Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto, Guid currentUserId);
+    Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file, Guid currentUserId);
     Task ToggleFavoriteAsync(int listingId);
     Task ToggleLikeAsync(int listingId);
     Task<IEnumerable<BikeListingDto>> GetFavoritesAsync();
@@ -27,12 +27,14 @@ public class MarketplaceService : IMarketplaceService
     private readonly AppDbContext _dbContext;
     private readonly IStorageService? _storageService;
     private readonly MinioSettings? _minioSettings;
+    private readonly ILogger<MarketplaceService> _logger;   
 
-    public MarketplaceService(AppDbContext dbContext, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
+    public MarketplaceService(AppDbContext dbContext, ILogger<MarketplaceService> logger, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
     {
         _dbContext = dbContext;
         _storageService = storageService;
         _minioSettings = minioOptions?.Value;
+        _logger = logger;
     }
 
     public async Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize)
@@ -66,9 +68,9 @@ public class MarketplaceService : IMarketplaceService
         return listing is null ? null : Map(listing);
     }
 
-    public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto)
+    public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto, Guid currentUserId)
     {
-        DtoValidationHelper.ValidateRequiredString(dto.Title, "Title");
+        DtoValidationHelper.ValidateRequiredString(dto.Make, "Make");
 
         var entity = new BikeListing
         {
@@ -88,14 +90,70 @@ public class MarketplaceService : IMarketplaceService
             Vin = dto.Vin,
             Description = dto.Description,
             CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = currentUserId,
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = currentUserId
         };
 
         _dbContext.BikeListings.Add(entity);
+
+        // Save make and model to look if not exists
+        var existingMake = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "MAKE" && x.Value == dto.Make);
+        _logger.LogTrace("Existing make: {ExistingMake}", JsonSerializer.Serialize(existingMake));
+        if (existingMake is null)
+        {
+            var newMake = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "MAKE",
+                Code = dto.Make.ToUpperInvariant(),
+                Value = dto.Make,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newMake);
+        }
+        var existingModel = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == dto.Make && x.Value == dto.Model);
+        _logger.LogTrace("Existing model: {ExistingModel}", JsonSerializer.Serialize(existingModel));
+        if (existingModel is null)
+        {
+            var newModel = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = dto.Make,
+                Code = dto.Model.ToUpperInvariant(),
+                Value = dto.Model,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newModel);
+        }
+        var existingType = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "BIKE_TYPE" && x.Value == dto.Type);
+        _logger.LogTrace("Existing type: {ExistingType}", JsonSerializer.Serialize(existingType));
+        if (existingType is null)
+        {
+            var newType = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "BIKE_TYPE",
+                Code = dto.Type.ToUpperInvariant(),
+                Value = dto.Type,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newType);
+        }
         await _dbContext.SaveChangesAsync();
         return Map(entity);
     }
 
-    public async Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file)
+    public async Task<BikeListingDto> UploadListingMediaAsync(int listingId, IFormFile file, Guid currentUserId)
     {
         if (_storageService is null || _minioSettings is null)
             throw new InvalidOperationException("Storage service is not configured.");

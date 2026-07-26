@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260725111919_asd")]
-    partial class asd
+    [Migration("20260726122343_Ver_1.0.0")]
+    partial class Ver_100
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -469,7 +469,7 @@ namespace BikerHub.Migrations
                     b.ToTable("FriendRequests");
                 });
 
-            modelBuilder.Entity("BikerHub.Entities.GarageBike", b =>
+            modelBuilder.Entity("BikerHub.Entities.GarageBikeEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -620,6 +620,49 @@ namespace BikerHub.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LookUps");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.MediaEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ObjectName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Medias");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Message", b =>
@@ -1249,13 +1292,13 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.Challenge", "Challenge")
                         .WithMany("Participants")
                         .HasForeignKey("ChallengeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BikerHub.Entities.UserEntity", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Challenge");
@@ -1280,6 +1323,15 @@ namespace BikerHub.Migrations
                     b.Navigation("FromUser");
 
                     b.Navigation("ToUser");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.MediaEntity", b =>
+                {
+                    b.HasOne("BikerHub.Entities.GarageBikeEntity", null)
+                        .WithMany("Images")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>
@@ -1346,7 +1398,7 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.SocialPostEntity", "Post")
                         .WithMany("Medias")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Post");
@@ -1357,7 +1409,7 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.UserEntity", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -1368,13 +1420,13 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.UserEntity", null)
                         .WithMany()
                         .HasForeignKey("FollowerUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 
@@ -1383,13 +1435,13 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.UserEntity", null)
                         .WithMany()
                         .HasForeignKey("FollowingUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 
@@ -1398,19 +1450,24 @@ namespace BikerHub.Migrations
                     b.HasOne("BikerHub.Entities.UserEntity", null)
                         .WithMany()
                         .HasForeignKey("FriendUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BikerHub.Entities.SocialProfileEntity", null)
                         .WithMany()
                         .HasForeignKey("SocialProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("BikerHub.Entities.Challenge", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("BikerHub.Entities.GarageBikeEntity", b =>
+                {
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("BikerHub.Entities.SocialPostCommentEntity", b =>

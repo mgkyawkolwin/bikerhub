@@ -11,6 +11,7 @@ import SnackBar from '@/components/snackbar';
 import Logger from '@/logging/logger';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { CreatePostPayload } from '@/models/createPostPayload';
+import LoadingOverlay from '@/components/loadingOverlay';
 
 export default function SocialCreateScreen() {
   const ins = useSafeAreaInsets();
@@ -176,8 +177,9 @@ export default function SocialCreateScreen() {
   }, []);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: ins.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: ins.top }]}>
+      <LoadingOverlay isLoading={isSubmitting} />
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
@@ -226,7 +228,7 @@ export default function SocialCreateScreen() {
         />
 
         {shareUrl ? (
-          <View style={[styles.sharePreview, { borderColor: colors.border, backgroundColor: colors.card }]}> 
+          <View style={[styles.sharePreview, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <Text style={[styles.sharePreviewLabel, { color: colors.secondaryText }]}>Share:</Text>
             <Text style={[styles.sharePreviewUrl, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
               {shareUrl}
@@ -275,31 +277,151 @@ export default function SocialCreateScreen() {
   );
 }
 
+// format following json
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center' },
-  backButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', marginLeft: 12 },
-  headerRight: { marginLeft: 'auto' },
-  postButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18 },
-  postButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  content: { paddingHorizontal: 16, paddingTop: 16, gap: 14 },
-  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 },
-  dropdownValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dropdownValue: { fontSize: 14 },
-  controlsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
-  iconButton: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  textArea: { borderWidth: 1, borderRadius: 20, padding: 16, minHeight: 170, textAlignVertical: 'top', fontSize: 15, backgroundColor: '#FFFFFF' },
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
-  photoWrapper: { width: '48%', aspectRatio: 1, borderRadius: 18, overflow: 'hidden', position: 'relative' },
-  photo: { width: '100%', height: '100%' },
-  photoDelete: { position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  sharePreview: { borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 12 },
-  sharePreviewLabel: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
-  sharePreviewUrl: { fontSize: 14 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  modalSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 24 },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#CCCCCC', alignSelf: 'center', marginBottom: 12 },
-  optionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#99999920' },
-  optionText: { fontSize: 16, fontWeight: '600' },
+  root: {
+    flex: 1
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  backButton: {
+    padding: 8
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: 12
+  },
+  headerRight: {
+    marginLeft: 'auto'
+  },
+  postButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 8
+  },
+  postButtonText: {
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 14
+  },
+  dropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12
+  },
+  dropdownValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  dropdownValue: {
+    fontSize: 14
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8
+  },
+  iconButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    minHeight: 170,
+    textAlignVertical: 'top',
+    fontSize: 15,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 12
+  },
+  photoWrapper: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  photo: {
+    width: '100%',
+    height: '100%'
+
+  },
+  photoDelete: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  sharePreview: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12
+  },
+  sharePreviewLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4
+  },
+  sharePreviewUrl: {
+    fontSize: 14
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end'
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 24
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '600'
+  },
 });

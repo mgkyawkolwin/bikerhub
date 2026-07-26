@@ -70,6 +70,58 @@ public class GarageBikeService : IGarageBikeService
             UpdatedById = currentUserId
         };
         _dbContext.GarageBikes.Add(garageBikeEntity);
+
+        // save make and model to lookup table if they don't exist
+        var existingMake = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "MAKE" && x.Value == garageBike.Make);
+        if (existingMake is null)
+        {
+            var newMake = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "MAKE",
+                Code = garageBike.Make.ToUpperInvariant(),
+                Value = garageBike.Make,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newMake);
+        }
+        var existingModel = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == garageBike.Make && x.Value == garageBike.Model);
+        if (existingModel is null)
+        {
+            var newModel = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = garageBike.Make,
+                Code = garageBike.Model.ToUpperInvariant(),
+                Value = garageBike.Model,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newModel);
+        }
+        var existingType = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "BIKE_TYPE" && x.Value == garageBike.Type);
+        if (existingType is null)
+        {
+            var newType = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "BIKE_TYPE",
+                Code = garageBike.Type.ToUpperInvariant(),
+                Value = garageBike.Type,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newType);
+        }
+
+
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBikeEntity);
     }
@@ -90,6 +142,55 @@ public class GarageBikeService : IGarageBikeService
         garageBike.Km = updatedGarageBike.Km;
         garageBike.Vin = updatedGarageBike.Vin;
         garageBike.UpdatedAtUtc = DateTime.UtcNow;
+
+        var existingMake = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "MAKE" && x.Value == garageBike.Make);
+        if (existingMake is null)
+        {
+            var newMake = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "MAKE",
+                Code = garageBike.Make.ToUpperInvariant(),
+                Value = garageBike.Make,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newMake);
+        }
+        var existingModel = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == garageBike.Make && x.Value == garageBike.Model);
+        if (existingModel is null)
+        {
+            var newModel = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = garageBike.Make,
+                Code = garageBike.Model.ToUpperInvariant(),
+                Value = garageBike.Model,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newModel);
+        }
+        var existingType = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "BIKE_TYPE" && x.Value == garageBike.Type);
+        if (existingType is null)
+        {
+            var newType = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "BIKE_TYPE",
+                Code = garageBike.Type.ToUpperInvariant(),
+                Value = garageBike.Type,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newType);
+        }
 
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBike);

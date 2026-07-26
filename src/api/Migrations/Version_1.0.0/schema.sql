@@ -8,7 +8,7 @@ START TRANSACTION;
 ALTER DATABASE CHARACTER SET utf8mb4;
 
 CREATE TABLE `BikeListings` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
     `Make` varchar(100) CHARACTER SET utf8mb4 NULL,
     `Model` varchar(100) CHARACTER SET utf8mb4 NULL,
@@ -33,26 +33,26 @@ CREATE TABLE `BikeListings` (
     `IsLiked` tinyint(1) NOT NULL,
     `LikeCount` int NOT NULL,
     `ViewCount` int NOT NULL,
-    `CreatedAt` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_BikeListings` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `Blogs` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
     `Summary` varchar(500) CHARACTER SET utf8mb4 NULL,
     `Content` longtext CHARACTER SET utf8mb4 NULL,
     `ImageUrl` varchar(512) CHARACTER SET utf8mb4 NULL,
     `Author` varchar(100) CHARACTER SET utf8mb4 NULL,
-    `CreatedAt` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Blogs` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -67,17 +67,18 @@ CREATE TABLE `Challenges` (
     `EndDate` datetime(6) NOT NULL,
     `IsEnded` tinyint(1) NOT NULL,
     `IsStarted` tinyint(1) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Challenges` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `ChatMessages` (
-    `Id` int NOT NULL AUTO_INCREMENT,
-    `SenderId` longtext CHARACTER SET utf8mb4 NOT NULL,
-    `ReceiverId` longtext CHARACTER SET utf8mb4 NOT NULL,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
+    `SenderId` char(36) COLLATE ascii_general_ci NOT NULL,
+    `ReceiverId` char(36) COLLATE ascii_general_ci NOT NULL,
     `SenderName` longtext CHARACTER SET utf8mb4 NULL,
     `SenderProfilePictureUrl` longtext CHARACTER SET utf8mb4 NULL,
     `ReceiverName` longtext CHARACTER SET utf8mb4 NULL,
@@ -87,10 +88,11 @@ CREATE TABLE `ChatMessages` (
     `Sent` tinyint(1) NOT NULL,
     `Delivered` tinyint(1) NOT NULL,
     `Read` tinyint(1) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_ChatMessages` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -113,15 +115,36 @@ CREATE TABLE `Directories` (
     `Rating` double NULL,
     `RatingCount` int NULL,
     `MyRating` double NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Directories` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
+CREATE TABLE `GarageBikes` (
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
+    `Title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `Make` varchar(50) CHARACTER SET utf8mb4 NULL,
+    `Model` varchar(50) CHARACTER SET utf8mb4 NULL,
+    `Year` int NULL,
+    `Cc` longtext CHARACTER SET utf8mb4 NULL,
+    `Type` longtext CHARACTER SET utf8mb4 NULL,
+    `ImagesJson` longtext CHARACTER SET utf8mb4 NULL,
+    `Mileage` longtext CHARACTER SET utf8mb4 NULL,
+    `Km` longtext CHARACTER SET utf8mb4 NULL,
+    `Vin` longtext CHARACTER SET utf8mb4 NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
+    CONSTRAINT `PK_GarageBikes` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+
 CREATE TABLE `Groups` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
     `Icon` varchar(100) CHARACTER SET utf8mb4 NULL,
     `Description` longtext CHARACTER SET utf8mb4 NULL,
@@ -129,11 +152,11 @@ CREATE TABLE `Groups` (
     `CoverPhotoUrl` longtext CHARACTER SET utf8mb4 NULL,
     `IsPrivate` tinyint(1) NOT NULL,
     `MembersCount` int NOT NULL,
-    `CreatedAt` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Groups` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -142,39 +165,42 @@ CREATE TABLE `LookUps` (
     `Category` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
     `Code` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
     `Value` varchar(256) CHARACTER SET utf8mb4 NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_LookUps` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `Messages` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Title` longtext CHARACTER SET utf8mb4 NOT NULL,
     `Body` longtext CHARACTER SET utf8mb4 NULL,
     `DateTimeUTC` datetime(6) NOT NULL,
     `Read` tinyint(1) NOT NULL,
-    `UserId` longtext CHARACTER SET utf8mb4 NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `UserId` char(36) COLLATE ascii_general_ci NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Messages` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `News` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Headline` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
     `Summary` varchar(500) CHARACTER SET utf8mb4 NULL,
     `Content` longtext CHARACTER SET utf8mb4 NULL,
     `ImageUrl` varchar(512) CHARACTER SET utf8mb4 NULL,
     `Source` varchar(200) CHARACTER SET utf8mb4 NULL,
     `DateTimeUTC` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_News` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -185,11 +211,11 @@ CREATE TABLE `Rides` (
     `Distance` decimal(65,30) NOT NULL,
     `Duration` decimal(65,30) NOT NULL,
     `LocationsJson` longtext CHARACTER SET utf8mb4 NULL,
-    `CreatedAt` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Rides` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -200,15 +226,16 @@ CREATE TABLE `Routes` (
     `Distance` decimal(65,30) NOT NULL,
     `Duration` decimal(65,30) NOT NULL,
     `OsrmResponseJson` longtext CHARACTER SET utf8mb4 NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Routes` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `StolenBikeReports` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
     `Title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
     `Make` varchar(100) CHARACTER SET utf8mb4 NULL,
     `Model` varchar(100) CHARACTER SET utf8mb4 NULL,
@@ -222,10 +249,11 @@ CREATE TABLE `StolenBikeReports` (
     `ImagesJson` longtext CHARACTER SET utf8mb4 NULL,
     `ReportedAt` datetime(6) NOT NULL,
     `Location` longtext CHARACTER SET utf8mb4 NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
-    `CreatedById` int NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
-    `UpdatedById` int NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_StolenBikeReports` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8mb4;
 
@@ -240,11 +268,27 @@ CREATE TABLE `Users` (
     `RatingCount` int NULL,
     `ProfilePictureUrl` varchar(512) CHARACTER SET utf8mb4 NULL,
     `PasswordHash` longtext CHARACTER SET utf8mb4 NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_Users` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `Medias` (
+    `Id` char(36) COLLATE ascii_general_ci NOT NULL,
+    `OwnerId` char(36) COLLATE ascii_general_ci NOT NULL,
+    `ObjectName` longtext CHARACTER SET utf8mb4 NOT NULL,
+    `ContentType` longtext CHARACTER SET utf8mb4 NOT NULL,
+    `Size` bigint NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
+    `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
+    CONSTRAINT `PK_Medias` PRIMARY KEY (`Id`),
+    CONSTRAINT `FK_Medias_GarageBikes_OwnerId` FOREIGN KEY (`OwnerId`) REFERENCES `GarageBikes` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `ChallengeParticipants` (
@@ -252,13 +296,14 @@ CREATE TABLE `ChallengeParticipants` (
     `DistanceInKm` decimal(65,30) NOT NULL,
     `ChallengeId` char(36) COLLATE ascii_general_ci NOT NULL,
     `UserId` char(36) COLLATE ascii_general_ci NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_ChallengeParticipants` PRIMARY KEY (`Id`),
-    CONSTRAINT `FK_ChallengeParticipants_Challenges_ChallengeId` FOREIGN KEY (`ChallengeId`) REFERENCES `Challenges` (`Id`) ON DELETE CASCADE,
-    CONSTRAINT `FK_ChallengeParticipants_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_ChallengeParticipants_Challenges_ChallengeId` FOREIGN KEY (`ChallengeId`) REFERENCES `Challenges` (`Id`),
+    CONSTRAINT `FK_ChallengeParticipants_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `FriendRequests` (
@@ -267,10 +312,11 @@ CREATE TABLE `FriendRequests` (
     `ToUserId` char(36) COLLATE ascii_general_ci NOT NULL,
     `Status` int NOT NULL,
     `RespondedAtUTC` datetime(6) NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_FriendRequests` PRIMARY KEY (`Id`),
     CONSTRAINT `FK_FriendRequests_Users_FromUserId` FOREIGN KEY (`FromUserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE,
     CONSTRAINT `FK_FriendRequests_Users_ToUserId` FOREIGN KEY (`ToUserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
@@ -293,12 +339,13 @@ CREATE TABLE `SocialProfiles` (
     `RideDuration` longtext CHARACTER SET utf8mb4 NULL,
     `RideElevation` longtext CHARACTER SET utf8mb4 NULL,
     `SocialLinksJson` longtext CHARACTER SET utf8mb4 NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialProfiles` PRIMARY KEY (`Id`),
-    CONSTRAINT `FK_SocialProfiles_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_SocialProfiles_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `SocialPosts` (
@@ -309,10 +356,11 @@ CREATE TABLE `SocialPosts` (
     `ShareCount` int NOT NULL,
     `UserId` char(36) COLLATE ascii_general_ci NOT NULL,
     `SocialProfileEntityId` char(36) COLLATE ascii_general_ci NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialPosts` PRIMARY KEY (`Id`),
     CONSTRAINT `FK_SocialPosts_SocialProfiles_SocialProfileEntityId` FOREIGN KEY (`SocialProfileEntityId`) REFERENCES `SocialProfiles` (`Id`),
     CONSTRAINT `FK_SocialPosts_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
@@ -322,24 +370,24 @@ CREATE TABLE `SocialProfileFollowers` (
     `SocialProfileId` char(36) COLLATE ascii_general_ci NOT NULL,
     `FollowerUserId` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialProfileFollowers` PRIMARY KEY (`SocialProfileId`, `FollowerUserId`),
-    CONSTRAINT `FK_SocialProfileFollowers_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`) ON DELETE CASCADE,
-    CONSTRAINT `FK_SocialProfileFollowers_Users_FollowerUserId` FOREIGN KEY (`FollowerUserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_SocialProfileFollowers_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`),
+    CONSTRAINT `FK_SocialProfileFollowers_Users_FollowerUserId` FOREIGN KEY (`FollowerUserId`) REFERENCES `Users` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `SocialProfileFollowing` (
     `SocialProfileId` char(36) COLLATE ascii_general_ci NOT NULL,
     `FollowingUserId` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialProfileFollowing` PRIMARY KEY (`SocialProfileId`, `FollowingUserId`),
-    CONSTRAINT `FK_SocialProfileFollowing_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`) ON DELETE CASCADE,
-    CONSTRAINT `FK_SocialProfileFollowing_Users_FollowingUserId` FOREIGN KEY (`FollowingUserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_SocialProfileFollowing_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`),
+    CONSTRAINT `FK_SocialProfileFollowing_Users_FollowingUserId` FOREIGN KEY (`FollowingUserId`) REFERENCES `Users` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `SocialProfileFriends` (
     `SocialProfileId` char(36) COLLATE ascii_general_ci NOT NULL,
     `FriendUserId` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialProfileFriends` PRIMARY KEY (`SocialProfileId`, `FriendUserId`),
-    CONSTRAINT `FK_SocialProfileFriends_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`) ON DELETE CASCADE,
-    CONSTRAINT `FK_SocialProfileFriends_Users_FriendUserId` FOREIGN KEY (`FriendUserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_SocialProfileFriends_SocialProfiles_SocialProfileId` FOREIGN KEY (`SocialProfileId`) REFERENCES `SocialProfiles` (`Id`),
+    CONSTRAINT `FK_SocialProfileFriends_Users_FriendUserId` FOREIGN KEY (`FriendUserId`) REFERENCES `Users` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE TABLE `SocialPostComments` (
@@ -348,10 +396,11 @@ CREATE TABLE `SocialPostComments` (
     `UserId` char(36) COLLATE ascii_general_ci NOT NULL,
     `ParentCommentId` char(36) COLLATE ascii_general_ci NULL,
     `Content` longtext CHARACTER SET utf8mb4 NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialPostComments` PRIMARY KEY (`Id`),
     CONSTRAINT `FK_SocialPostComments_SocialPostComments_ParentCommentId` FOREIGN KEY (`ParentCommentId`) REFERENCES `SocialPostComments` (`Id`),
     CONSTRAINT `FK_SocialPostComments_SocialPosts_PostId` FOREIGN KEY (`PostId`) REFERENCES `SocialPosts` (`Id`) ON DELETE CASCADE,
@@ -363,10 +412,11 @@ CREATE TABLE `SocialPostLikes` (
     `PostId` char(36) COLLATE ascii_general_ci NOT NULL,
     `UserId` char(36) COLLATE ascii_general_ci NOT NULL,
     `LikedAtUTC` datetime(6) NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialPostLikes` PRIMARY KEY (`Id`),
     CONSTRAINT `FK_SocialPostLikes_SocialPosts_PostId` FOREIGN KEY (`PostId`) REFERENCES `SocialPosts` (`Id`) ON DELETE CASCADE,
     CONSTRAINT `FK_SocialPostLikes_Users_UserId` FOREIGN KEY (`UserId`) REFERENCES `Users` (`Id`) ON DELETE CASCADE
@@ -380,12 +430,13 @@ CREATE TABLE `SocialPostMedias` (
     `OriginalFileName` longtext CHARACTER SET utf8mb4 NOT NULL,
     `ContentType` longtext CHARACTER SET utf8mb4 NOT NULL,
     `Size` bigint NOT NULL,
-    `CreatedAtUTC` datetime(6) NOT NULL,
+    `CreatedAtUtc` datetime(6) NOT NULL,
     `CreatedById` char(36) COLLATE ascii_general_ci NOT NULL,
-    `UpdatedAtUTC` datetime(6) NOT NULL,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
     `UpdatedById` char(36) COLLATE ascii_general_ci NOT NULL,
+    `RowVersion` char(36) COLLATE ascii_general_ci NOT NULL,
     CONSTRAINT `PK_SocialPostMedias` PRIMARY KEY (`Id`),
-    CONSTRAINT `FK_SocialPostMedias_SocialPosts_PostId` FOREIGN KEY (`PostId`) REFERENCES `SocialPosts` (`Id`) ON DELETE CASCADE
+    CONSTRAINT `FK_SocialPostMedias_SocialPosts_PostId` FOREIGN KEY (`PostId`) REFERENCES `SocialPosts` (`Id`)
 ) CHARACTER SET=utf8mb4;
 
 CREATE UNIQUE INDEX `IX_ChallengeParticipants_ChallengeId_UserId` ON `ChallengeParticipants` (`ChallengeId`, `UserId`);
@@ -395,6 +446,8 @@ CREATE INDEX `IX_ChallengeParticipants_UserId` ON `ChallengeParticipants` (`User
 CREATE INDEX `IX_FriendRequests_FromUserId` ON `FriendRequests` (`FromUserId`);
 
 CREATE INDEX `IX_FriendRequests_ToUserId` ON `FriendRequests` (`ToUserId`);
+
+CREATE INDEX `IX_Medias_OwnerId` ON `Medias` (`OwnerId`);
 
 CREATE INDEX `IX_SocialPostComments_ParentCommentId` ON `SocialPostComments` (`ParentCommentId`);
 
@@ -421,7 +474,6 @@ CREATE INDEX `IX_SocialProfileFriends_FriendUserId` ON `SocialProfileFriends` (`
 CREATE INDEX `IX_SocialProfiles_UserId` ON `SocialProfiles` (`UserId`);
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
-VALUES ('20260719062034_Ver_1.0.0', '9.0.0');
+VALUES ('20260726122343_Ver_1.0.0', '9.0.0');
 
 COMMIT;
-

@@ -18,17 +18,27 @@ import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import SnackBar from '@/components/snackbar';
+import LoadingOverlay from '@/components/loadingOverlay';
 import { container } from '@/services';
 import { GarageBikeServiceToken } from '@/services/garageBikeService';
 import type { GarageBikeService } from '@/services/garageBikeService';
 import type { BikeType } from '@/models/marketplace';
 import { GarageBike } from '@/models/garageBike';
+import Lookup from '@/models/lookup';
+import { LookupService, LookupServiceToken } from '@/services/lookupService';
+import AutoCompleteTextInput from '@/components/autoCompleteTextInput';
 
-const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
-const MODELS = ['MT-15', 'CB500X', 'Classic 350', 'Z650', 'R NineT', 'V-Strom 650', 'Monster 797', 'CB300R', '390 Duke', 'Tiger 900'] as const;
-const TYPES: BikeType[] = ['Cruiser', 'Sport', 'Standard', 'Adventure', 'Touring', 'Custom'];
+// const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
+// const MODELS = ['MT-15', 'CB500X', 'Classic 350', 'Z650', 'R NineT', 'V-Strom 650', 'Monster 797', 'CB300R', '390 Duke', 'Tiger 900'] as const;
+// const TYPES: BikeType[] = ['Cruiser', 'Sport', 'Standard', 'Adventure', 'Touring', 'Custom'];
 
 type DropdownField = 'make' | 'model' | 'type' | null;
+
+type PhotoItem = {
+  uri: string;
+  id?: string;
+  isExisting?: boolean;
+};
 
 export default function AddGarageBikeScreen() {
   const insets = useSafeAreaInsets();
@@ -36,6 +46,10 @@ export default function AddGarageBikeScreen() {
   const params = useLocalSearchParams();
   const garageBikeService = useMemo(
     () => container.resolve<GarageBikeService>(GarageBikeServiceToken),
+    [],
+  );
+  const lookupService = useMemo(
+    () => container.resolve<LookupService>(LookupServiceToken),
     [],
   );
 
@@ -49,10 +63,13 @@ export default function AddGarageBikeScreen() {
   const [km, setKm] = useState('');
   const [vin, setVin] = useState('');
   const [type, setType] = useState<BikeType | undefined>(undefined);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<'title' | 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [types, setTypes] = useState<BikeType[]>([]);
 
   const garageBikeId = Array.isArray(params.garageBikeId) ? params.garageBikeId[0] : params.garageBikeId;
   const isEditMode = params.mode === 'edit';
@@ -66,11 +83,14 @@ export default function AddGarageBikeScreen() {
     try {
       const response = await garageBikeService.getGarageBikeById(garageBikeId);
       if (!response.ok) {
+        SnackBar.Error(`${response.status}: ${response.statusText}. Request failed. Please try again.`);
         return;
       }
 
       const responseJson = await response.json();
+      console.log('Garage bike fetch response:', responseJson);
       if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
         return;
       }
 
@@ -83,6 +103,13 @@ export default function AddGarageBikeScreen() {
       setKm(parsedGarageBike.km ?? '');
       setVin(parsedGarageBike.vin ?? '');
       setType(parsedGarageBike.type);
+      setPhotos(
+        (parsedGarageBike.images ?? []).map((image) => ({
+          uri: image.url ?? '',
+          id: image.id,
+          isExisting: true,
+        })).filter((photo) => Boolean(photo.uri)),
+      );
     } catch {
       setEditingGarageBike(null);
     }
@@ -102,16 +129,37 @@ export default function AddGarageBikeScreen() {
 
   const dropdownItems = useMemo(
     () => ({
-      make: MAKES,
-      model: MODELS,
-      type: TYPES,
+      make: makes,
+      model: models,
+      type: types,
     }),
     [],
   );
 
-  const removePhoto = useCallback((index: number) => {
+  const removePhoto = useCallback(async (index: number) => {
+    const photo = photos[index];
+    if (!photo) return;
+
+    if (photo.isExisting && photo.id && editingGarageBike?.id) {
+      try {
+        const response = await garageBikeService.deleteGarageBikeMedia(editingGarageBike.id, photo.id);
+        if (!response.ok) {
+          SnackBar.Error('Unable to delete this photo right now.');
+          return;
+        }
+
+        setEditingGarageBike((prev) => prev ? ({ ...prev, images: (prev.images ?? []).filter((image) => image.id !== photo.id) }) : prev);
+        setPhotos((prev) => prev.filter((_, idx) => idx !== index));
+        SnackBar.Success('Photo deleted.');
+        return;
+      } catch {
+        SnackBar.Error('Unable to delete this photo right now.');
+        return;
+      }
+    }
+
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
-  }, []);
+  }, [editingGarageBike?.id, garageBikeService, photos]);
 
   const getFileName = (uri: string) => {
     const parts = uri.split('/');
@@ -189,7 +237,7 @@ export default function AddGarageBikeScreen() {
     const uris = assets.map((asset) => asset.uri).filter(Boolean);
 
     if (!imageResult.canceled && uris.length) {
-      setPhotos((prev) => [...uris, ...prev]);
+      setPhotos((prev) => [...uris.map((uri) => ({ uri })), ...prev]);
     }
   };
 
@@ -218,6 +266,22 @@ export default function AddGarageBikeScreen() {
           return;
         }
 
+        const pendingUploads = photos.filter((photo) => !photo.isExisting);
+        if (pendingUploads.length > 0) {
+          for (const photo of pendingUploads) {
+            const uploadResponse = await garageBikeService.uploadGarageBikeImage(editingGarageBike.id, {
+              uri: photo.uri,
+              name: getFileName(photo.uri),
+              type: getMimeType(photo.uri),
+            });
+
+            if (!uploadResponse.ok) {
+              const uploadResult = await uploadResponse.json().catch(() => null);
+              throw new Error(uploadResult?.message || 'Media upload failed.');
+            }
+          }
+        }
+
         SnackBar.Success('Garage bike updated successfully.');
         setTimeout(() => router.back(), 1000);
         return;
@@ -242,11 +306,15 @@ export default function AddGarageBikeScreen() {
       }
 
       if (photos.length > 0) {
-        for (const uri of photos) {
+        for (const photo of photos) {
+          if (photo.isExisting) {
+            continue;
+          }
+
           const uploadResponse = await garageBikeService.uploadGarageBikeImage(createdListingId, {
-            uri,
-            name: getFileName(uri),
-            type: getMimeType(uri),
+            uri: photo.uri,
+            name: getFileName(photo.uri),
+            type: getMimeType(photo.uri),
           });
 
           if (!uploadResponse.ok) {
@@ -264,6 +332,57 @@ export default function AddGarageBikeScreen() {
       setIsSubmitting(false);
     }
   };
+  
+    const handleMakeTextChange = async (text: string) => {
+      setMake(text);
+      const response = await lookupService.getLookup('MAKE', "", text);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+  
+      const lookups = responseJson.data as Lookup[];
+      setMakes(lookups.map((lookup) => lookup.value));
+    }
+  
+    const handleModelTextChange = async (text: string) => {
+      setModel(text);
+      const response = await lookupService.getLookup(make, '', text);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+  
+      const lookups = responseJson.data as Lookup[];
+      setModels(lookups.map((lookup) => lookup.value));
+    }
+  
+    const handleTypeTextChange = async (text: string) => {
+      setType(text);
+      const response = await lookupService.getLookup('BIKE_TYPE', '', text);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+  
+      const lookups = responseJson.data as Lookup[];
+      setTypes(lookups.map((lookup) => lookup.value));
+    }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}>
@@ -285,52 +404,58 @@ export default function AddGarageBikeScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
-            <TouchableOpacity
+            <AutoCompleteTextInput
+              value={make}
+              onBlur={() => setMakes([])}
+              onTextChange={(text) => {
+                handleMakeTextChange(text);
+                if (errors.make) setErrors((prev) => ({ ...prev, make: undefined }));
+              }}
+              suggestions={makes}
+              placeholder={t.Title.make}
+              placeholderTextColor={colors.placeholder}
               style={[
-                styles.dropdown,
-                { borderColor: errors.make ? '#E85D04' : colors.border, backgroundColor: colors.card },
+                styles.textInput,
+                { borderColor: errors.make ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              onPress={() => setActiveDropdown('make')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}>
-                {make || t.Title.selectOption}
-              </Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
+            />
             {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
-            <TouchableOpacity
+            <AutoCompleteTextInput
+              value={model}
+              onBlur={() => setModels([])}
+              onTextChange={(text) => {
+                handleModelTextChange(text);
+                if (errors.model) setErrors((prev) => ({ ...prev, model: undefined }));
+              }}
+              suggestions={models}
+              placeholder={t.Title.model}
+              placeholderTextColor={colors.placeholder}
               style={[
-                styles.dropdown,
-                { borderColor: errors.model ? '#E85D04' : colors.border, backgroundColor: colors.card },
+                styles.textInput,
+                { borderColor: errors.model ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              onPress={() => setActiveDropdown('model')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}>
-                {model || t.Title.selectOption}
-              </Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
+            />
             {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
 
             <View style={styles.fieldHalf}>
 
               <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-              <TouchableOpacity
-                style={[
-                  styles.dropdown,
-                  { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
-                ]}
-                onPress={() => setActiveDropdown('type')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.dropdownText, { color: colors.text }]}>
-                  {type || t.Title.selectOption}
-                </Text>
-                <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-              </TouchableOpacity>
+              <AutoCompleteTextInput
+              value={type}
+              onBlur={() => setTypes([])}
+              onTextChange={(text) => {
+                handleTypeTextChange(text);
+                if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }));
+              }}
+              suggestions={types}
+              placeholder={t.Title.type}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.type ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
               {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
             </View>
 
@@ -419,18 +544,18 @@ export default function AddGarageBikeScreen() {
             </View>
 
             {photos.length ? (
-              <View style={styles.photoGrid}>
-                {photos.map((uri, index) => (
+              <View style={[styles.photoGrid, photos.length >= 3 ? { justifyContent: 'space-between' } : { justifyContent: 'flex-start' }]}>
+                {photos.map((photo, index) => (
                   <View
-                    key={`${uri}-${index}`}
+                    key={`${photo.uri}-${index}`}
                     style={[
                       styles.photoGridItem,
                       { backgroundColor: colors.card },
                       (index + 1) % 3 === 0 ? { marginRight: 0 } : undefined,
                     ]}
                   >
-                    <Image source={{ uri }} style={styles.photoThumb} />
-                    <TouchableOpacity style={styles.photoRemove} onPress={() => removePhoto(index)} hitSlop={10}>
+                    <Image source={{ uri: photo.uri }} style={styles.photoThumb} />
+                    <TouchableOpacity style={styles.photoRemove} onPress={() => void removePhoto(index)} hitSlop={10}>
                       <MaterialIcons name="close" size={16} color="#FFFFFF" />
                     </TouchableOpacity>
                   </View>
@@ -446,7 +571,7 @@ export default function AddGarageBikeScreen() {
 
         <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity
-            style={[styles.postButton, { backgroundColor: colors.button }]}
+            style={[styles.postButton, { backgroundColor: colors.accent }]}
             onPress={handlePost}
             disabled={isSubmitting}
           >
@@ -455,6 +580,8 @@ export default function AddGarageBikeScreen() {
         </View>
 
       </View>
+
+      <LoadingOverlay isLoading={isSubmitting} />
 
       <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
         <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} onPress={() => setActiveDropdown(null)} />
@@ -643,7 +770,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   postButton: {
-    marginHorizontal: 16,
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
