@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Image, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
+import { Alert, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View, RefreshControl, Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -15,6 +15,9 @@ import SocialCommentModal from '@/components/socialCommentModal';
 import PopupMenu from '@/components/popupMenu';
 import SnackBar from '@/components/snackbar';
 import { SocialServiceClient, SocialServiceToken } from '@/services/socialService';
+import { GarageBikeServiceToken } from '@/services/garageBikeService';
+import type { GarageBikeService } from '@/services/garageBikeService';
+import type { GarageBike } from '@/models/garageBike';
 
 export default function SocialProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -22,6 +25,7 @@ export default function SocialProfileScreen() {
   const params = useLocalSearchParams();
   const { authUser } = useAuthContext();
   const socialSerivce = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
+  const garageBikeService = useMemo(() => container.resolve<GarageBikeService>(GarageBikeServiceToken), []);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +40,8 @@ export default function SocialProfileScreen() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [isProfileUploading, setIsProfileUploading] = useState(false);
+  const [garageBikes, setGarageBikes] = useState<GarageBike[]>([]);
+  const [garageLoading, setGarageLoading] = useState(false);
 
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const isOwnProfile = Boolean(userId && authUser?.id === userId);
@@ -67,6 +73,33 @@ export default function SocialProfileScreen() {
       setLoading(false);
     }
   }, [userId, socialSerivce]);
+
+  const loadGarageBikes = useCallback(async () => {
+    if (!userId) {
+      setGarageBikes([]);
+      return;
+    }
+
+    setGarageLoading(true);
+    try {
+      const response = await garageBikeService.getGarageBikes(userId);
+      if (!response.ok) {
+        return;
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        return;
+      }
+
+      const items = Array.isArray(result.data) ? result.data : [];
+      setGarageBikes(items);
+    } catch (error) {
+      console.error('Failed to load garage bikes:', error);
+    } finally {
+      setGarageLoading(false);
+    }
+  }, [garageBikeService, userId]);
 
   const loadComments = useCallback(
     async (postId: string) => {
@@ -358,14 +391,14 @@ export default function SocialProfileScreen() {
         )}`,
       );
     },
-    [profile, router],
+    [profile],
   );
 
   const photoMenuItems = useMemo(() => {
     if (!photoMenuTarget || !profile) return [];
 
     const hasPhoto = photoMenuTarget === 'cover' ? Boolean(profile.coverPhotoUrl) : Boolean(profile.profilePhotoUrl);
-    const items: Array<{ label: string; onPress: () => void; destructive?: boolean }> = [];
+    const items: { label: string; onPress: () => void; destructive?: boolean }[] = [];
 
     if (hasPhoto) {
       items.push({ label: 'View Photo', onPress: () => handleViewPhoto(photoMenuTarget) });
@@ -574,8 +607,28 @@ export default function SocialProfileScreen() {
   }, [loadProfile]);
 
   React.useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    void loadProfile();
+    void loadGarageBikes();
+  }, [loadProfile, loadGarageBikes]);
+
+  const getGarageBikePrimaryImageUri = (item: GarageBike) => {
+    const firstImage = item.images?.[0];
+    if (typeof firstImage === 'string') {
+      return firstImage;
+    }
+    if (firstImage && typeof firstImage === 'object' && 'url' in firstImage) {
+      return String((firstImage as { url?: string }).url || '');
+    }
+    return '';
+  };
+
+  const handleOpenGarageBike = (item: GarageBike) => {
+    if (!item.id) return;
+    void router.push({
+      pathname: '/social/garagebike' as never,
+      params: { garageBikeId: item.id } as never,
+    });
+  };
 
   const renderPost = ({ item }: { item: Post }) => (
     <SocialPostCard
@@ -694,60 +747,30 @@ export default function SocialProfileScreen() {
                       <Text style={[styles.profileName, { color: colors.text }]}>
                         {profile.displayName}
                       </Text>
-                      {!isOwnProfile ? (
-                        <TouchableOpacity
-                          style={[styles.friendButton, { borderColor: colors.border }]}
-                          activeOpacity={0.85}
-                          onPress={handleFriendRequest}
-                        >
-                          <MaterialIcons
-                            name={profile.isFriend ? 'person-off' : profile.isFriendRequestPending ? 'person-remove' : 'person-add'}
-                            size={18}
-                            color={colors.accent}
-                          />
-                          <Text style={[styles.friendButtonText, { color: colors.accent }]}>
-                            {profile.isFriend
-                              ? 'Unfriend'
-                              : profile.isFriendRequestPending
-                                ? 'Cancel Friend Request'
-                                : 'Add Friend'}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null}
+
                       {/* <TouchableOpacity style={styles.shareButton} activeOpacity={0.8} onPress={() => { }}>
                         <MaterialIcons name="share" size={18} color={colors.accent} />
                         <Text style={[styles.shareButtonText, { color: colors.accent }]}>Share</Text>
                       </TouchableOpacity> */}
                     </View>
-                    {(profile.socialLinks?.length > 0 || isOwnProfile) && (
-                      <View style={styles.socialLinksRow}>
-                        {profile.socialLinks?.length > 0 ? (
-                          <View style={styles.socialIconRow}>
-                            {profile.socialLinks.map((link) => (
-                              <TouchableOpacity
-                                key={link.platform}
-                                style={styles.socialIconButton}
-                                activeOpacity={0.7}
-                                onPress={() => { }}
-                              >
-                                <MaterialIcons name={mapPlatformIcon(link.platform)} size={16} color={colors.accent} />
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        ) : (
-                          <Text style={[styles.noSocialText, { color: colors.secondaryText }]}>Add social links</Text>
-                        )}
-                        {isOwnProfile ? (
-                          <TouchableOpacity
-                            style={styles.editSocialButton}
-                            activeOpacity={0.7}
-                            onPress={handleEditSocialLinks}
-                          >
-                            <MaterialIcons name="edit" size={18} color={colors.accent} />
-                          </TouchableOpacity>
-                        ) : null}
-                      </View>
-                    )}
+                    <View style={styles.statsContainer}>
+                      <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowersPress}>
+                        <Text style={[styles.statValue, { color: colors.text }]}>
+                          {profile.followersCount}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.accent }]}>
+                          Followers
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowingPress}>
+                        <Text style={[styles.statValue, { color: colors.text }]}>
+                          {profile.followingCount}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.accent }]}>
+                          Following
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
 
@@ -758,26 +781,59 @@ export default function SocialProfileScreen() {
                   </Text>
                 ) : null}
 
+                <View style={styles.statsAndFollowRow}>
+                  {(profile.socialLinks?.length > 0 || isOwnProfile) && (
+                    <View style={styles.socialLinksRow}>
+                      {profile.socialLinks?.length > 0 ? (
+                        <View style={styles.socialIconRow}>
+                          {profile.socialLinks.map((link) => (
+                            <TouchableOpacity
+                              key={link.platform}
+                              style={styles.socialIconButton}
+                              activeOpacity={0.7}
+                              onPress={() => { }}
+                            >
+                              <MaterialIcons name={mapPlatformIcon(link.platform)} size={24} color={colors.accent} />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={[styles.noSocialText, { color: colors.secondaryText }]}>Add social links</Text>
+                      )}
+                      {isOwnProfile ? (
+                        <TouchableOpacity
+                          style={styles.editSocialButton}
+                          activeOpacity={0.7}
+                          onPress={handleEditSocialLinks}
+                        >
+                          <MaterialIcons name="edit" size={18} color={colors.accent} />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
                 {/* Row 3: Followers, Following, Follow Button */}
                 <View style={styles.statsAndFollowRow}>
-                  <View style={styles.statsContainer}>
-                    <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowersPress}>
-                      <Text style={[styles.statValue, { color: colors.text }]}>
-                        {profile.followersCount}
-                      </Text>
-                      <Text style={[styles.statLabel, { color: colors.accent }]}>
-                        Followers
+                  {!isOwnProfile ? (
+                    <TouchableOpacity
+                      style={[styles.friendButton, { backgroundColor: colors.accent, borderWidth: 0 }]}
+                      activeOpacity={0.85}
+                      onPress={handleFriendRequest}
+                    >
+                      <MaterialIcons
+                        name={profile.isFriend ? 'person-off' : profile.isFriendRequestPending ? 'person-remove' : 'person-add'}
+                        size={18}
+                        color={colors.text}
+                      />
+                      <Text style={[styles.friendButtonText, { color: colors.text }]}>
+                        {profile.isFriend
+                          ? 'Unfriend'
+                          : profile.isFriendRequestPending
+                            ? 'Cancel Friend Request'
+                            : 'Add Friend'}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowingPress}>
-                      <Text style={[styles.statValue, { color: colors.text }]}>
-                        {profile.followingCount}
-                      </Text>
-                      <Text style={[styles.statLabel, { color: colors.accent }]}>
-                        Following
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  ) : null}
                   {!isOwnProfile ? (
                     <View style={styles.actionButtonsRow}>
                       <TouchableOpacity
@@ -789,8 +845,8 @@ export default function SocialProfileScreen() {
                           {profile.isFollowing ? 'Unfollow' : 'Follow'}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.messageButton, { borderColor: colors.accent }]} activeOpacity={0.85}>
-                        <Text style={[styles.messageButtonText, { color: colors.accent }]}>Message</Text>
+                      <TouchableOpacity style={[styles.messageButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
+                        <Text style={[styles.messageButtonText, { color: colors.text }]}>Message</Text>
                       </TouchableOpacity>
                     </View>
                   ) : null}
@@ -805,7 +861,7 @@ export default function SocialProfileScreen() {
                         {profile.garageCount}
                       </Text>
                       <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
-                        Garages
+                        Garage
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -825,7 +881,7 @@ export default function SocialProfileScreen() {
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="straighten" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                      {profile.rideDistance}
+                      {profile.rideDistance ?? 0} km
                     </Text>
                     <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Distance
@@ -836,7 +892,7 @@ export default function SocialProfileScreen() {
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="schedule" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                      {profile.rideDuration}
+                      {profile.rideDuration ?? 0} hrs
                     </Text>
                     <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Duration
@@ -847,12 +903,55 @@ export default function SocialProfileScreen() {
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="terrain" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                      {profile.rideElevation}
+                      {profile.rideElevation ?? 0} ft
                     </Text>
                     <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
                       Elevation
                     </Text>
                   </View>
+                </View>
+
+                <View style={styles.garageSection}>
+                  <Text style={[styles.garageSectionTitle, { color: colors.text }]}>Garage</Text>
+                  {garageLoading ? (
+                    <View style={styles.garageLoadingState}>
+                      <Text style={[styles.garageEmptyText, { color: colors.secondaryText }]}>Loading...</Text>
+                    </View>
+                  ) : garageBikes.length > 0 ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.garageScrollContent}
+                    >
+                      {garageBikes.map((item) => {
+                        const imageUri = getGarageBikePrimaryImageUri(item);
+                        return (
+                          <TouchableOpacity
+                            key={item.id ?? `${item.make}-${item.model}-${item.year}`}
+                            style={[styles.garageCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                            activeOpacity={0.9}
+                            onPress={() => handleOpenGarageBike(item)}
+                          >
+                            {imageUri ? (
+                              <Image source={{ uri: imageUri }} style={styles.garageCardImage} />
+                            ) : (
+                              <View style={[styles.garageCardImage, styles.garagePlaceholder, { backgroundColor: colors.border }]}> 
+                                <MaterialIcons name="pedal-bike" size={28} color={colors.secondaryText} />
+                              </View>
+                            )}
+                            <Text style={[styles.garageCardTitle, { color: colors.text }]} numberOfLines={1}>
+                              {item.make || 'Bike'} {item.model || ''}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : (
+                    <View style={[styles.garageEmptyState, { borderColor: colors.border }]}> 
+                      <MaterialIcons name="garage" size={24} color={colors.secondaryText} />
+                      <Text style={[styles.garageEmptyText, { color: colors.secondaryText }]}>No bikes in garage</Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -1119,6 +1218,8 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   statItem: {
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
   },
   statValue: {
@@ -1189,6 +1290,55 @@ const styles = StyleSheet.create({
   },
   fiveStatLabel: {
     fontSize: 11,
+  },
+  garageSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  garageSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  garageScrollContent: {
+    paddingRight: 4,
+    gap: 10,
+    paddingBottom: 2,
+  },
+  garageCard: {
+    width: 110,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  garageCardImage: {
+    width: '100%',
+    height: 88,
+    backgroundColor: '#E7E7E7',
+  },
+  garagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  garageCardTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  garageLoadingState: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  garageEmptyState: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  garageEmptyText: {
+    fontSize: 13,
   },
   postsHeader: {
     flexDirection: 'row',
