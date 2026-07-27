@@ -15,6 +15,8 @@ const en = {
     english: 'English',
     favorite: 'Favorite',
     filterTitle: 'Filter Listings',
+    garage: 'Garage',
+    garageBike: 'Garage Bike',
     home: 'Home',
     language: 'Language',
     listing: 'Listing',

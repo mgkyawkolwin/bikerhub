@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, type TextInputProps } from 'react-native';
 
 type AutoCompleteTextInputProps = TextInputProps & {
+  isSuggestionsVisible: boolean;
   suggestions?: string[];
   onTextChange?: (text: string) => void;
 };
@@ -10,7 +11,7 @@ type AutoCompleteTextInputProps = TextInputProps & {
 const AutoCompleteTextInput = React.forwardRef<TextInput, AutoCompleteTextInputProps>((props, ref) => {
   const { colors } = useThemeContext();
   
-  const { suggestions = [], onTextChange, value, style, ...restProps } = props;
+  const { isSuggestionsVisible, suggestions = [], onTextChange, value, style, ...restProps } = props;
   const [inputValue, setInputValue] = useState(value ?? '');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -19,6 +20,10 @@ const AutoCompleteTextInput = React.forwardRef<TextInput, AutoCompleteTextInputP
       setInputValue(value ?? '');
     }
   }, [value, inputValue]);
+
+  useEffect(() => {
+    setShowSuggestions(isSuggestionsVisible ?? false);
+  }, [isSuggestionsVisible]);
 
   const handleChangeText = (nextText: string) => {
     setInputValue(nextText);

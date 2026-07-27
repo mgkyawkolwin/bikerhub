@@ -16,7 +16,7 @@ public interface IGarageBikeService
     Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id);
     Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId);
     Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId);
-    Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id);
+    Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id, Guid currentUserId);
     Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId);
     Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId, Guid currentUserId);
 }
@@ -70,6 +70,9 @@ public class GarageBikeService : IGarageBikeService
             UpdatedById = currentUserId
         };
         _dbContext.GarageBikes.Add(garageBikeEntity);
+
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == currentUserId) ?? throw new CustomException("Social profile not found for the current user.");
+        socialProfile.GarageCount += 1;
 
         // save make and model to lookup table if they don't exist
         var existingMake = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "MAKE" && x.Value == garageBike.Make);
@@ -196,15 +199,16 @@ public class GarageBikeService : IGarageBikeService
         return MapToDto(garageBike);
     }
 
-    public async Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id)
+    public async Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id, Guid currentUserId)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == id);
         if (garageBike is null)
         {
             return null;
         }
-
         _dbContext.GarageBikes.Remove(garageBike);
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == currentUserId) ?? throw new CustomException("Social profile not found for the current user.");
+        socialProfile.GarageCount -= 1;
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBike);
     }

@@ -110,9 +110,9 @@ var app = builder.Build();
 // auto migration for development environment
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
+//     using var scope = app.Services.CreateScope();
+//     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     dbContext.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.

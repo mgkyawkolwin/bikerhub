@@ -519,8 +519,8 @@ export default function SocialProfileScreen() {
         profile.isFriend
           ? 'Unable to unfriend user.'
           : profile.isFriendRequestPending
-          ? 'Unable to cancel friend request.'
-          : 'Unable to send friend request.',
+            ? 'Unable to cancel friend request.'
+            : 'Unable to send friend request.',
       );
     }
   };
@@ -581,7 +581,7 @@ export default function SocialProfileScreen() {
     <SocialPostCard
       post={item}
       onAuthorPress={() => router.push({ pathname: '/social/profile', params: { userId: item.createdByUserId ?? '' } })}
-      onToggleLove={() => {}}
+      onToggleLove={() => { }}
       onOpenComments={(postId) => void openComments(postId ?? '')}
       onSharePress={() => handleSharePost(item.id)}
       onMenuPress={item.createdByUserId === authUser?.id ? () => void handleOpenPostMenu(item.id) : undefined}
@@ -647,7 +647,7 @@ export default function SocialProfileScreen() {
         ListHeaderComponent={
           profile ? (
             <>
-<TouchableOpacity
+              <TouchableOpacity
                 disabled={!isOwnProfile || isCoverUploading}
                 onPress={handleUploadCoverPhoto}
                 style={styles.coverTouchable}
@@ -656,12 +656,12 @@ export default function SocialProfileScreen() {
                 {profile.coverPhotoUrl ? (
                   <Image source={{ uri: profile.coverPhotoUrl }} style={styles.coverImage} />
                 ) : (
-                  <View style={[styles.coverImage, styles.coverPlaceholder, { backgroundColor: colors.border }]}> 
+                  <View style={[styles.coverImage, styles.coverPlaceholder, { backgroundColor: colors.border }]}>
                     <MaterialIcons name="photo" size={48} color={colors.secondaryText} />
                   </View>
                 )}
                 {isOwnProfile ? (
-                  <View style={[styles.coverEditBadge, { backgroundColor: colors.card }]}> 
+                  <View style={[styles.coverEditBadge, { backgroundColor: colors.card }]}>
                     <MaterialIcons name={isCoverUploading ? 'hourglass-top' : 'photo-camera'} size={20} color={colors.accent} />
                   </View>
                 ) : null}
@@ -679,12 +679,12 @@ export default function SocialProfileScreen() {
                     {profile.avatarUrl ? (
                       <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
                     ) : (
-                      <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.border }]}> 
+                      <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.border }]}>
                         <MaterialIcons name="person" size={32} color={colors.secondaryText} />
                       </View>
                     )}
                     {isOwnProfile ? (
-                      <View style={[styles.avatarEditBadge, { backgroundColor: colors.card }]}> 
+                      <View style={[styles.avatarEditBadge, { backgroundColor: colors.card }]}>
                         <MaterialIcons name={isProfileUploading ? 'hourglass-top' : 'photo-camera'} size={18} color={colors.accent} />
                       </View>
                     ) : null}
@@ -705,7 +705,7 @@ export default function SocialProfileScreen() {
                             size={18}
                             color={colors.accent}
                           />
-                          <Text style={[styles.friendButtonText, { color: colors.accent }]}> 
+                          <Text style={[styles.friendButtonText, { color: colors.accent }]}>
                             {profile.isFriend
                               ? 'Unfriend'
                               : profile.isFriendRequestPending
@@ -770,10 +770,10 @@ export default function SocialProfileScreen() {
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.statItem} activeOpacity={0.8} onPress={handleFollowingPress}>
-                      <Text style={[styles.statValue, { color: colors.text }]}> 
+                      <Text style={[styles.statValue, { color: colors.text }]}>
                         {profile.followingCount}
                       </Text>
-                      <Text style={[styles.statLabel, { color: colors.accent }]}> 
+                      <Text style={[styles.statLabel, { color: colors.accent }]}>
                         Following
                       </Text>
                     </TouchableOpacity>
@@ -798,15 +798,17 @@ export default function SocialProfileScreen() {
                 {/* Row 4: 5 Stats - Garages, Rides, Distance, Duration, Elevation */}
                 <View style={[styles.fiveStatsGrid, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
                   {/* Garages */}
-                  <View style={styles.fiveStatItem}>
-                    <MaterialIcons name="garage" size={24} color={colors.accent} />
-                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                      {profile.garageCount}
-                    </Text>
-                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
-                      Garages
-                    </Text>
-                  </View>
+                  <TouchableOpacity onPress={() => router.push({ pathname: '/social/garage', params: { userId } })} activeOpacity={0.8}>
+                    <View style={styles.fiveStatItem}>
+                      <MaterialIcons name="garage" size={24} color={colors.accent} />
+                      <Text style={[styles.fiveStatValue, { color: colors.text }]}>
+                        {profile.garageCount}
+                      </Text>
+                      <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                        Garages
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
 
                   {/* Rides */}
                   <View style={styles.fiveStatItem}>
@@ -851,32 +853,6 @@ export default function SocialProfileScreen() {
                       Elevation
                     </Text>
                   </View>
-                </View>
-                <View style={styles.profileActionRow}>
-                  <TouchableOpacity
-                    style={styles.profileActionButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push({ pathname: '/social/garage', params: { userId } })}
-                  >
-                    <MaterialIcons name="garage" size={20} color={colors.text} />
-                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Garages</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/list', params: { userId } })}>
-                    <MaterialIcons name="pedal-bike" size={20} color={colors.text} />
-                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Rides</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.profileActionButton} activeOpacity={0.8} onPress={() => router.push({ pathname: '/ride/plans', params: { userId } })}>
-                    <MaterialIcons name="playlist-add" size={20} color={colors.text} />
-                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Plans</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.profileActionButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push({ pathname: '/social/listing', params: { userId } })}
-                  >
-                    <MaterialIcons name="storefront" size={20} color={colors.text} />
-                    <Text style={[styles.profileActionLabel, { color: colors.text }]}>Listing</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
 

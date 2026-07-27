@@ -70,6 +70,9 @@ export default function AddGarageBikeScreen() {
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [types, setTypes] = useState<BikeType[]>([]);
+  const [makeSuggestionsVisible, setMakeSuggestionsVisible] = useState(false);
+  const [modelSuggestionsVisible, setModelSuggestionsVisible] = useState(false);
+  const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
 
   const garageBikeId = Array.isArray(params.garageBikeId) ? params.garageBikeId[0] : params.garageBikeId;
   const isEditMode = params.mode === 'edit';
@@ -391,7 +394,7 @@ export default function AddGarageBikeScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditMode ? 'Edit Bike' : t.Title.sellBike}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditMode ? 'Edit Bike' : t.Title.garageBike}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -406,11 +409,12 @@ export default function AddGarageBikeScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
             <AutoCompleteTextInput
               value={make}
-              onBlur={() => setMakes([])}
+              onBlur={() => setMakeSuggestionsVisible(false)}
               onTextChange={(text) => {
                 handleMakeTextChange(text);
                 if (errors.make) setErrors((prev) => ({ ...prev, make: undefined }));
               }}
+              isSuggestionsVisible={makeSuggestionsVisible}
               suggestions={makes}
               placeholder={t.Title.make}
               placeholderTextColor={colors.placeholder}
@@ -423,11 +427,12 @@ export default function AddGarageBikeScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
             <AutoCompleteTextInput
               value={model}
-              onBlur={() => setModels([])}
+              onBlur={() => setModelSuggestionsVisible(false)}
               onTextChange={(text) => {
                 handleModelTextChange(text);
                 if (errors.model) setErrors((prev) => ({ ...prev, model: undefined }));
               }}
+              isSuggestionsVisible={modelSuggestionsVisible}
               suggestions={models}
               placeholder={t.Title.model}
               placeholderTextColor={colors.placeholder}
@@ -443,11 +448,12 @@ export default function AddGarageBikeScreen() {
               <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
               <AutoCompleteTextInput
               value={type}
-              onBlur={() => setTypes([])}
+              onBlur={() => setTypeSuggestionsVisible(false)}
               onTextChange={(text) => {
                 handleTypeTextChange(text);
                 if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }));
               }}
+              isSuggestionsVisible={typeSuggestionsVisible}
               suggestions={types}
               placeholder={t.Title.type}
               placeholderTextColor={colors.placeholder}

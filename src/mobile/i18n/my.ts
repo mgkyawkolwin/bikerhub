@@ -15,6 +15,8 @@ const my = {
     english: 'English',
     favorite: 'အကြိုက်',
     filterTitle: 'စာရင်းစစ်ထုတ်',
+    garage: 'ဂရေ့ဂျ်',
+    garageBike: 'ဂရေ့ဂျ် ဘိုင့်ခ်',
     home: 'ပင်မစာမျက်နှာ',
     language: 'ဘာသာစကား',
     listing: 'စာရင်း',

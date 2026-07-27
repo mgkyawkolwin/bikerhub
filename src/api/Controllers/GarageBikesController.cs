@@ -157,7 +157,7 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: DeleteGarageBike({GarageBikeId})", id);
-            var garageBike = await _garageBikeService.DeleteGarageBikeAsync(id);
+            var garageBike = await _garageBikeService.DeleteGarageBikeAsync(id, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
             if (garageBike is null)
             {
                 return NotFound(new { Success = false, Message = "Garage bike not found." });
