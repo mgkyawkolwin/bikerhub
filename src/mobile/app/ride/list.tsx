@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View, Alert, Text, RefreshControl } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View, Alert, Text, RefreshControl, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,6 +12,78 @@ import { RideServiceToken } from '@/services/rideService';
 import { setRouteDraft } from '@/services/routeTransfer';
 import type { RideService } from '@/services/rideService';
 import Ride from '@/models/ride';
+import polyline from '@mapbox/polyline';
+
+const encodePolyline = (points: { latitude: number; longitude: number }[]): string => {
+  let encoded = '';
+  let prevLat = 0;
+  let prevLng = 0;
+
+  for (const point of points) {
+    const lat = Math.round(point.latitude * 1e5);
+    const lng = Math.round(point.longitude * 1e5);
+    const deltaLat = lat - prevLat;
+    const deltaLng = lng - prevLng;
+
+    prevLat = lat;
+    prevLng = lng;
+
+    encoded += encodeValue(deltaLat) + encodeValue(deltaLng);
+  }
+
+  return encoded;
+};
+
+const encodeValue = (value: number): string => {
+  const adjusted = value < 0 ? (value << 1) - 1 : value << 1;
+  let encoded = '';
+  let remaining = adjusted;
+
+  while (remaining >= 0x20) {
+    encoded += String.fromCharCode((0x20 | (remaining & 0x1f)) + 63);
+    remaining >>= 5;
+  }
+
+  encoded += String.fromCharCode(remaining + 63);
+  return encoded;
+};
+
+const formatDuration = (seconds?: number) => {
+  if (!seconds || seconds <= 0) return '0 min';
+
+  const totalMinutes = Math.max(1, Math.ceil(seconds / 60));
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return `${hours}h ${mins}m`;
+};
+
+const formatDistance = (distance?: number) => {
+  if (!distance || distance <= 0) return '0 km';
+  if (distance < 1) return `${Math.round(distance * 1000)} m`;
+  return `${distance.toFixed(2)} km`;
+};
+
+const getStaticMapUrl = (locations: Ride['locations'], apiKey?: string) => {
+  const safeLocations = (locations ?? []).filter((point) => point?.latitude != null && point?.longitude != null);
+  if (safeLocations.length < 2 || !apiKey) return null;
+
+  const encodedPath = polyline.encode(safeLocations.map(p => [p.latitude, p.longitude])); // encodePolyline(safeLocations);
+  const start = safeLocations[0];
+  const end = safeLocations[safeLocations.length - 1];
+
+  const params = [
+    'size=600x260',
+    'scale=2',
+    'maptype=roadmap',
+    `path=color:0x2196F3|weight:5|enc:${encodedPath}`,
+    `markers=color:green|label:S|${start.latitude},${start.longitude}`,
+    `markers=color:red|label:E|${end.latitude},${end.longitude}`,
+  ];
+
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.join('&')}&key=${encodeURIComponent(apiKey)}`;
+};
 
 export default function RideListScreen() {
   const insets = useSafeAreaInsets();
@@ -25,7 +97,6 @@ export default function RideListScreen() {
 
   const [rides, setRides] = useState<Ride[]>([]);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +122,6 @@ export default function RideListScreen() {
 
         setRides((prev) => (reset ? filteredItems : [...prev, ...filteredItems]));
         setPage(data.page ?? pageNumber);
-        setTotal(data.total ?? filteredItems.length);
         setTotalPages(data.totalPages ?? 1);
       } catch (error) {
         console.error('Failed to load rides:', error);
@@ -83,24 +153,37 @@ export default function RideListScreen() {
 
   const currentUserId = authUser?.id;
   const isOwnRides = !viewedUserId || viewedUserId === currentUserId;
+  const googleMapsApiKey = 'AIzaSyDhdk-puMVacWKP-sxoM205gR5Yl4LX4Wk';
 
-  const renderRide = ({ item }: { item: Ride }) => (
+  const renderRide = ({ item }: { item: Ride }) => {
+    const staticMapUrl = getStaticMapUrl(item.locations, googleMapsApiKey);
+    const hasRoutePreview = Boolean(staticMapUrl);
+
+    return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => loadRide(item)}
       activeOpacity={0.8}
     >
       <View style={styles.cardBody}>
+        {hasRoutePreview ? (
+          <Image source={{ uri: staticMapUrl! }} style={styles.mapPreview} resizeMode="cover" />
+        ) : (
+          <View style={styles.mapPreviewPlaceholder}>
+            <MaterialIcons name="map" size={24} color={colors.secondaryText} />
+            <Text style={[styles.mapPreviewPlaceholderText, { color: colors.secondaryText }]}>Route preview unavailable</Text>
+          </View>
+        )}
         <View style={styles.titleRow}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
         </View>
         <View style={styles.metaRow}>
           <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {item.duration ?? 0}</Text>
+          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {formatDuration(item.duration)}</Text>
         </View>
         <View style={styles.metaRow}>
           <MaterialIcons name="straighten" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {item.distance ?? 0}</Text>
+          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {formatDistance(item.distance)}</Text>
         </View>
         {item.createdById ? (
           <View style={styles.metaRow}>
@@ -118,7 +201,8 @@ export default function RideListScreen() {
         <Text style={styles.downloadText}>View</Text>
       </TouchableOpacity>
     </TouchableOpacity>
-  );
+    );
+  };
 
   const loadRide = (item: Ride) => {
     const draft = {
@@ -131,9 +215,9 @@ export default function RideListScreen() {
     setRouteDraft(draft);
 
     if (item.id) {
-      router.push({ pathname: '/ride/rides', params: { rideId: item.id } });
+      router.push({ pathname: '/ride/rideRecorder', params: { rideId: item.id } });
     } else {
-      router.push('/ride/rides');
+      router.push('/ride/rideRecorder');
     }
   };
 
@@ -146,7 +230,7 @@ export default function RideListScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Rides</Text>
         <View style={styles.actionsRow}>
           {isOwnRides ? (
-            <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/ride/rides')}>
+            <TouchableOpacity style={[styles.iconAction, { backgroundColor: colors.accent }]} activeOpacity={0.8} onPress={() => router.push('/ride/rideRecorder')}>
               <MaterialIcons name="directions-bike" size={18} color="#FFFFFF" />
               <Text style={styles.recordActionText}>Ride</Text>
             </TouchableOpacity>
@@ -186,6 +270,9 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, gap: 12 },
   card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden' },
   cardBody: { padding: 16, gap: 10 },
+  mapPreview: { width: '100%', height: 180, borderRadius: 12, backgroundColor: '#EAEAEA' },
+  mapPreviewPlaceholder: { width: '100%', height: 180, borderRadius: 12, backgroundColor: '#F3F3F3', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  mapPreviewPlaceholderText: { fontSize: 13, fontWeight: '600' },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   cardTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
   badge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },

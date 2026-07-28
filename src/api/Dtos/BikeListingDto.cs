@@ -2,7 +2,6 @@ namespace BikerHub.Dtos;
 
 public sealed record BikeListingDto(
     Guid Id,
-    string? Title = null,
     string? Make = null,
     string? Model = null,
     int? Year = null,

@@ -1586,7 +1586,7 @@ const RideRecorder: React.FC = () => {
                                     onPress={startNavigating}
                                     disabled={planSegments.length === 0 || planIsLoading}
                                 >
-                                    <Text style={styles.controlButtonText}>Start Navigating</Text>
+                                    <Text style={styles.controlButtonText}>Start Riding</Text>
                                 </TouchableOpacity>
                             </>
                         ) : !sessionActive ? (
@@ -1596,7 +1596,7 @@ const RideRecorder: React.FC = () => {
                                         style={[styles.controlButton, styles.startButton]}
                                         onPress={startNavigating}
                                     >
-                                        <Text style={styles.controlButtonText}>Start Navigation</Text>
+                                        <Text style={styles.controlButtonText}>Start Riding</Text>
                                     </TouchableOpacity>
                                 )}
                             </>
@@ -1881,7 +1881,7 @@ const styles = StyleSheet.create({
         gap: 12,
         zIndex: 20,
     },
-    controlButton: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+    controlButton: { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
     controlButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
     startButton: { backgroundColor: '#4CAF50' },
     simulateButton: { backgroundColor: '#9C27B0' },
@@ -1891,9 +1891,8 @@ const styles = StyleSheet.create({
     stopSimulateButton: { backgroundColor: '#f44336', flex: 0.5 },
     recordControlOverlay: {
         position: 'absolute',
-        top: 24,
-        left: 0,
-        right: 0,
+        bottom: 24,
+        right: 24,
         alignItems: 'center',
         zIndex: 30,
     },
@@ -1954,7 +1953,7 @@ const styles = StyleSheet.create({
     },
     planningInstructions: {
         position: 'absolute',
-        bottom: 90,
+        top: 50,
         left: 0,
         right: 0,
         alignItems: 'center',

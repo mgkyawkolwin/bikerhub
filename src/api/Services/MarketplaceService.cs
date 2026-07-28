@@ -74,7 +74,6 @@ public class MarketplaceService : IMarketplaceService
 
         var entity = new BikeListing
         {
-            Title = dto.Title,
             Make = dto.Make,
             Model = dto.Model,
             Year = dto.Year,
@@ -230,7 +229,6 @@ public class MarketplaceService : IMarketplaceService
 
         return new BikeListingDto(
             entity.Id,
-            entity.Title,
             entity.Make,
             entity.Model,
             entity.Year,

@@ -35,7 +35,6 @@ public class UserService : IUserService
 
         return new BikeListingDto(
             entity.Id,
-            entity.Title,
             entity.Make,
             entity.Model,
             entity.Year,

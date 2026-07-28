@@ -4,15 +4,15 @@ namespace BikerHub.Entities;
 
 public class BikeListing : BaseEntity<Guid>
 {
-    [Required]
-    [MaxLength(200)]
-    public string Title { get; set; } = string.Empty;
 
     [MaxLength(100)]
     public string? Make { get; set; }
 
     [MaxLength(100)]
     public string? Model { get; set; }
+
+    [MaxLength(50)]
+    public string? Edition { get; set; }
 
     public int? Year { get; set; }
     public decimal? Price { get; set; }
