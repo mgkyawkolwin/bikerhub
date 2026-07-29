@@ -14,40 +14,6 @@ import type { RideService } from '@/services/rideService';
 import Ride from '@/models/ride';
 import polyline from '@mapbox/polyline';
 
-const encodePolyline = (points: { latitude: number; longitude: number }[]): string => {
-  let encoded = '';
-  let prevLat = 0;
-  let prevLng = 0;
-
-  for (const point of points) {
-    const lat = Math.round(point.latitude * 1e5);
-    const lng = Math.round(point.longitude * 1e5);
-    const deltaLat = lat - prevLat;
-    const deltaLng = lng - prevLng;
-
-    prevLat = lat;
-    prevLng = lng;
-
-    encoded += encodeValue(deltaLat) + encodeValue(deltaLng);
-  }
-
-  return encoded;
-};
-
-const encodeValue = (value: number): string => {
-  const adjusted = value < 0 ? (value << 1) - 1 : value << 1;
-  let encoded = '';
-  let remaining = adjusted;
-
-  while (remaining >= 0x20) {
-    encoded += String.fromCharCode((0x20 | (remaining & 0x1f)) + 63);
-    remaining >>= 5;
-  }
-
-  encoded += String.fromCharCode(remaining + 63);
-  return encoded;
-};
-
 const formatDuration = (seconds?: number) => {
   if (!seconds || seconds <= 0) return '0 min';
 
@@ -74,7 +40,7 @@ const getStaticMapUrl = (locations: Ride['locations'], apiKey?: string) => {
   const end = safeLocations[safeLocations.length - 1];
 
   const params = [
-    'size=600x260',
+    'size=600x400',
     'scale=2',
     'maptype=roadmap',
     `path=color:0x2196F3|weight:5|enc:${encodedPath}`,
@@ -166,6 +132,9 @@ export default function RideListScreen() {
       activeOpacity={0.8}
     >
       <View style={styles.cardBody}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
+        </View>
         {hasRoutePreview ? (
           <Image source={{ uri: staticMapUrl! }} style={styles.mapPreview} resizeMode="cover" />
         ) : (
@@ -174,24 +143,28 @@ export default function RideListScreen() {
             <Text style={[styles.mapPreviewPlaceholderText, { color: colors.secondaryText }]}>Route preview unavailable</Text>
           </View>
         )}
-        <View style={styles.titleRow}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.name}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.duration}: {formatDuration(item.duration)}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <MaterialIcons name="straighten" size={14} color={colors.secondaryText} />
-          <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.distance}: {formatDistance(item.distance)}</Text>
-        </View>
-        {item.createdById ? (
-          <View style={styles.metaRow}>
-            <MaterialIcons name="person" size={14} color={colors.secondaryText} />
-            <Text style={[styles.metaText, { color: colors.secondaryText }]}>{t.Title.createdBy}: {item.createdById}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <MaterialIcons name="straighten" size={28} color={colors.accent} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{formatDistance(item.distance)}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Distance</Text>
           </View>
+          <View style={styles.statItem}>
+            <MaterialIcons name="schedule" size={28} color={colors.accent} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{formatDuration(item.duration)}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Duration</Text>
+          </View>
+          <View style={styles.statItem}>
+            <MaterialIcons name="terrain" size={28} color={colors.accent} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{item.elevation ?? 0} ft</Text>
+            <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Elevation</Text>
+          </View>
+        </View>
+        {item.description ? (
+          <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
+            {item.description.slice(0, 300)}{item.description.length > 300 ? '...' : ''}
+          </Text>
         ) : null}
-        <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>{item.description}</Text>
       </View>
       <TouchableOpacity
         onPress={() => loadRide(item)}
@@ -263,18 +236,26 @@ const styles = StyleSheet.create({
   backButton: { padding: 8 },
   title: { fontSize: 22, fontWeight: '700', flex: 1, textAlign: 'center', color: '#FFFFFF' },
   actionsRow: { flexDirection: 'row', alignItems: 'center' },
-  iconAction: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, marginLeft: 10, borderRadius: 14 },
+  iconAction: { flexDirection: 'row', alignItems: 'center', 
+    paddingHorizontal: 18, 
+    paddingVertical: 8, 
+    marginLeft: 10, 
+    borderRadius: 14 },
   recordActionText: { marginLeft: 6, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   headerAction: { paddingHorizontal: 10, paddingVertical: 8 },
   headerButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   list: { paddingHorizontal: 16, gap: 12 },
   card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden' },
   cardBody: { padding: 16, gap: 10 },
-  mapPreview: { width: '100%', height: 180, borderRadius: 12, backgroundColor: '#EAEAEA' },
-  mapPreviewPlaceholder: { width: '100%', height: 180, borderRadius: 12, backgroundColor: '#F3F3F3', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  mapPreview: { width: '100%', height: 300, borderRadius: 4, backgroundColor: '#EAEAEA' },
+  mapPreviewPlaceholder: { width: '100%', height: 300, borderRadius: 12, backgroundColor: '#F3F3F3', alignItems: 'center', justifyContent: 'center', gap: 6 },
   mapPreviewPlaceholderText: { fontSize: 13, fontWeight: '600' },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 4 },
   cardTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, marginTop: 2 },
+  statItem: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: { fontSize: 18, fontWeight: '800' },
+  statLabel: { fontSize: 14 },
   badge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
   badgeText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   deleteButton: { padding: 6 },

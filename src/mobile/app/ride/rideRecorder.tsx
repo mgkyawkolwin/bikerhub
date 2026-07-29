@@ -18,14 +18,18 @@ import Ride from '@/models/ride';
 import { getRouteDraft, clearRouteDraft } from '@/services/routeTransfer';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useThemeContext } from '@/hooks/use-theme-context';
 
 interface LatLng {
     latitude: number;
     longitude: number;
     timestamp?: number;
+    elevation?: number;
+    speed?: number;
 }
 
 const RideRecorder: React.FC = () => {
+    const { colors } = useThemeContext();
     const params = useLocalSearchParams();
     const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
     const rideId = Array.isArray(params.rideId) ? params.rideId[0] : params.rideId;
@@ -47,8 +51,6 @@ const RideRecorder: React.FC = () => {
     const [saveModalVisible, setSaveModalVisible] = useState(false);
     const [rideTitle, setRideTitle] = useState('');
     const [rideDescription, setRideDescription] = useState('');
-    const [totalRouteDistance, setTotalRouteDistance] = useState(0);
-    const [totalRouteDuration, setTotalRouteDuration] = useState(0);
     const [currentUserLocation, setCurrentUserLocation] = useState<LatLng | null>(null);
     const [simulatedPosition] = useState<LatLng | null>(null);
 
@@ -57,6 +59,16 @@ const RideRecorder: React.FC = () => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const timerRef = useRef<number | null>(null);
     const currentBearingRef = useRef<number>(0);
+    const headingWindowRef = useRef<number[]>([]);
+    const lastHeadingRef = useRef<number | null>(null);
+    const latitudeWindowRef = useRef<number[]>([]);
+    const longitudeWindowRef = useRef<number[]>([]);
+    const elevationWindowRef = useRef<number[]>([]);
+    const speedWindowRef = useRef<number[]>([]);
+    const lastLatitudeRef = useRef<number | null>(null);
+    const lastLongitudeRef = useRef<number | null>(null);
+    const lastElevationRef = useRef<number | null>(null);
+    const lastSpeedRef = useRef<number | null>(null);
 
     const initialRegion: Region = {
         latitude: 20.5937,
@@ -70,6 +82,8 @@ const RideRecorder: React.FC = () => {
             const draft = getRouteDraft();
             if (!draft) {
                 if (rideId) {
+                    let shouldCenterOnUser = true;
+
                     try {
                         const response = await rideService.getRideById(rideId);
                         if (!response.ok) {
@@ -87,26 +101,28 @@ const RideRecorder: React.FC = () => {
                         setRoutePath(savedLocations);
                         setTotalDistance(rideData.distance ?? 0);
                         setElapsedTime(rideData.duration ?? 0);
-                        setTotalRouteDistance(rideData.distance ?? 0);
-                        setTotalRouteDuration(rideData.duration ? rideData.duration / 60 : 0);
+                        shouldCenterOnUser = savedLocations.length === 0;
 
                         if (savedLocations.length > 0) {
                             setTimeout(() => {
-                                mapRef.current?.fitToCoordinates(savedLocations, {
-                                    edgePadding: { top: 80, right: 40, bottom: 120, left: 40 },
-                                    animated: true,
-                                });
+                                const firstPoint = savedLocations[0];
+                                mapRef.current?.animateCamera({
+                                    center: firstPoint,
+                                    heading: currentBearingRef.current ?? 0,
+                                    pitch: 60,
+                                    zoom: 16,
+                                }, { duration: 800 });
                             }, 500);
                         }
                     } catch (error) {
                         console.error('Failed to load ride by ID:', error);
                     }
 
-                    requestLocationPermission();
+                    requestLocationPermission(shouldCenterOnUser);
                     return;
                 }
 
-                requestLocationPermission();
+                requestLocationPermission(true);
                 return;
             }
 
@@ -116,26 +132,17 @@ const RideRecorder: React.FC = () => {
             if (routeCoordinates.length > 0) {
                 setRoutePath(routeCoordinates);
                 setTimeout(() => {
-                    mapRef.current?.fitToCoordinates(routeCoordinates, {
-                        edgePadding: { top: 80, right: 40, bottom: 120, left: 40 },
-                        animated: true,
-                    });
+                    const firstPoint = routeCoordinates[0];
+                    mapRef.current?.animateCamera({
+                        center: firstPoint,
+                        heading: currentBearingRef.current ?? 0,
+                        pitch: 60,
+                        zoom: 16,
+                    }, { duration: 800 });
                 }, 500);
             }
 
-            const draftSegments = draft.segments as any[] | undefined;
-            let totalDist = 0;
-            let totalDur = 0;
-            if (draftSegments && draftSegments.length > 0) {
-                for (const segment of draftSegments) {
-                    totalDist += segment.distance || 0;
-                    totalDur += segment.duration || 0;
-                }
-            }
-
-            setTotalRouteDistance(totalDist);
-            setTotalRouteDuration(totalDur);
-            requestLocationPermission();
+            requestLocationPermission(routeCoordinates.length === 0);
         };
 
         loadDraftRoute();
@@ -227,7 +234,7 @@ const RideRecorder: React.FC = () => {
         mapRef.current.animateCamera({
             center: cameraCenter,
             heading: nextHeading,
-            pitch: 0,
+            pitch: 60,
             zoom: 16,
         }, { duration: 500 });
 
@@ -247,6 +254,38 @@ const RideRecorder: React.FC = () => {
         }
     }, [getRouteHeading]);
 
+    const getRollingAverage = useCallback((rawValue: number | null | undefined, historyRef: { current: number[] }, fallbackRef: { current: number | null }) => {
+        const numericValue = typeof rawValue === 'number' && Number.isFinite(rawValue) ? rawValue : fallbackRef.current;
+
+        if (numericValue == null) {
+            return null;
+        }
+
+        const nextHistory = [...historyRef.current, numericValue].slice(-3);
+        historyRef.current = nextHistory;
+        fallbackRef.current = numericValue;
+
+        return nextHistory.reduce((sum, value) => sum + value, 0) / nextHistory.length;
+    }, []);
+
+    const getSmoothedHeading = useCallback((rawHeading: number | null | undefined, historyRef: { current: number[] }, fallbackRef: { current: number | null }) => {
+        const numericValue = typeof rawHeading === 'number' && Number.isFinite(rawHeading) ? rawHeading : fallbackRef.current;
+
+        if (numericValue == null) {
+            return null;
+        }
+
+        const normalizedValue = ((numericValue % 360) + 360) % 360;
+        const centeredValue = normalizedValue > 180 ? normalizedValue - 360 : normalizedValue;
+        const nextHistory = [...historyRef.current, centeredValue].slice(-4);
+        historyRef.current = nextHistory;
+        fallbackRef.current = centeredValue;
+
+        const average = nextHistory.reduce((sum, value) => sum + value, 0) / nextHistory.length;
+        const smoothedHeading = ((average % 360) + 360) % 360;
+        return smoothedHeading < 0 ? smoothedHeading + 360 : smoothedHeading;
+    }, []);
+
     const zoomToRouteAndRotate = useCallback(async () => {
         if (!mapRef.current) return;
 
@@ -260,38 +299,57 @@ const RideRecorder: React.FC = () => {
                 longitude: userLoc.coords.longitude,
             };
 
-            const region: Region = {
-                latitude: currentPos.latitude,
-                longitude: currentPos.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            };
+            const initialHeading = getSmoothedHeading(userLoc.coords.heading, headingWindowRef, lastHeadingRef) ?? currentBearingRef.current ?? 0;
+            currentBearingRef.current = initialHeading;
+            if (userLoc.coords.heading != null) {
+                lastHeadingRef.current = initialHeading;
+            }
 
-            mapRef.current.animateToRegion(region, 1000);
+            mapRef.current.animateCamera({
+                center: currentPos,
+                heading: initialHeading,
+                pitch: 60,
+                zoom: 16,
+            }, { duration: 1000 });
 
             if (routePath.length > 1) {
                 setTimeout(() => {
-                    updateMapCamera(currentPos, getRouteHeading(currentPos));
+                    updateMapCamera(currentPos, initialHeading);
                 }, 1000);
             }
         } catch (error) {
             console.error('Error zooming to route:', error);
         }
-    }, [routePath.length, getRouteHeading, updateMapCamera]);
+    }, [routePath.length, getSmoothedHeading, updateMapCamera]);
 
     const startRecording = async () => {
         setIsPaused(false);
         setIsRecording(true);
         setSessionActive(true);
+        latitudeWindowRef.current = [];
+        longitudeWindowRef.current = [];
+        elevationWindowRef.current = [];
+        speedWindowRef.current = [];
+        headingWindowRef.current = [];
+        lastLatitudeRef.current = null;
+        lastLongitudeRef.current = null;
+        lastElevationRef.current = null;
+        lastSpeedRef.current = null;
+        lastHeadingRef.current = null;
         await zoomToRouteAndRotate();
         await subscribeLocationUpdates(false);
     };
 
-    const requestLocationPermission = async () => {
+    const requestLocationPermission = async (shouldCenterOnUser = true) => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
                 setPermissionGranted(true);
+
+                if (!shouldCenterOnUser) {
+                    return;
+                }
+
                 const location = await Location.getCurrentPositionAsync({
                     accuracy: Location.Accuracy.BestForNavigation,
                 });
@@ -325,19 +383,55 @@ const RideRecorder: React.FC = () => {
             setLocations([]);
             setTotalDistance(0);
             setElapsedTime(0);
+            latitudeWindowRef.current = [];
+            longitudeWindowRef.current = [];
+            elevationWindowRef.current = [];
+            speedWindowRef.current = [];
+            lastLatitudeRef.current = null;
+            lastLongitudeRef.current = null;
+            lastElevationRef.current = null;
+            lastSpeedRef.current = null;
         }
 
         locationSubscription.current = await Location.watchPositionAsync(
             {
                 accuracy: Location.Accuracy.BestForNavigation,
-                timeInterval: 1000,
-                distanceInterval: 5,
+                timeInterval: 300,
+                distanceInterval: 0,
             },
-            (newLocation) => {
+            (newLocation: Location.LocationObject) => {
+                const smoothedLatitude = getRollingAverage(
+                    newLocation.coords.latitude,
+                    latitudeWindowRef,
+                    lastLatitudeRef,
+                );
+                const smoothedLongitude = getRollingAverage(
+                    newLocation.coords.longitude,
+                    longitudeWindowRef,
+                    lastLongitudeRef,
+                );
+                const smoothedElevation = getRollingAverage(
+                    newLocation.coords.altitude ?? null,
+                    elevationWindowRef,
+                    lastElevationRef,
+                );
+                const smoothedSpeed = getRollingAverage(
+                    newLocation.coords.speed == null ? null : newLocation.coords.speed * 3.6,
+                    speedWindowRef,
+                    lastSpeedRef,
+                );
+                const smoothedHeading = getSmoothedHeading(
+                    newLocation.coords.heading,
+                    headingWindowRef,
+                    lastHeadingRef,
+                );
+
                 const newPoint: LatLng = {
-                    latitude: newLocation.coords.latitude,
-                    longitude: newLocation.coords.longitude,
+                    latitude: smoothedLatitude ?? newLocation.coords.latitude,
+                    longitude: smoothedLongitude ?? newLocation.coords.longitude,
                     timestamp: newLocation.timestamp,
+                    elevation: smoothedElevation ?? undefined,
+                    speed: smoothedSpeed ?? undefined,
                 };
 
                 setCurrentUserLocation(newPoint);
@@ -359,46 +453,44 @@ const RideRecorder: React.FC = () => {
                 });
 
                 if (mapRef.current && !isPaused) {
-                    const gpsBearing = newLocation.coords.heading ?? currentBearingRef.current;
-                    const shouldUseRouteCamera = routePath.length > 1;
-
-                    if (shouldUseRouteCamera) {
-                        const routeHeading = getRouteHeading(newPoint);
-                        const nextHeading = Number.isFinite(routeHeading) ? routeHeading : gpsBearing;
-                        currentBearingRef.current = nextHeading;
-                        const gpsCameraCenter = offsetCoordinate(
+                    const gpsBearing = typeof smoothedHeading === 'number' && Number.isFinite(smoothedHeading)
+                        ? smoothedHeading
+                        : (typeof newLocation.coords.heading === 'number' && Number.isFinite(newLocation.coords.heading)
+                            ? newLocation.coords.heading
+                            : currentBearingRef.current);
+                    const routeHeading = routePath.length > 1 ? getRouteHeading(newPoint) : null;
+                    const nextHeading = typeof gpsBearing === 'number' && Number.isFinite(gpsBearing)
+                        ? gpsBearing
+                        : (Number.isFinite(routeHeading ?? NaN) ? routeHeading! : currentBearingRef.current);
+                    currentBearingRef.current = nextHeading;
+                    if (typeof gpsBearing === 'number' && Number.isFinite(gpsBearing)) {
+                        lastHeadingRef.current = gpsBearing;
+                    }
+                    const cameraCenter = offsetCoordinate(
+                        newPoint.latitude,
+                        newPoint.longitude,
+                        nextHeading,
+                        250,
+                    );
+                    mapRef.current.animateCamera({
+                        center: cameraCenter,
+                        heading: nextHeading,
+                        pitch: 60,
+                        zoom: 16,
+                    }, { duration: 500 });
+                    if (miniMapRef.current) {
+                        const miniCameraCenter = offsetCoordinate(
                             newPoint.latitude,
                             newPoint.longitude,
                             nextHeading,
-                            250,
+                            350,
                         );
-                        mapRef.current.animateCamera({
-                            center: gpsCameraCenter,
+                        miniMapRef.current.animateCamera({
+                            center: miniCameraCenter,
                             heading: nextHeading,
-                            pitch: 0,
-                            zoom: 16,
+                            pitch: 60,
+                            zoom: 13,
                         }, { duration: 500 });
-                        if (miniMapRef.current) {
-                            const gpsMinCameraCenter = offsetCoordinate(
-                                newPoint.latitude,
-                                newPoint.longitude,
-                                nextHeading,
-                                350,
-                            );
-                            miniMapRef.current.animateCamera({
-                                center: gpsMinCameraCenter,
-                                heading: nextHeading,
-                                pitch: 0,
-                                zoom: 13,
-                            }, { duration: 500 });
-                        }
-                    } else {
-                        mapRef.current.animateToRegion({
-                            latitude: newPoint.latitude,
-                            longitude: newPoint.longitude,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                        }, 500);
                     }
                 }
             }
@@ -453,16 +545,45 @@ const RideRecorder: React.FC = () => {
     };
 
     const handleSaveRide = async () => {
-        if (!rideTitle.trim() || !rideDescription.trim()) {
-            Alert.alert('Error', 'Please enter a title and description.');
+        if (!rideTitle.trim()) {
+            Alert.alert('Error', 'Please enter a title.');
             return;
         }
 
+        if (!currentUserId || locations.length < 1 || totalDistance <= 0 || elapsedTime <= 0) {
+            Alert.alert('Error', 'Ride details are incomplete.');
+            return;
+        }
+
+        const validSpeeds = locations
+            .map((point) => point.speed)
+            .filter((speed): speed is number => typeof speed === 'number' && Number.isFinite(speed));
+        const validElevations = locations
+            .map((point) => point.elevation)
+            .filter((elevation): elevation is number => typeof elevation === 'number' && Number.isFinite(elevation));
+
+        const averageSpeed = validSpeeds.length > 0
+            ? validSpeeds.reduce((sum, speed) => sum + speed, 0) / validSpeeds.length
+            : 0;
+        const totalElevation = validElevations.length > 0
+            ? Math.max(...validElevations) - Math.min(...validElevations)
+            : 0;
+        const minSpeed = validSpeeds.length > 0 ? Math.min(...validSpeeds) : 0;
+        const maxSpeed = validSpeeds.length > 0 ? Math.max(...validSpeeds) : 0;
+        const minElevation = validElevations.length > 0 ? Math.min(...validElevations) : 0;
+        const maxElevation = validElevations.length > 0 ? Math.max(...validElevations) : 0;
+
         const payload: Ride = {
             name: rideTitle.trim(),
-            description: rideDescription.trim(),
+            description: rideDescription.trim() || undefined,
             distance: totalDistance,
             duration: elapsedTime,
+            averageSpeed,
+            totalElevation,
+            minSpeed,
+            maxSpeed,
+            minElevation,
+            maxElevation,
             createdById: String(currentUserId),
             locations,
         };
@@ -507,60 +628,58 @@ const RideRecorder: React.FC = () => {
         return `${hours}:${remainingMinutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const formatEtaDuration = (seconds: number): string => {
-        if (seconds < 60) {
-            return `${Math.ceil(seconds)}s`;
-        }
-
-        const totalMinutes = Math.ceil(seconds / 60);
-        if (totalMinutes < 60) {
-            return `${totalMinutes} min`;
-        }
-
-        const hours = Math.floor(totalMinutes / 60);
-        const mins = totalMinutes % 60;
-        return `${hours}h ${mins}m`;
+    const formatSpeed = (speedKmh: number): string => {
+        if (!Number.isFinite(speedKmh)) return '0 km/h';
+        return `${speedKmh.toFixed(1)} km/h`;
     };
+
+    const formatElevation = (elevation: number): string => {
+        if (!Number.isFinite(elevation)) return '0 m';
+        return `${Math.round(elevation)} m`;
+    };
+
+    const validSpeeds = locations
+        .map((point) => point.speed)
+        .filter((speed): speed is number => typeof speed === 'number' && Number.isFinite(speed));
+    const validElevations = locations
+        .map((point) => point.elevation)
+        .filter((elevation): elevation is number => typeof elevation === 'number' && Number.isFinite(elevation));
+    const liveAverageSpeed = validSpeeds.length > 0
+        ? validSpeeds.reduce((sum, speed) => sum + speed, 0) / validSpeeds.length
+        : 0;
+    const liveTotalElevation = validElevations.length > 0
+        ? Math.max(...validElevations) - Math.min(...validElevations)
+        : 0;
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={styles.container}>
-                {routePath.length > 0 && !sessionActive && (
-                    <View style={styles.routeStats}>
-                        <View style={styles.routeStatItem}>
-                            <Text style={styles.routeStatLabel}>Distance</Text>
-                            <Text style={styles.routeStatValue}>{formatDistance(totalRouteDistance)}</Text>
-                        </View>
-                        <View style={styles.routeStatDivider} />
-                        <View style={styles.routeStatItem}>
-                            <Text style={styles.routeStatLabel}>Est. Time</Text>
-                            <Text style={styles.routeStatValue}>{formatEtaDuration(totalRouteDuration)}</Text>
-                        </View>
-                        <View style={styles.routeStatDivider} />
+                <View style={styles.liveStatsOverlay} pointerEvents="none">
+                    <View style={styles.liveStatsBox}>
+                        <Text style={[styles.liveStatText, {color: colors.white}]}>Distance</Text>
+                        <Text style={[styles.liveStatValue, { color: colors.white }]}>{formatDistance(totalDistance)}</Text>
                     </View>
-                )}
-
-                {sessionActive && (
-                    <View style={styles.statsBar}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Distance</Text>
-                            <Text style={styles.statValue}>{formatDistance(totalDistance)}</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statLabel}>Time</Text>
-                            <Text style={styles.statValue}>{formatTime(elapsedTime)}</Text>
-                        </View>
+                    <View style={styles.liveStatsBox}>
+                        <Text style={[styles.liveStatText, {color: colors.white}]}>Duration</Text>
+                        <Text style={[styles.liveStatValue, { color: colors.white }]}>{formatTime(elapsedTime)}</Text>
                     </View>
-                )}
+                    <View style={styles.liveStatsBox}>
+                        <Text style={[styles.liveStatText, {color: colors.white}]}>Average Speed</Text>
+                        <Text style={[styles.liveStatValue, { color: colors.white }]}>{formatSpeed(liveAverageSpeed)}</Text>
+                    </View>
+                    <View style={styles.liveStatsBox}>
+                        <Text style={[styles.liveStatText, {color: colors.white}]}>Total Elevation</Text>
+                        <Text style={[styles.liveStatValue, { color: colors.white }]}>{formatElevation(liveTotalElevation)}</Text>
+                    </View>
+                </View>
 
                 <View style={styles.mapContainer}>
                     <MapView
                         ref={mapRef}
                         style={styles.map}
                         initialRegion={initialRegion}
-                        showsUserLocation={!isSimulating}
-                        showsMyLocationButton={!isSimulating}
+                        showsUserLocation={true}
+                        showsMyLocationButton={true}
                         followsUserLocation={false}
                         showsCompass={true}
                         showsScale={true}
@@ -688,36 +807,42 @@ const RideRecorder: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    routeStats: {
-        flexDirection: 'row',
-        backgroundColor: 'rgba(33,150,243,0.95)',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+    liveStatsOverlay: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
+        top: 16,
+        left: 8,
+        right: 8,
         zIndex: 10,
-    },
-    routeStatItem: { flex: 1, alignItems: 'center' },
-    routeStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginBottom: 4 },
-    routeStatValue: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-    routeStatDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.3)' },
-    statsBar: {
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        borderRadius: 10,
         flexDirection: 'row',
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        paddingVertical: 6,
     },
-    statItem: { flex: 1, alignItems: 'center' },
-    statLabel: { fontSize: 11, color: '#ccc', marginBottom: 4 },
-    statValue: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-    statDivider: { width: 1, height: 30, backgroundColor: '#444' },
+    liveStatsBox: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 2,
+    },
+    liveStatText: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 2,
+        textAlign: 'center',
+        color: '#FFFFFF',
+    },
+    liveStatValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        textAlign: 'center',
+        color: '#FFFFFF',
+    },
+    liveStatAccent: {
+        color: '#7DD3FC',
+    },
     mapContainer: { flex: 1, position: 'relative' },
     map: { flex: 1 },
 
@@ -836,7 +961,8 @@ const styles = StyleSheet.create({
     recordControlOverlay: {
         position: 'absolute',
         bottom: 24,
-        right: 24,
+        left: 0,
+        right: 0,
         alignItems: 'center',
         zIndex: 30,
     },

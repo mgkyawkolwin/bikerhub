@@ -42,6 +42,11 @@ public class RideService : IRideService
     public async Task<RideDto> CreateRideAsync(CreateRideDto dto)
     {
         DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+        DtoValidationHelper.ValidateGuid(dto.CreatedById, "CreatedById");
+        if (dto.Locations is null || !dto.Locations.Any())
+        {
+            throw new CustomException("Locations are required.");
+        }
 
         var entity = new RideEntity
         {
@@ -49,8 +54,14 @@ public class RideService : IRideService
             Description = dto.Description,
             Distance = dto.Distance,
             Duration = dto.Duration,
-            CreatedById = dto.CreatedById,
-            LocationsJson = dto.Locations is null ? null : JsonSerializer.Serialize(dto.Locations),
+            AverageSpeed = dto.AverageSpeed,
+            TotalElevation = dto.TotalElevation,
+            MinSpeed = dto.MinSpeed,
+            MaxSpeed = dto.MaxSpeed,
+            MinElevation = dto.MinElevation,
+            MaxElevation = dto.MaxElevation,
+            CreatedById = dto.CreatedById ?? Guid.Empty,
+            LocationsJson = JsonSerializer.Serialize(dto.Locations),
             CreatedAtUtc = DateTime.UtcNow,
         };
 
@@ -62,6 +73,12 @@ public class RideService : IRideService
     public async Task<RideDto> UpdateRideAsync(Guid id, CreateRideDto dto)
     {
         DtoValidationHelper.ValidateRequiredString(dto.Name, "Name");
+        DtoValidationHelper.ValidateGuid(dto.CreatedById, "CreatedById");
+        
+        if (dto.Locations is null || !dto.Locations.Any())
+        {
+            throw new CustomException("Locations are required.");
+        }
 
         var entity = await _dbContext.Rides.FindAsync(id);
         if (entity is null)
@@ -73,8 +90,14 @@ public class RideService : IRideService
         entity.Description = dto.Description;
         entity.Distance = dto.Distance;
         entity.Duration = dto.Duration;
-        entity.CreatedById = dto.CreatedById;
-        entity.LocationsJson = dto.Locations is null ? null : JsonSerializer.Serialize(dto.Locations);
+        entity.AverageSpeed = dto.AverageSpeed;
+        entity.TotalElevation = dto.TotalElevation;
+        entity.MinSpeed = dto.MinSpeed;
+        entity.MaxSpeed = dto.MaxSpeed;
+        entity.MinElevation = dto.MinElevation;
+        entity.MaxElevation = dto.MaxElevation;
+        entity.CreatedById = dto.CreatedById ?? entity.CreatedById;
+        entity.LocationsJson = JsonSerializer.Serialize(dto.Locations);
 
         await _dbContext.SaveChangesAsync();
         return MapRide(entity);
@@ -102,6 +125,12 @@ public class RideService : IRideService
             ride.Description,
             ride.Distance,
             ride.Duration,
+            ride.AverageSpeed,
+            ride.TotalElevation,
+            ride.MinSpeed,
+            ride.MaxSpeed,
+            ride.MinElevation,
+            ride.MaxElevation,
             ride.CreatedById,
             locations,
             ride.CreatedAtUtc,

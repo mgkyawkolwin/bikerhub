@@ -4,15 +4,27 @@ namespace BikerHub.Dtos;
 
 public sealed record CreateRideDto(
     [property: JsonPropertyName("name")]
-    string? Name,
+    string Name = null,
     [property: JsonPropertyName("description")]
-    string? Description,
+    string? Description = null,
     [property: JsonPropertyName("distance")]
-    decimal Distance,
+    decimal Distance = 0,
     [property: JsonPropertyName("duration")]
-    decimal Duration,
+    decimal Duration = 0,
     [property: JsonPropertyName("createdById")]
-    Guid CreatedById,
+    Guid? CreatedById = null,
+    [property: JsonPropertyName("averageSpeed")]
+    decimal AverageSpeed = 0,
+    [property: JsonPropertyName("totalElevation")]
+    decimal TotalElevation = 0,
+    [property: JsonPropertyName("minSpeed")]
+    decimal MinSpeed = 0,
+    [property: JsonPropertyName("maxSpeed")]
+    decimal MaxSpeed = 0,
+    [property: JsonPropertyName("minElevation")]
+    decimal MinElevation = 0,
+    [property: JsonPropertyName("maxElevation")]
+    decimal MaxElevation = 0,
     [property: JsonPropertyName("locations")]
-    IEnumerable<RideLocationDto>? Locations
+    IEnumerable<RideLocationDto>? Locations = null
 );
