@@ -105,13 +105,7 @@ const RideRecorder: React.FC = () => {
 
                         if (savedLocations.length > 0) {
                             setTimeout(() => {
-                                const firstPoint = savedLocations[0];
-                                mapRef.current?.animateCamera({
-                                    center: firstPoint,
-                                    heading: currentBearingRef.current ?? 0,
-                                    pitch: 60,
-                                    zoom: 16,
-                                }, { duration: 800 });
+                                fitRouteOnMap(savedLocations);
                             }, 500);
                         }
                     } catch (error) {
@@ -132,13 +126,7 @@ const RideRecorder: React.FC = () => {
             if (routeCoordinates.length > 0) {
                 setRoutePath(routeCoordinates);
                 setTimeout(() => {
-                    const firstPoint = routeCoordinates[0];
-                    mapRef.current?.animateCamera({
-                        center: firstPoint,
-                        heading: currentBearingRef.current ?? 0,
-                        pitch: 60,
-                        zoom: 16,
-                    }, { duration: 800 });
+                    fitRouteOnMap(routeCoordinates);
                 }, 500);
             }
 
@@ -147,6 +135,30 @@ const RideRecorder: React.FC = () => {
 
         loadDraftRoute();
     }, [rideId, rideService]);
+
+    const fitRouteOnMap = useCallback((coordinates: LatLng[]) => {
+        if (!mapRef.current || coordinates.length === 0) return;
+
+        if (coordinates.length === 1) {
+            mapRef.current.animateCamera({
+                center: coordinates[0],
+                heading: currentBearingRef.current ?? 0,
+                pitch: 60,
+                zoom: 16,
+            }, { duration: 600 });
+            return;
+        }
+
+        mapRef.current.fitToCoordinates(coordinates, {
+            edgePadding: {
+                top: 80,
+                right: 80,
+                bottom: 180,
+                left: 80,
+            },
+            animated: true,
+        });
+    }, []);
 
     // Utility functions
     const toRad = (value: number): number => (value * Math.PI) / 180;
@@ -305,22 +317,11 @@ const RideRecorder: React.FC = () => {
                 lastHeadingRef.current = initialHeading;
             }
 
-            mapRef.current.animateCamera({
-                center: currentPos,
-                heading: initialHeading,
-                pitch: 60,
-                zoom: 16,
-            }, { duration: 1000 });
-
-            if (routePath.length > 1) {
-                setTimeout(() => {
-                    updateMapCamera(currentPos, initialHeading);
-                }, 1000);
-            }
+            updateMapCamera(currentPos, initialHeading);
         } catch (error) {
             console.error('Error zooming to route:', error);
         }
-    }, [routePath.length, getSmoothedHeading, updateMapCamera]);
+    }, [getSmoothedHeading, updateMapCamera]);
 
     const startRecording = async () => {
         setIsPaused(false);
@@ -466,32 +467,7 @@ const RideRecorder: React.FC = () => {
                     if (typeof gpsBearing === 'number' && Number.isFinite(gpsBearing)) {
                         lastHeadingRef.current = gpsBearing;
                     }
-                    const cameraCenter = offsetCoordinate(
-                        newPoint.latitude,
-                        newPoint.longitude,
-                        nextHeading,
-                        250,
-                    );
-                    mapRef.current.animateCamera({
-                        center: cameraCenter,
-                        heading: nextHeading,
-                        pitch: 60,
-                        zoom: 16,
-                    }, { duration: 500 });
-                    if (miniMapRef.current) {
-                        const miniCameraCenter = offsetCoordinate(
-                            newPoint.latitude,
-                            newPoint.longitude,
-                            nextHeading,
-                            350,
-                        );
-                        miniMapRef.current.animateCamera({
-                            center: miniCameraCenter,
-                            heading: nextHeading,
-                            pitch: 60,
-                            zoom: 13,
-                        }, { duration: 500 });
-                    }
+                    updateMapCamera(newPoint, nextHeading);
                 }
             }
         );
@@ -744,12 +720,24 @@ const RideRecorder: React.FC = () => {
                                 showsCompass={false}
                                 showsScale={false}
                                 showsMyLocationButton={false}
-                                initialRegion={{
-                                    latitude: (simulatedPosition || currentUserLocation)!.latitude,
-                                    longitude: (simulatedPosition || currentUserLocation)!.longitude,
-                                    latitudeDelta: 0.888,
-                                    longitudeDelta: 0.888,
-                                }}
+                                initialRegion={(() => {
+                                    const location = simulatedPosition || currentUserLocation;
+                                    if (!location) {
+                                        return {
+                                            latitude: 0,
+                                            longitude: 0,
+                                            latitudeDelta: 0.888,
+                                            longitudeDelta: 0.888,
+                                        };
+                                    }
+                                    const offset = offsetCoordinate(location.latitude, location.longitude, currentBearingRef.current ?? 0, 200);
+                                    return {
+                                        latitude: offset.latitude,
+                                        longitude: offset.longitude,
+                                        latitudeDelta: 0.888,
+                                        longitudeDelta: 0.888,
+                                    };
+                                })()}
                                 pointerEvents="none"
                             >
                                 {routePath.length > 1 && (

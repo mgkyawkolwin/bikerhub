@@ -31,6 +31,11 @@ const formatDistance = (distance?: number) => {
   return `${distance.toFixed(2)} km`;
 };
 
+const formatAvgSpeed = (speed?: number) => {
+  if (!speed || speed <= 0) return '0 km/h';
+  return `${speed.toFixed(1)} km/h`;
+};
+
 const getStaticMapUrl = (locations: Ride['locations'], apiKey?: string) => {
   const safeLocations = (locations ?? []).filter((point) => point?.latitude != null && point?.longitude != null);
   if (safeLocations.length < 2 || !apiKey) return null;
@@ -153,6 +158,11 @@ export default function RideListScreen() {
             <MaterialIcons name="schedule" size={28} color={colors.accent} />
             <Text style={[styles.statValue, { color: colors.text }]}>{formatDuration(item.duration)}</Text>
             <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Duration</Text>
+          </View>
+          <View style={styles.statItem}>
+            <MaterialIcons name="speed" size={28} color={colors.accent} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{formatAvgSpeed(item.averageSpeed)}</Text>
+            <Text style={[styles.statLabel, { color: colors.secondaryText }]}>Avg. Speed</Text>
           </View>
           <View style={styles.statItem}>
             <MaterialIcons name="terrain" size={28} color={colors.accent} />
