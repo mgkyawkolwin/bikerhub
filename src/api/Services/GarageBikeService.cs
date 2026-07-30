@@ -36,20 +36,29 @@ public class GarageBikeService : IGarageBikeService
 
     public async Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId)
     {
-        IQueryable<GarageBikeEntity> query = _dbContext.GarageBikes.Include(bike => bike.Images).AsNoTracking();
-        query = query.Where(x => x.CreatedById == userId);
-        var garageBikes = await query.ToListAsync();
-        return [.. garageBikes.Select(MapToDto)];
+        var garageBikes = await _dbContext.GarageBikes
+            .AsNoTracking()
+            .Where(x => x.CreatedById == userId)
+            .ToListAsync();
+
+        var garageBikeIds = garageBikes.Select(x => x.Id).ToList();
+        var medias = await _dbContext.Medias.Where(m => garageBikeIds.Contains(m.OwnerId)).ToListAsync();
+        var mediaLookup = medias.GroupBy(m => m.OwnerId).ToDictionary(g => g.Key, g => g.ToList());
+
+        return [.. garageBikes.Select(garageBike => MapToDto(garageBike, mediaLookup.ContainsKey(garageBike.Id) ? mediaLookup[garageBike.Id] : null))];
     }
 
     public async Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id)
     {
         var garageBike = await _dbContext.GarageBikes
             .AsNoTracking()
-            .Include(x => x.Images)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        return MapToDto(garageBike);
+        var medias = garageBike is null
+            ? Enumerable.Empty<MediaEntity>()
+            : await _dbContext.Medias.Where(m => m.OwnerId == garageBike.Id).ToListAsync();
+
+        return MapToDto(garageBike, medias);
     }
 
     public async Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId)
@@ -291,7 +300,7 @@ public class GarageBikeService : IGarageBikeService
         return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 
-    private GarageBikeDto MapToDto(GarageBikeEntity? garageBike)
+    private GarageBikeDto MapToDto(GarageBikeEntity? garageBike, IEnumerable<MediaEntity>? medias = null)
     {
         if (garageBike is null)
         {
@@ -308,15 +317,17 @@ public class GarageBikeService : IGarageBikeService
             Km = garageBike.Km,
             Vin = garageBike.Vin,
             CreatedById = garageBike.CreatedById,
-            Images = [.. garageBike.Images.Select(image => new MediaDto
-            {
-                Id = image.Id,
-                OwnerId = image.OwnerId,
-                ObjectName = image.ObjectName,
-                ContentType = image.ContentType,
-                Size = image.Size,
-                Url = BuildObjectUrl(image.ObjectName),
-            })]
+            Images = medias is null
+                ? []
+                : [.. medias.Select(image => new MediaDto
+                {
+                    Id = image.Id,
+                    OwnerId = image.OwnerId,
+                    ObjectName = image.ObjectName,
+                    ContentType = image.ContentType,
+                    Size = image.Size,
+                    Url = BuildObjectUrl(image.ObjectName),
+                })]
         };
     }
 }

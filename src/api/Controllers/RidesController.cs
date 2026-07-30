@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using BikerHub.Dtos;
 using BikerHub.Exceptions;
 using BikerHub.Services;
@@ -105,6 +107,55 @@ public class RidesController : BaseController
         }
     }
 
+    [HttpPost("{id:guid}/media")]
+    [Authorize]
+    public async Task<IActionResult> UploadRideMedia([FromRoute] Guid id, [FromForm] IFormFile file)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: UploadRideMedia(id={RideId}, file={File})", id, JsonSerializer.Serialize(file));
+            if (file is null)
+            {
+                return BadRequest(new { Success = false, Message = "A media file is required." });
+            }
+
+            var ride = await _rideService.UploadRideMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            return Ok(new { Success = true, Data = ride });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpDelete("{id:guid}/media/{mediaId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteRideMedia([FromRoute] Guid id, [FromRoute] Guid mediaId)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteRideMedia({RideId}, {MediaId})", id, mediaId);
+            await _rideService.DeleteRideMediaAsync(id, mediaId, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateRide(Guid id, [FromBody] CreateRideDto? dto)
     {
@@ -124,6 +175,37 @@ public class RidesController : BaseController
             var ride = await _rideService.UpdateRideAsync(id, dto);
 
             _logger.LogInformation("Ride updated successfully: {RideId}", id);
+            _logger.LogDebug("Updated ride result: {Ride}", JsonSerializer.Serialize(ride));
+            return Ok(new { Success = true, Data = ride });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPatch("{id}/info")]
+    public async Task<IActionResult> UpdateRideInfo(Guid id, [FromBody] UpdateRideInfoDto? dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: UpdateRideInfo({RideId})", id);
+            if (dto is null)
+            {
+                _logger.LogWarning("UpdateRideInfo called with null body for id {RideId}", id);
+                return BadRequest(new { Success = false, Message = "UpdateRideInfoDto cannot be null." });
+            }
+
+            _logger.LogInformation("Updating ride info {RideId} {Name}", id, dto.Name);
+            var ride = await _rideService.UpdateRideInfoAsync(id, dto);
+
+            _logger.LogInformation("Ride info updated successfully: {RideId}", id);
             _logger.LogDebug("Updated ride result: {Ride}", JsonSerializer.Serialize(ride));
             return Ok(new { Success = true, Data = ride });
         }

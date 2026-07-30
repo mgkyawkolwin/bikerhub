@@ -10,6 +10,7 @@ export default class Ride {
   id?: string;
   name?: string;
   description?: string;
+  bike?: string;
   distance?: number;
   duration?: number;
   averageSpeed?: number;

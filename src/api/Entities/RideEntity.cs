@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BikerHub.Entities;
 
@@ -10,6 +11,7 @@ public class RideEntity : BaseEntity<Guid>
     public string Name { get; set; } = string.Empty;
 
     public string? Description { get; set; }
+    public string? Bike { get; set; }
     public decimal Distance { get; set; }
     public decimal Duration { get; set; }
     public decimal AverageSpeed { get; set; }
@@ -19,4 +21,7 @@ public class RideEntity : BaseEntity<Guid>
     public decimal MinElevation { get; set; }
     public decimal MaxElevation { get; set; }
     public string LocationsJson { get; set; } = string.Empty;
+
+    [NotMapped]
+    public MediaEntity[]? Medias { get; set; }
 }

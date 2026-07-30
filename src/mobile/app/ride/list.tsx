@@ -129,11 +129,12 @@ export default function RideListScreen() {
   const renderRide = ({ item }: { item: Ride }) => {
     const staticMapUrl = getStaticMapUrl(item.locations, googleMapsApiKey);
     const hasRoutePreview = Boolean(staticMapUrl);
+    const canEdit = currentUserId ? item.createdById === currentUserId : false;
 
     return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => loadRide(item)}
+      onPress={() => viewRide(item)}
       activeOpacity={0.8}
     >
       <View style={styles.cardBody}>
@@ -176,31 +177,50 @@ export default function RideListScreen() {
           </Text>
         ) : null}
       </View>
-      <TouchableOpacity
-        onPress={() => loadRide(item)}
-        style={[styles.downloadButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.downloadText}>View</Text>
-      </TouchableOpacity>
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          onPress={() => viewRide(item)}
+          style={[styles.actionButton, { borderColor: colors.accent, backgroundColor: colors.accent }]}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.downloadText}>View</Text>
+        </TouchableOpacity>
+        {canEdit ? (
+          <TouchableOpacity
+            onPress={() => editRide(item)}
+            style={[styles.actionButton, { borderColor: colors.secondaryText, backgroundColor: 'transparent' }]}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.downloadText, { color: colors.text }]}>Edit</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </TouchableOpacity>
     );
   };
 
   const loadRide = (item: Ride) => {
-    const draft = {
-      locations: item.locations ?? [],
-      routePath: item.locations ?? [],
-      totalDistance: item.distance ?? 0,
-      totalDuration: item.duration ?? 0,
-    } as any;
-
-    setRouteDraft(draft);
 
     if (item.id) {
       router.push({ pathname: '/ride/rideRecorder', params: { rideId: item.id } });
     } else {
       router.push('/ride/rideRecorder');
+    }
+  };
+
+  const viewRide = (item: Ride) => {
+    if (item.id) {
+      router.push({ pathname: '/ride/viewRide', params: { rideId: item.id } });
+    } else {
+      router.push('/ride/viewRide');
+    }
+  };
+
+  const editRide = (item: Ride) => {
+    if (item.id) {
+      router.push({ pathname: '/ride/editRide', params: { rideId: item.id } });
+    } else {
+      router.push('/ride/editRide');
     }
   };
 
@@ -273,6 +293,8 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 13 },
   cardSummary: { fontSize: 14, lineHeight: 20, marginTop: 8 },
   downloadButton: { margin: 16, borderRadius: 8, paddingVertical: 8, alignContent: 'center', alignItems: 'center', justifyContent: 'center' },
+  actionRow: { flexDirection: 'row', gap: 10, padding: 16 },
+  actionButton: { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   uploadRouteButton: { maxWidth: 50, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 8, borderWidth: 1, borderColor: '#E85D04', backgroundColor: 'transparent' },
   uploadRouteText: { fontSize: 15, fontWeight: '700' },
   fieldGroup: { gap: 8 },

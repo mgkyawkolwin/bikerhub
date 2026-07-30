@@ -135,14 +135,5 @@ public class AppDbContext : DbContext
                 .HasForeignKey(participant => participant.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
-
-        modelBuilder.Entity<GarageBikeEntity>(entity =>
-        {
-            entity
-                .HasMany(bike => bike.Images)
-                .WithOne()
-                .HasForeignKey(media => media.OwnerId)
-                .OnDelete(DeleteBehavior.NoAction);
-        });
     }
 }

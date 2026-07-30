@@ -19,6 +19,7 @@ import { getRouteDraft, clearRouteDraft } from '@/services/routeTransfer';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import SnackBar from '@/components/snackbar';
 
 interface LatLng {
     latitude: number;
@@ -240,7 +241,7 @@ const RideRecorder: React.FC = () => {
             currentPosition.latitude,
             currentPosition.longitude,
             nextHeading,
-            1200,
+            1000,
         );
 
         mapRef.current.animateCamera({
@@ -255,7 +256,7 @@ const RideRecorder: React.FC = () => {
                 currentPosition.latitude,
                 currentPosition.longitude,
                 nextHeading,
-                1200,
+                1000,
             );
             miniMapRef.current.animateCamera({
                 center: miniCameraCenter,
@@ -532,9 +533,7 @@ const RideRecorder: React.FC = () => {
             setRoutePath(locations);
         }
 
-        if (locations.length > 0) {
-            setSaveModalVisible(true);
-        }
+        setSaveModalVisible(true);
     };
 
     const handleSaveRide = async () => {
@@ -584,15 +583,20 @@ const RideRecorder: React.FC = () => {
         try {
             const response = await rideService.createRide(payload);
             if (!response.ok) {
-                const errorJson = await response.json().catch(() => null);
-                const message = typeof errorJson === 'object' && errorJson?.message ? errorJson.message : 'Failed to save ride.';
-                throw new Error(message);
+                SnackBar.Error(`${response.status} ${response.statusText} : Invalid response. Please try again.`);
+            }
+
+            const responseJson = await response.json();
+            if (!responseJson.success ) {
+                SnackBar.Error(responseJson.message || 'Failed to save ride.');
+                return;
             }
 
             setSaveModalVisible(false);
             setRideTitle('');
             setRideDescription('');
-            Alert.alert('Saved', 'Ride saved successfully.');
+            SnackBar.Success('Ride saved successfully!');
+            router.push({ pathname: '/ride/viewRide', params: { rideId: responseJson.data.id } });
         } catch (error) {
             Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save ride.');
         }
@@ -867,10 +871,10 @@ const styles = StyleSheet.create({
     },
     miniMapContainer: {
         position: 'absolute',
-        bottom: 30,
-        left: 16,
-        width: 160,
-        height: 240,
+        top: 90,
+        left: 8,
+        width: 120,
+        height: 180,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 2,

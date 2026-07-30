@@ -7,6 +7,8 @@ public sealed record CreateRideDto(
     string Name = null,
     [property: JsonPropertyName("description")]
     string? Description = null,
+    [property: JsonPropertyName("bike")]
+    string? Bike = null,
     [property: JsonPropertyName("distance")]
     decimal Distance = 0,
     [property: JsonPropertyName("duration")]

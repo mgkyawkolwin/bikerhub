@@ -19,6 +19,7 @@ public sealed record RideDto(
     Guid Id,
     string? Name = null,
     string? Description = null,
+    string? Bike = null,
     decimal Distance = 0,
     decimal Duration = 0,
     decimal AverageSpeed = 0,
@@ -29,6 +30,7 @@ public sealed record RideDto(
     decimal MaxElevation = 0,
     Guid? CreatedById = null,
     IEnumerable<RideLocationDto>? Locations = null,
+    IEnumerable<MediaDto>? Medias = null,
     DateTime? CreatedAtUTC = null,
     DateTime? UpdatedAtUTC = null,
     Guid? UpdatedById = null

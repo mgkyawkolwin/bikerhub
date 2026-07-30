@@ -4,6 +4,9 @@ using BikerHub.Data;
 using BikerHub.Dtos;
 using BikerHub.Entities;
 using BikerHub.Exceptions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using BikerHub.Models;
 
 namespace BikerHub.Services;
 
@@ -13,15 +16,22 @@ public interface IRideService
     Task<RideDto?> GetRideByIdAsync(Guid id);
     Task<RideDto> CreateRideAsync(CreateRideDto dto);
     Task<RideDto> UpdateRideAsync(Guid id, CreateRideDto dto);
+    Task<RideDto> UpdateRideInfoAsync(Guid id, UpdateRideInfoDto dto);
+    Task<RideDto> UploadRideMediaAsync(Guid rideId, IFormFile file, Guid currentUserId);
+    Task<bool> DeleteRideMediaAsync(Guid rideId, Guid mediaId, Guid currentUserId);
 }
 
 public class RideService : IRideService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IStorageService? _storageService;
+    private readonly MinioSettings? _minioSettings;
 
-    public RideService(AppDbContext dbContext)
+    public RideService(AppDbContext dbContext, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
     {
         _dbContext = dbContext;
+        _storageService = storageService;
+        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<RideDto>> GetRidesAsync(int page, int pageSize)
@@ -30,13 +40,21 @@ public class RideService : IRideService
         var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PaginatedResultDto<RideDto>(items.Select(MapRide).ToList(), page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
+        // load medias for these rides in a single query
+        var rideIds = items.Select(i => i.Id).ToList();
+        var medias = await _dbContext.Medias.Where(m => rideIds.Contains(m.OwnerId)).ToListAsync();
+        var mediaLookup = medias.GroupBy(m => m.OwnerId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var mapped = items.Select(item => MapRide(item, mediaLookup.ContainsKey(item.Id) ? mediaLookup[item.Id] : null)).ToList();
+        return new PaginatedResultDto<RideDto>(mapped, page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
     public async Task<RideDto?> GetRideByIdAsync(Guid id)
     {
         var ride = await _dbContext.Rides.FindAsync(id);
-        return ride is null ? null : MapRide(ride);
+        if (ride is null) return null;
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == ride.Id).ToListAsync();
+        return MapRide(ride, medias);
     }
 
     public async Task<RideDto> CreateRideAsync(CreateRideDto dto)
@@ -52,6 +70,7 @@ public class RideService : IRideService
         {
             Name = dto.Name ?? string.Empty,
             Description = dto.Description,
+            Bike = dto.Bike,
             Distance = dto.Distance,
             Duration = dto.Duration,
             AverageSpeed = dto.AverageSpeed,
@@ -67,7 +86,8 @@ public class RideService : IRideService
 
         _dbContext.Rides.Add(entity);
         await _dbContext.SaveChangesAsync();
-        return MapRide(entity);
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == entity.Id).ToListAsync();
+        return MapRide(entity, medias);
     }
 
     public async Task<RideDto> UpdateRideAsync(Guid id, CreateRideDto dto)
@@ -87,6 +107,7 @@ public class RideService : IRideService
         }
 
         entity.Name = dto.Name ?? entity.Name;
+        entity.Bike = dto.Bike;
         entity.Description = dto.Description;
         entity.Distance = dto.Distance;
         entity.Duration = dto.Duration;
@@ -100,10 +121,39 @@ public class RideService : IRideService
         entity.LocationsJson = JsonSerializer.Serialize(dto.Locations);
 
         await _dbContext.SaveChangesAsync();
-        return MapRide(entity);
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == entity.Id).ToListAsync();
+        return MapRide(entity, medias);
     }
 
-    private static RideDto MapRide(RideEntity ride)
+    public async Task<RideDto> UpdateRideInfoAsync(Guid id, UpdateRideInfoDto dto)
+    {
+        if (dto is null)
+        {
+            throw new CustomException("UpdateRideInfoDto cannot be null.");
+        }
+
+        var entity = await _dbContext.Rides.FindAsync(id);
+        if (entity is null)
+        {
+            throw new CustomException("Ride not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            entity.Name = dto.Name;
+        }
+
+        // update bike and description (description can be cleared)
+        entity.Name = dto.Name ?? "";
+        entity.Bike = dto.Bike;
+        entity.Description = dto.Description;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == entity.Id).ToListAsync();
+        return MapRide(entity, medias);
+    }
+    private RideDto MapRide(RideEntity ride, IEnumerable<MediaEntity>? medias = null)
     {
         IEnumerable<RideLocationDto>? locations = null;
 
@@ -119,10 +169,25 @@ public class RideService : IRideService
             }
         }
 
+        List<MediaDto>? mediaDtos = null;
+        if (medias != null && medias.Any())
+        {
+            mediaDtos = medias.Select(m => new MediaDto
+            {
+                Id = m.Id,
+                OwnerId = m.OwnerId,
+                ObjectName = m.ObjectName,
+                ContentType = m.ContentType,
+                Size = m.Size,
+                Url = BuildObjectUrl(m.ObjectName)
+            }).ToList();
+        }
+
         return new RideDto(
             ride.Id,
             ride.Name,
             ride.Description,
+            ride.Bike,
             ride.Distance,
             ride.Duration,
             ride.AverageSpeed,
@@ -133,9 +198,81 @@ public class RideService : IRideService
             ride.MaxElevation,
             ride.CreatedById,
             locations,
+            mediaDtos,
             ride.CreatedAtUtc,
             ride.UpdatedAtUtc,
             ride.UpdatedById
         );
+    }
+
+    private string BuildObjectUrl(string objectName)
+    {
+        if (_minioSettings is null) return objectName;
+        if (string.IsNullOrWhiteSpace(_minioSettings.ObjectAccessUrl)) return objectName;
+        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
+    }
+
+    public async Task<RideDto> UploadRideMediaAsync(Guid rideId, IFormFile file, Guid currentUserId)
+    {
+        if (_storageService is null || _minioSettings is null)
+        {
+            throw new InvalidOperationException("Storage service is not configured.");
+        }
+
+        var ride = await _dbContext.Rides.FindAsync(rideId) ?? throw new CustomException("Ride not found.");
+        var objectName = await _storageService.UploadFileAsync(file);
+
+        var media = new MediaEntity
+        {
+            OwnerId = ride.Id,
+            ObjectName = objectName,
+            ContentType = file.ContentType ?? "application/octet-stream",
+            Size = file.Length,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = currentUserId,
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = currentUserId
+        };
+        _dbContext.Medias.Add(media);
+        await _dbContext.SaveChangesAsync();
+
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == ride.Id).ToListAsync();
+        return MapRide(ride, medias);
+    }
+
+    public async Task<bool> DeleteRideMediaAsync(Guid rideId, Guid mediaId, Guid currentUserId)
+    {
+        var ride = await _dbContext.Rides.FirstOrDefaultAsync(x => x.Id == rideId);
+        if (ride is null)
+        {
+            throw new CustomException("Ride not found.");
+        }
+
+        if (ride.CreatedById != currentUserId)
+        {
+            throw new CustomException("Not authorized to delete this media.");
+        }
+
+        var media = await _dbContext.Medias.FirstOrDefaultAsync(x => x.Id == mediaId && x.OwnerId == ride.Id);
+        if (media is null)
+        {
+            throw new CustomException("Media not found.");
+        }
+
+        if (_storageService is not null)
+        {
+            try
+            {
+                await _storageService.DeleteObjectAsync(media.ObjectName);
+            }
+            catch (Exception)
+            {
+                // Best effort
+            }
+        }
+
+        _dbContext.Medias.Remove(media);
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 }
