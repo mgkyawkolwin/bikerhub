@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MapView, { Polyline, Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { container } from '@/services/diContainer';
 import { RideServiceToken } from '@/services/rideService';
 import type { RideService } from '@/services/rideService';
@@ -240,7 +240,7 @@ const RideRecorder: React.FC = () => {
             currentPosition.latitude,
             currentPosition.longitude,
             nextHeading,
-            250,
+            1200,
         );
 
         mapRef.current.animateCamera({
@@ -255,13 +255,13 @@ const RideRecorder: React.FC = () => {
                 currentPosition.latitude,
                 currentPosition.longitude,
                 nextHeading,
-                350,
+                1200,
             );
             miniMapRef.current.animateCamera({
                 center: miniCameraCenter,
                 heading: nextHeading,
-                pitch: 0,
-                zoom: 13,
+                pitch: 30,
+                zoom: 10,
             }, { duration: 500 });
         }
     }, [getRouteHeading]);
@@ -498,6 +498,23 @@ const RideRecorder: React.FC = () => {
         await subscribeLocationUpdates(true);
     };
 
+    const discardRecording = async () => {
+        setSaveModalVisible(false);
+        router.back();
+    };
+
+    const handleStopPress = useCallback(() => {
+        Alert.alert(
+            'Stop Ride',
+            'Are you sure you want to stop this ride?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Stop', style: 'destructive', onPress: () => { stopRecording(); } },
+            ],
+            { cancelable: true },
+        );
+    }, []);
+
     const stopRecording = async () => {
         if (locationSubscription.current) {
             await locationSubscription.current.remove();
@@ -515,7 +532,7 @@ const RideRecorder: React.FC = () => {
             setRoutePath(locations);
         }
 
-        if (locations.length > 0 && isOwnData) {
+        if (locations.length > 0) {
             setSaveModalVisible(true);
         }
     };
@@ -699,7 +716,7 @@ const RideRecorder: React.FC = () => {
                                 >
                                     <Text style={styles.recordActionText}>{isPaused ? 'Resume Ride' : 'Pause Ride'}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[styles.recordActionButton, styles.stopButton]} onPress={stopRecording}>
+                                <TouchableOpacity style={[styles.recordActionButton, styles.stopButton]} onPress={handleStopPress}>
                                     <Text style={styles.recordActionText}>Stop Ride</Text>
                                 </TouchableOpacity>
                             </View>
@@ -760,23 +777,16 @@ const RideRecorder: React.FC = () => {
                     <Modal visible={saveModalVisible} transparent animationType="slide">
                         <View style={styles.modalContainer}>
                             <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Save Ride</Text>
+                                <Text style={styles.modalTitle}>Enter Title</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Title"
                                     value={rideTitle}
                                     onChangeText={setRideTitle}
                                 />
-                                <TextInput
-                                    style={[styles.input, styles.textArea]}
-                                    placeholder="Description"
-                                    value={rideDescription}
-                                    onChangeText={setRideDescription}
-                                    multiline
-                                />
                                 <View style={styles.modalButtons}>
-                                    <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton]} onPress={() => setSaveModalVisible(false)}>
-                                        <Text style={styles.cancelModalText}>Cancel</Text>
+                                    <TouchableOpacity style={[styles.modalButton, styles.cancelModalButton, { backgroundColor: '#f44336' }]} onPress={() => discardRecording()}>
+                                        <Text style={[styles.cancelModalText, { color: '#FFFFFF' }]}>Discard</Text>
                                     </TouchableOpacity>
                                     {isOwnData ? (
                                         <TouchableOpacity style={[styles.modalButton, styles.saveModalButton]} onPress={handleSaveRide}>
@@ -857,10 +867,10 @@ const styles = StyleSheet.create({
     },
     miniMapContainer: {
         position: 'absolute',
-        bottom: 90,
+        bottom: 30,
         left: 16,
-        width: 120,
-        height: 180,
+        width: 160,
+        height: 240,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 2,
