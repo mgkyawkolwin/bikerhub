@@ -5,7 +5,7 @@
 namespace BikerHub.Migrations
 {
     /// <inheritdoc />
-    public partial class aa : Migration
+    public partial class Ver_1012 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,11 +17,22 @@ namespace BikerHub.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_Medias_OwnerId",
                 table: "Medias");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Bike",
+                table: "Rides",
+                type: "longtext",
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "Bike",
+                table: "Rides");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Medias_OwnerId",
                 table: "Medias",
