@@ -596,7 +596,7 @@ const RideRecorder: React.FC = () => {
             setRideTitle('');
             setRideDescription('');
             SnackBar.Success('Ride saved successfully!');
-            router.push({ pathname: '/ride/viewRide', params: { rideId: responseJson.data.id } });
+            router.push({ pathname: '/ride/editRide', params: { rideId: responseJson.data.id } });
         } catch (error) {
             Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save ride.');
         }
