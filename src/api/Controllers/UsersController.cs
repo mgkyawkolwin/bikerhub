@@ -14,13 +14,13 @@ namespace BikerHub.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
-public class UserController : BaseController
+public class UsersController : BaseController
 {
     private readonly AppDbContext _dbContext;
     private readonly IUserService _userService;
-    private readonly ILogger<UserController> _logger;
+    private readonly ILogger<UsersController> _logger;
 
-    public UserController(AppDbContext dbContext, IUserService userService, ILogger<UserController> logger) : base(logger)
+    public UsersController(AppDbContext dbContext, IUserService userService, ILogger<UsersController> logger) : base(logger)
     {
         _dbContext = dbContext;
         _userService = userService;

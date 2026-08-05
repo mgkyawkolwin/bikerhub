@@ -70,6 +70,32 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("signinadmin")]
+    public async Task<ActionResult<AuthResponseDto>> SignInAdmin(LoginDto dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: SignInAdmin(dto={Dto})", JsonSerializer.Serialize(dto));
+
+            var response = await _authService.SignInAdminAsync(dto);
+
+            _logger.LogDebug("Admin sign-in successful for username {Username}", dto.Username);
+            _logger.LogDebug("AuthResponseDto: {Response}", JsonSerializer.Serialize(response));
+
+            return Ok(new { Success = true, Data = response });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogWarning(ex, "Admin sign-in failed for username {Username}", dto.Username);
+            return BadRequest(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while signing in as admin");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while signing in as admin." });
+        }
+    }
+
     [HttpPost("google")]
     public async Task<ActionResult<AuthResponseDto>> GoogleSignIn(GoogleLoginDto dto)
     {

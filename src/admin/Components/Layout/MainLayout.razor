@@ -1,0 +1,58 @@
+﻿@inherits LayoutComponentBase
+
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+
+<div class="page">
+    <div class="sidebar @(isSidebarOpen ? "open" : "closed")">
+        <NavMenu />
+    </div>
+
+    <main class="d-flex flex-column min-vh-100">
+        <div class="top-row px-4">
+            <button class="menu-toggle btn btn-link" type="button" @onclick="ToggleSidebar"
+                    aria-label="Toggle navigation menu">
+                <span class="menu-icon">☰</span>
+            </button>
+
+            <div class="page-title">Admin Portal</div>
+
+            <button class="btn btn-danger signout-button" type="button" @onclick="SignOutAsync">Sign Out</button>
+        </div>
+
+        <article class="content px-4 flex-grow-1">
+            @Body
+        </article>
+
+        <FluentDialogProvider />
+        <FluentToastProvider MaxToastCount="10" />
+        <FooterBar />
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool isSidebarOpen = true;
+
+    private void ToggleSidebar()
+    {
+        isSidebarOpen = !isSidebarOpen;
+    }
+
+    private async Task SignOutAsync()
+    {
+        if (HttpContextAccessor.HttpContext is not null)
+        {
+            await HttpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+
+        Navigation.NavigateTo("/auth/signin", forceLoad: true);
+    }
+}

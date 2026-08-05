@@ -1,0 +1,381 @@
+@page "/users/list"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using BikerHub.Dtos
+@using BikerHub.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IAdminUserService AdminUserService
+@inject DialogService DialogService
+@inject ToastService ToastService
+@inject ILogger<List> Logger
+
+<PageTitle>Users</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Users</h2>
+        <button type="button" class="btn btn-primary" @onclick="OpenNewUserDialog">New User</button>
+    </div>
+
+    <FluentCard>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_users.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4">No users found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var user in _users)
+                        {
+                            <tr>
+                                <td>@user.Id</td>
+                                <td>@user.UserName</td>
+                                <td>@user.Email</td>
+                                <td>@user.Role</td>
+                                <td>@(user.IsActive ? "Active" : "Inactive")</td>
+                                <td class="d-flex gap-2">
+                                    <FluentButton Appearance="Appearance.Stealth" IconStart="@_editIcon" OnClick="() => OpenEditUserDialog(user)">
+                                        <span class="visually-hidden">Edit</span>
+                                    </FluentButton>
+                                    <FluentButton Appearance="Appearance.Stealth" IconStart="@_deleteIcon" OnClick="() => ConfirmDeleteUserAsync(user)">
+                                        <span class="visually-hidden">Delete</span>
+                                    </FluentButton>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </FluentCard>
+
+    <FluentDialog @bind-Hidden="_isNewUserDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Create new user">
+        <div class="p-4" style="min-width: 420px;">
+            <h4>Create new user</h4>
+
+            <EditForm Model="_newUser" OnValidSubmit="CreateNewUserAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <FluentTextField @bind-Value="_newUser.UserName" Placeholder="Username" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <FluentTextField @bind-Value="_newUser.Email" Placeholder="Email address" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <FluentTextField @bind-Value="_newUser.Password" TextFieldType="TextFieldType.Password" Placeholder="Password" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <FluentTextField @bind-Value="_newUser.Role" Placeholder="Admin" Style="width: 100%;" />
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="isActiveCheckbox" @bind="_newUser.IsActive" />
+                    <label class="form-check-label" for="isActiveCheckbox">Active</label>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseNewUserDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Create User")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+
+    <FluentDialog @bind-Hidden="_isEditUserDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Edit user">
+        <div class="p-4" style="min-width: 420px;">
+            <h4>Edit user</h4>
+
+            <EditForm Model="_editUser" OnValidSubmit="UpdateUserAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <FluentTextField @bind-Value="_editUser.UserName" Placeholder="Username" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <FluentTextField @bind-Value="_editUser.Email" Placeholder="Email address" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <FluentTextField @bind-Value="_editUser.Role" Placeholder="Admin" Style="width: 100%;" />
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="editIsActiveCheckbox" @bind="_editUser.IsActive" />
+                    <label class="form-check-label" for="editIsActiveCheckbox">Active</label>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditUserDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private List<AdminUserDto> _users = new();
+    private bool _isNewUserDialogHidden = true;
+    private bool _isEditUserDialogHidden = true;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private NewUserModel _newUser = new();
+    private EditUserModel _editUser = new();
+    private Guid _editingUserId;
+    private readonly Icon _editIcon = new Icon("Edit", IconVariant.Regular, IconSize.Size16, "Edit");
+    private readonly Icon _deleteIcon = new Icon("Delete", IconVariant.Regular, IconSize.Size16, "Delete");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        _isCheckingAuth = false;
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            var result = await AdminUserService.GetAllAsync(page: 1, pageSize: 100);
+            _users = result.Items.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load admin users.");
+            _users = new List<AdminUserDto>();
+        }
+    }
+
+    private void OpenNewUserDialog()
+    {
+        _formErrorMessage = null;
+        _newUser = new NewUserModel();
+        _isNewUserDialogHidden = false;
+    }
+
+    private void CloseNewUserDialog()
+    {
+        _isNewUserDialogHidden = true;
+    }
+
+    private void OpenEditUserDialog(AdminUserDto user)
+    {
+        _formErrorMessage = null;
+        _editingUserId = user.Id;
+        _editUser = new EditUserModel
+        {
+            UserName = user.UserName,
+            Email = user.Email,
+            Role = user.Role,
+            IsActive = user.IsActive
+        };
+        _isEditUserDialogHidden = false;
+    }
+
+    private void CloseEditUserDialog()
+    {
+        _isEditUserDialogHidden = true;
+    }
+
+    private Task ConfirmDeleteUserAsync(AdminUserDto user)
+    {
+        DialogService.ShowConfirmation(
+            this,
+            async dialogResult =>
+            {
+                if (dialogResult.Cancelled)
+                {
+                    return;
+                }
+
+                _isSubmitting = true;
+                try
+                {
+                    var deleted = await AdminUserService.DeleteAsync(user.Id);
+                    if (deleted)
+                    {
+                        await LoadUsersAsync();
+                        ToastService.ShowSuccess("Admin user deleted successfully.", 2000, "Deleted");
+                    }
+                    else
+                    {
+                        ToastService.ShowError("Failed to delete admin user.", 2000, "Error");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to delete admin user.");
+                    ToastService.ShowError("Failed to delete admin user.", 2000, "Error");
+                }
+                finally
+                {
+                    _isSubmitting = false;
+                }
+            },
+            $"Are you sure you want to delete user '{user.UserName}'?",
+            "Delete",
+            "Cancel",
+            "Confirm delete");
+
+        return Task.CompletedTask;
+    }
+
+    private async Task CreateNewUserAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateAdminUserDto
+            {
+                UserName = _newUser.UserName,
+                Email = _newUser.Email,
+                Password = _newUser.Password,
+                Role = string.IsNullOrWhiteSpace(_newUser.Role) ? "Admin" : _newUser.Role,
+                IsActive = _newUser.IsActive
+            };
+
+            await AdminUserService.CreateAsync(dto);
+            await LoadUsersAsync();
+            _isNewUserDialogHidden = true;
+            ToastService.ShowSuccess("New admin user has been created.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create new admin user.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task UpdateUserAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new UpdateAdminUserDto
+            {
+                UserName = _editUser.UserName,
+                Email = _editUser.Email,
+                Role = string.IsNullOrWhiteSpace(_editUser.Role) ? "Admin" : _editUser.Role,
+                IsActive = _editUser.IsActive
+            };
+
+            await AdminUserService.UpdateAsync(_editingUserId, dto);
+            await LoadUsersAsync();
+            _isEditUserDialogHidden = true;
+            ToastService.ShowSuccess("Admin user updated successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update admin user.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private sealed class NewUserModel
+    {
+        [Required(ErrorMessage = "Username is required")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        public string Password { get; set; } = string.Empty;
+
+        public string Role { get; set; } = "Admin";
+
+        public bool IsActive { get; set; } = true;
+    }
+
+    private sealed class EditUserModel
+    {
+        [Required(ErrorMessage = "Username is required")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        public string? Role { get; set; }
+
+        public bool IsActive { get; set; } = true;
+    }
+}

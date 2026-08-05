@@ -91,6 +91,7 @@ builder.Services.AddScoped<IRideService, RideService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
 builder.Services.AddScoped<IStolenBikeService, StolenBikeService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>

@@ -32,6 +32,7 @@ public class AppDbContext : DbContext
     public DbSet<LookUpEntity> LookUps => Set<LookUpEntity>();
     public DbSet<GarageBikeEntity> GarageBikes => Set<GarageBikeEntity>();
     public DbSet<MediaEntity> Medias => Set<MediaEntity>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

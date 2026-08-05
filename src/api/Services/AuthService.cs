@@ -56,6 +56,32 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    private string CreateJwtToken(AdminUser adminUser)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, adminUser.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, adminUser.Email),
+            new Claim(ClaimTypes.Name, adminUser.UserName),
+            new Claim(ClaimTypes.Role, adminUser.Role),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiresInMinutes);
+
+        var token = new JwtSecurityToken(
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
+            claims: claims,
+            expires: expires,
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
         DtoValidationHelper.ValidateRequiredString(dto.UserName, "Name");
@@ -168,6 +194,60 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
         );
 
         _logger.LogTrace("AuthResponseDto: {@Response}", response);
+        return response;
+    }
+
+    public async Task<AuthResponseDto> SignInAdminAsync(LoginDto dto)
+    {
+        _logger.LogTrace("SignInAdminAsync called with username {dto}", dto);
+        DtoValidationHelper.ValidateRequiredString(dto.Username, "Username");
+        DtoValidationHelper.ValidateRequiredString(dto.Password, "Password");
+
+        _logger.LogTrace("SignInAdminAsync called with username {Username}", dto.Username);
+
+        var normalizedUsername = dto.Username.Trim();
+        var normalizedEmail = normalizedUsername.Contains('@') ? normalizedUsername.ToLowerInvariant() : null;
+        var normalizedName = normalizedUsername.ToLowerInvariant();
+        var adminUser = await _dbContext.AdminUsers.SingleOrDefaultAsync(u => u.IsActive && ((normalizedEmail != null && u.Email == normalizedEmail) || u.UserName.ToLower() == normalizedName));
+
+        if (adminUser == null)
+        {
+            _logger.LogWarning("Admin sign-in failed for unknown username {Username}", dto.Username);
+            throw new CustomException("Invalid admin username or password.");
+        }
+
+        var passwordHasher = new PasswordHasher<AdminUser>();
+        var verificationResult = passwordHasher.VerifyHashedPassword(adminUser, adminUser.PasswordHash, dto.Password);
+        if (verificationResult == PasswordVerificationResult.Failed)
+        {
+            _logger.LogWarning("Admin sign-in failed for username {Username}: invalid password", dto.Username);
+            throw new CustomException("Invalid admin username or password.");
+        }
+
+        adminUser.LastLoginAtUtc = DateTime.UtcNow;
+        adminUser.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Admin user {Username} authenticated successfully", dto.Username);
+
+        var token = CreateJwtToken(adminUser);
+        var response = new AuthResponseDto(
+            token,
+            new UserDto
+            {
+                Id = adminUser.Id,
+                UserName = adminUser.UserName,
+                Email = adminUser.Email,
+                Address = null,
+                City = null,
+                Rating = null,
+                RatingCount = null,
+                ProfilePictureUrl = null,
+                Token = token
+            }
+        );
+
+        _logger.LogTrace("Admin auth response created for {Email}", adminUser.Email);
         return response;
     }
 
