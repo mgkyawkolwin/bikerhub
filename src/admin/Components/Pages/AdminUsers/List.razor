@@ -1,4 +1,4 @@
-@page "/users/list"
+@page "/adminusers/list"
 @rendermode InteractiveServer
 
 @using System.ComponentModel.DataAnnotations
@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IUserService UserService
+@inject IAdminUserService AdminUserService
 @inject IDialogService DialogService
 @inject IToastService ToastService
 @inject ILogger<List> Logger
@@ -32,14 +32,14 @@
     </div>
 
     <FluentCard>
-        <FluentDataGrid @ref="_userGrid" TGridItem="UserDto" ItemsProvider="LoadPageAsync" ItemKey="@(user => user.Id)" Pagination="_paginationState" ShowHover="true" DisplayMode="DataGridDisplayMode.Table" GridTemplateColumns="200px 1fr 1.5fr 1fr 180px 180px">
+        <FluentDataGrid @ref="_userGrid" TGridItem="AdminUserDto" ItemsProvider="LoadPageAsync" ItemKey="@(user => user.Id)" Pagination="_paginationState" ShowHover="true" DisplayMode="DataGridDisplayMode.Table" GridTemplateColumns="200px 1fr 1.5fr 1fr 180px 180px">
             <PropertyColumn Title="#" Property="@(user => user.Id)" />
             <PropertyColumn Title="Username" Property="@(user => user.UserName)" />
             <PropertyColumn Title="Email" Property="@(user => user.Email)" />
-            <PropertyColumn Title="City" Property="@(user => user.City)" />
-            <TemplateColumn Title="Rating">
+            <PropertyColumn Title="Role" Property="@(user => user.Role)" />
+            <TemplateColumn Title="Status">
                 <ChildContent Context="user">
-                    <span>@(user.Rating?.ToString("0.0") ?? "-")</span>
+                    <span>@(user.IsActive ? "Active" : "Inactive")</span>
                 </ChildContent>
             </TemplateColumn>
             <TemplateColumn Title="Actions">
@@ -74,11 +74,6 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Display Name</label>
-                    <FluentTextField @bind-Value="_newUser.DisplayName" Placeholder="Display name" Style="width: 100%;" />
-                </div>
-
-                <div class="mb-3">
                     <label class="form-label">Email</label>
                     <FluentTextField @bind-Value="_newUser.Email" Placeholder="Email address" Style="width: 100%;" />
                 </div>
@@ -89,8 +84,13 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">City</label>
-                    <FluentTextField @bind-Value="_newUser.City" Placeholder="City" Style="width: 100%;" />
+                    <label class="form-label">Role</label>
+                    <FluentTextField @bind-Value="_newUser.Role" Placeholder="Admin" Style="width: 100%;" />
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="isActiveCheckbox" @bind="_newUser.IsActive" />
+                    <label class="form-check-label" for="isActiveCheckbox">Active</label>
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
@@ -122,23 +122,18 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Display Name</label>
-                    <FluentTextField @bind-Value="_editUser.DisplayName" Placeholder="Display name" Style="width: 100%;" />
-                </div>
-
-                <div class="mb-3">
                     <label class="form-label">Email</label>
                     <FluentTextField @bind-Value="_editUser.Email" Placeholder="Email address" Style="width: 100%;" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <FluentTextField @bind-Value="_editUser.Password" TextFieldType="TextFieldType.Password" Placeholder="Leave blank to keep current password" Style="width: 100%;" />
+                    <label class="form-label">Role</label>
+                    <FluentTextField @bind-Value="_editUser.Role" Placeholder="Admin" Style="width: 100%;" />
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">City</label>
-                    <FluentTextField @bind-Value="_editUser.City" Placeholder="City" Style="width: 100%;" />
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="editIsActiveCheckbox" @bind="_editUser.IsActive" />
+                    <label class="form-check-label" for="editIsActiveCheckbox">Active</label>
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
@@ -160,8 +155,8 @@
 @code {
     private bool _isCheckingAuth = true;
     private bool _isAuthenticated;
-    private List<UserDto> _users = new();
-    private FluentDataGrid<UserDto>? _userGrid;
+    private List<AdminUserDto> _users = new();
+    private FluentDataGrid<AdminUserDto>? _userGrid;
     private readonly PaginationState _paginationState = new PaginationState { ItemsPerPage = 10 };
     private bool _isNewUserDialogHidden = true;
     private bool _isEditUserDialogHidden = true;
@@ -186,22 +181,21 @@
         _isCheckingAuth = false;
     }
 
-    private async ValueTask<GridItemsProviderResult<UserDto>> LoadPageAsync(GridItemsProviderRequest<UserDto> request)
+    private async ValueTask<GridItemsProviderResult<AdminUserDto>> LoadPageAsync(GridItemsProviderRequest<AdminUserDto> request)
     {
         try
         {
             var startIndex = request.StartIndex;
             var pageSize = request.Count ?? _paginationState.ItemsPerPage;
             var page = (startIndex / pageSize) + 1;
-
-            var result = await UserService.GetUsersAsync(page, pageSize, string.Empty);
+            var result = await AdminUserService.GetAllAsync(page, pageSize);
             _users = result.Items.ToList();
             return GridItemsProviderResult.From(_users, result.Total);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to load users.");
-            return GridItemsProviderResult.From(Array.Empty<UserDto>(), 0);
+            Logger.LogError(ex, "Failed to load admin users.");
+            return GridItemsProviderResult.From(Array.Empty<AdminUserDto>(), 0);
         }
     }
 
@@ -217,17 +211,16 @@
         _isNewUserDialogHidden = true;
     }
 
-    private void OpenEditUserDialog(UserDto user)
+    private void OpenEditUserDialog(AdminUserDto user)
     {
         _formErrorMessage = null;
         _editingUserId = user.Id;
         _editUser = new EditUserModel
         {
-            UserName = user.UserName ?? string.Empty,
-            DisplayName = user.DisplayName ?? string.Empty,
-            Email = user.Email ?? string.Empty,
-            City = user.City,
-            Password = string.Empty
+            UserName = user.UserName,
+            Email = user.Email,
+            Role = user.Role,
+            IsActive = user.IsActive
         };
         _isEditUserDialogHidden = false;
     }
@@ -237,8 +230,10 @@
         _isEditUserDialogHidden = true;
     }
 
-    private async Task ConfirmDeleteUserAsync(UserDto user)
+    private async Task ConfirmDeleteUserAsync(AdminUserDto user)
     {
+        @* var dialog = await  DialogService.ShowConfirmationAsync("Are you <strong>sure</strong> you want to delete this item? <br /><br />This will also remove any linked items");
+        var result = await dialog.Result; *@
         await DialogService.ShowConfirmationAsync(
             this,
             async dialogResult =>
@@ -251,34 +246,35 @@
                 _isSubmitting = true;
                 try
                 {
-                    var deleted = await UserService.DeleteAsync(user.Id);
+                    var deleted = await AdminUserService.DeleteAsync(user.Id);
                     if (deleted)
                     {
                         if (_userGrid is not null)
                         {
                             await _userGrid.RefreshDataAsync(false);
                         }
-                        ToastService.ShowSuccess("User deleted successfully.", 2000, "Deleted");
+                        ToastService.ShowSuccess("Admin user deleted successfully.", 2000, "Deleted");
                     }
                     else
                     {
-                        ToastService.ShowError("Failed to delete user.", 2000, "Error");
+                        ToastService.ShowError("Failed to delete admin user.", 2000, "Error");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "Failed to delete user.");
-                    ToastService.ShowError("Failed to delete user.", 2000, "Error");
+                    Logger.LogError(ex, "Failed to delete admin user.");
+                    ToastService.ShowError("Failed to delete admin user.", 2000, "Error");
                 }
                 finally
                 {
                     _isSubmitting = false;
                 }
             },
-            $"Are you sure you want to delete user '{user.UserName ?? user.DisplayName}'?",
+            $"Are you sure you want to delete user '{user.UserName}'?",
             "Delete",
             "Cancel",
             "Confirm delete");
+
     }
 
     private async Task CreateNewUserAsync()
@@ -288,27 +284,26 @@
 
         try
         {
-            var dto = new CreateUserDto
+            var dto = new CreateAdminUserDto
             {
                 UserName = _newUser.UserName,
-                DisplayName = _newUser.DisplayName,
                 Email = _newUser.Email,
                 Password = _newUser.Password,
-                City = _newUser.City
+                Role = string.IsNullOrWhiteSpace(_newUser.Role) ? "Admin" : _newUser.Role,
+                IsActive = _newUser.IsActive
             };
 
-            await UserService.CreateAsync(dto);
+            await AdminUserService.CreateAsync(dto);
             if (_userGrid is not null)
             {
                 await _userGrid.RefreshDataAsync(false);
             }
-
             _isNewUserDialogHidden = true;
-            ToastService.ShowSuccess("New user has been created.", 2000, "Success");
+            ToastService.ShowSuccess("New admin user has been created.", 2000, "Success");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to create new user.");
+            Logger.LogError(ex, "Failed to create new admin user.");
             _formErrorMessage = ex.Message;
         }
         finally
@@ -324,27 +319,25 @@
 
         try
         {
-            var dto = new UpdateUserDto
+            var dto = new UpdateAdminUserDto
             {
                 UserName = _editUser.UserName,
-                DisplayName = _editUser.DisplayName,
                 Email = _editUser.Email,
-                Password = string.IsNullOrWhiteSpace(_editUser.Password) ? null : _editUser.Password,
-                City = _editUser.City
+                Role = string.IsNullOrWhiteSpace(_editUser.Role) ? "Admin" : _editUser.Role,
+                IsActive = _editUser.IsActive
             };
 
-            await UserService.UpdateAsync(_editingUserId, dto);
+            await AdminUserService.UpdateAsync(_editingUserId, dto);
             if (_userGrid is not null)
             {
                 await _userGrid.RefreshDataAsync(false);
             }
-
             _isEditUserDialogHidden = true;
-            ToastService.ShowSuccess("User updated successfully.", 2000, "Success");
+            ToastService.ShowSuccess("Admin user updated successfully.", 2000, "Success");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to update user.");
+            Logger.LogError(ex, "Failed to update admin user.");
             _formErrorMessage = ex.Message;
         }
         finally
@@ -353,18 +346,10 @@
         }
     }
 
-    private void ViewUserDetails(UserDto user)
-    {
-        ToastService.ShowInfo($"Viewing user {user.UserName ?? user.DisplayName}", 2000, "User Details");
-    }
-
     private sealed class NewUserModel
     {
         [Required(ErrorMessage = "Username is required")]
         public string UserName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Display name is required")]
-        public string DisplayName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Enter a valid email address")]
@@ -373,7 +358,9 @@
         [Required(ErrorMessage = "Password is required")]
         public string Password { get; set; } = string.Empty;
 
-        public string? City { get; set; }
+        public string Role { get; set; } = "Admin";
+
+        public bool IsActive { get; set; } = true;
     }
 
     private sealed class EditUserModel
@@ -381,15 +368,12 @@
         [Required(ErrorMessage = "Username is required")]
         public string UserName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Display name is required")]
-        public string DisplayName { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Enter a valid email address")]
         public string Email { get; set; } = string.Empty;
 
-        public string? Password { get; set; }
+        public string? Role { get; set; }
 
-        public string? City { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }
