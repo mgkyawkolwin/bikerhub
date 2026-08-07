@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
+using BikerHub.Dtos;
 using BikerHub.Exceptions;
 using BikerHub.Services;
 
@@ -104,6 +105,82 @@ public class ChallengesController : BaseController
             }
 
             return Ok(new { Success = true, Data = challenge });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> CreateChallenge([FromForm] CreateChallengeDto dto, [FromForm] IFormFile? coverPhoto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: CreateChallenge(title={Title})", dto.Title);
+            var challenge = await _challengeService.CreateAsync(dto, coverPhoto);
+            return Ok(new { Success = true, Data = challenge });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateChallenge(Guid id, [FromForm] UpdateChallengeDto dto, [FromForm] IFormFile? coverPhoto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: UpdateChallenge(id={Id})", id);
+            var challenge = await _challengeService.UpdateAsync(id, dto, coverPhoto);
+            if (challenge is null)
+            {
+                return NotFound(new { Success = false, Message = "Challenge not found." });
+            }
+
+            return Ok(new { Success = true, Data = challenge });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteChallenge(Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteChallenge(id={Id})", id);
+            var deleted = await _challengeService.DeleteAsync(id);
+            if (!deleted)
+            {
+                return NotFound(new { Success = false, Message = "Challenge not found." });
+            }
+
+            return Ok(new { Success = true, Message = "Challenge deleted successfully." });
         }
         catch (CustomException ex)
         {

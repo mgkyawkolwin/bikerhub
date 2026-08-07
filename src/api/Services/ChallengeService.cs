@@ -1,3 +1,5 @@
+using System.IO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BikerHub.Data;
@@ -17,7 +19,11 @@ public enum ChallengePeriod
 public interface IChallengeService
 {
     Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period, Guid? currentUserId = null);
+    Task<IEnumerable<ChallengeDto>> GetAllAsync(Guid? currentUserId = null);
     Task<ChallengeDto?> GetChallengeByIdAsync(Guid id, Guid? currentUserId = null);
+    Task<ChallengeDto> CreateAsync(CreateChallengeDto dto, IFormFile? coverPhoto = null);
+    Task<ChallengeDto?> UpdateAsync(Guid id, UpdateChallengeDto dto, IFormFile? coverPhoto = null);
+    Task<bool> DeleteAsync(Guid id);
     Task<bool> JoinChallengeAsync(Guid challengeId, Guid userId);
     Task<bool> LeaveChallengeAsync(Guid challengeId, Guid userId);
 }
@@ -25,12 +31,16 @@ public interface IChallengeService
 public class ChallengeService : IChallengeService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IStorageService? _storageService;
     private readonly MinioSettings? _minioSettings;
+    private readonly ILogger<ChallengeService> _logger;
 
-    public ChallengeService(AppDbContext dbContext, IOptions<MinioSettings>? minioOptions = null)
+    public ChallengeService(AppDbContext dbContext, IStorageService? storageService, IOptions<MinioSettings>? minioOptions = null, ILogger<ChallengeService>? logger = null)
     {
         _dbContext = dbContext;
-        _minioSettings = minioOptions?.Value;
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _minioSettings = minioOptions?.Value ?? throw new ArgumentNullException(nameof(minioOptions));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period, Guid? currentUserId = null)
@@ -68,6 +78,133 @@ public class ChallengeService : IChallengeService
 
         var profilePhotoUrls = await GetProfilePhotoUrlsAsync(challenge.Participants.Select(participant => participant.UserId));
         return MapChallenge(challenge, currentUserId, profilePhotoUrls);
+    }
+
+    public async Task<IEnumerable<ChallengeDto>> GetAllAsync(Guid? currentUserId = null)
+    {
+        await _dbContext.Database.EnsureCreatedAsync();
+        var challenges = await _dbContext.Challenges
+            .AsNoTracking()
+            .Include(c => c.Participants)
+                .ThenInclude(p => p.User)
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .ToListAsync();
+
+        var profilePhotoUrls = await GetProfilePhotoUrlsAsync(challenges.SelectMany(challenge => challenge.Participants).Select(participant => participant.UserId));
+        return challenges.Select(challenge => MapChallenge(challenge, currentUserId, profilePhotoUrls));
+    }
+
+    public async Task<ChallengeDto> CreateAsync(CreateChallengeDto dto, IFormFile? coverPhoto = null)
+    {
+        _logger.LogTrace("CALLED: CreateAsync()");
+        _logger.LogTrace("Dto: {@Dto}", dto);
+        _logger.LogTrace("CoverPhoto: {@CoverPhoto}", coverPhoto == null ? "null" : coverPhoto.FileName);
+        await _dbContext.Database.EnsureCreatedAsync();
+
+        var challenge = new Challenge
+        {
+            Title = dto.Title.Trim(),
+            Description = dto.Description?.Trim(),
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            NoOfParticipants = dto.NoOfParticipants,
+            IsStarted = dto.StartDate <= DateTime.UtcNow,
+            IsEnded = dto.EndDate < DateTime.UtcNow
+        };
+
+        if (coverPhoto is not null && _storageService is not null)
+        {
+            _logger.LogTrace("Uploading cover photo for challenge.");
+            challenge.CoverImageUrl = await _storageService.UploadFileAsync(coverPhoto);
+            _logger.LogTrace("Cover photo uploaded successfully. URL: {CoverImageUrl}", challenge.CoverImageUrl);
+        }
+        _logger.LogTrace("Saving new challenge to the database.");
+        _dbContext.Challenges.Add(challenge);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogTrace("New challenge saved successfully with ID: {ChallengeId}", challenge.Id);
+        return MapChallenge(challenge);
+    }
+
+    public async Task<ChallengeDto?> UpdateAsync(Guid id, UpdateChallengeDto dto, IFormFile? coverPhoto = null)
+    {
+        await _dbContext.Database.EnsureCreatedAsync();
+
+        var challenge = await _dbContext.Challenges.FindAsync(id);
+        if (challenge is null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Title))
+        {
+            challenge.Title = dto.Title.Trim();
+        }
+
+        if (dto.Description is not null)
+        {
+            challenge.Description = dto.Description.Trim();
+        }
+
+        if (dto.StartDate.HasValue)
+        {
+            challenge.StartDate = dto.StartDate.Value;
+        }
+
+        if (dto.EndDate.HasValue)
+        {
+            challenge.EndDate = dto.EndDate.Value;
+        }
+
+        if (dto.NoOfParticipants.HasValue)
+        {
+            challenge.NoOfParticipants = dto.NoOfParticipants.Value;
+        }
+
+        challenge.IsStarted = challenge.StartDate <= DateTime.UtcNow;
+        challenge.IsEnded = challenge.EndDate < DateTime.UtcNow;
+
+        if (coverPhoto is not null && _storageService is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(challenge.CoverImageUrl))
+            {
+                var oldObjectName = GetObjectNameFromUrl(challenge.CoverImageUrl);
+                if (!string.IsNullOrWhiteSpace(oldObjectName))
+                {
+                    await _storageService.DeleteObjectAsync(oldObjectName);
+                }
+            }
+
+            challenge.CoverImageUrl = await _storageService.UploadFileAsync(coverPhoto);
+        }
+
+        challenge.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return MapChallenge(challenge);
+    }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        await _dbContext.Database.EnsureCreatedAsync();
+
+        var challenge = await _dbContext.Challenges.FindAsync(id);
+        if (challenge is null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(challenge.CoverImageUrl) && _storageService is not null)
+        {
+            var objectName = GetObjectNameFromUrl(challenge.CoverImageUrl);
+            if (!string.IsNullOrWhiteSpace(objectName))
+            {
+                await _storageService.DeleteObjectAsync(objectName);
+            }
+        }
+
+        _dbContext.Challenges.Remove(challenge);
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> JoinChallengeAsync(Guid challengeId, Guid userId)
@@ -214,5 +351,20 @@ public class ChallengeService : IChallengeService
         return string.IsNullOrWhiteSpace(bucketName)
             ? $"{baseUrl}/{objectName}"
             : $"{baseUrl}/{bucketName}/{objectName}";
+    }
+
+    private static string? GetObjectNameFromUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return Path.GetFileName(uri.LocalPath);
+        }
+
+        return Path.GetFileName(url);
     }
 }

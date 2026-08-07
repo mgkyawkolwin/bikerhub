@@ -10,7 +10,9 @@
 @inject IUserService UserService
 @inject IDialogService DialogService
 @inject IToastService ToastService
+@inject IJSRuntime JSRuntime
 @inject ILogger<List> Logger
+@inject IStringLocalizer<LocalizedStrings> Localizer
 
 <PageTitle>Users</PageTitle>
 
@@ -33,7 +35,14 @@
 
     <FluentCard>
         <FluentDataGrid @ref="_userGrid" TGridItem="UserDto" ItemsProvider="LoadPageAsync" ItemKey="@(user => user.Id)" Pagination="_paginationState" ShowHover="true" DisplayMode="DataGridDisplayMode.Table" GridTemplateColumns="200px 1fr 1.5fr 1fr 180px 180px">
-            <PropertyColumn Title="#" Property="@(user => user.Id)" />
+            <TemplateColumn Title="#">
+                <ChildContent Context="user">
+                    <div class="d-flex align-items-center gap-2">
+                        <span>@($"{user.Id.ToString()[..4]}...{user.Id.ToString()[^4..]}")</span>
+                        <FluentIcon Icon="Icons.Regular.Size20.Copy" OnClick="() => CopyIdToClipboard(user.Id)" />
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
             <PropertyColumn Title="Username" Property="@(user => user.UserName)" />
             <PropertyColumn Title="Email" Property="@(user => user.Email)" />
             <PropertyColumn Title="City" Property="@(user => user.City)" />
@@ -46,10 +55,10 @@
                 <ChildContent Context="user">
                     <div class="d-flex gap-2">
                         <FluentButton Appearance="Appearance.Stealth" IconStart="@_editIcon" OnClick="() => OpenEditUserDialog(user)">
-                            <span class="visually-hidden">Edit</span>
+                            <span class="visually-hidden">@Localizer["Title.Edit"]</span>
                         </FluentButton>
                         <FluentButton Appearance="Appearance.Stealth" IconStart="@_deleteIcon" OnClick="() => ConfirmDeleteUserAsync(user)">
-                            <span class="visually-hidden">Delete</span>
+                            <span class="visually-hidden">@Localizer["Title.Delete"]</span>
                         </FluentButton>
                     </div>
                 </ChildContent>
@@ -172,6 +181,13 @@
     private Guid _editingUserId;
     private readonly Icon _editIcon = new Icon("Edit", IconVariant.Regular, IconSize.Size16, "Edit");
     private readonly Icon _deleteIcon = new Icon("Delete", IconVariant.Regular, IconSize.Size16, "Delete");
+
+
+    private async Task CopyIdToClipboard(Guid userId)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", userId.ToString());
+        ToastService.ShowSuccess("User ID copied to clipboard.", 1500, "Copied");
+    }
 
     protected override async Task OnInitializedAsync()
     {

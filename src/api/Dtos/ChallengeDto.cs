@@ -23,3 +23,21 @@ public sealed record ChallengeDto(
     DateTime? CreatedAtUTC = null,
     DateTime? UpdatedAtUTC = null
 );
+
+public sealed record CreateChallengeDto
+{
+    public string Title { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public DateTime StartDate { get; init; }
+    public DateTime EndDate { get; init; }
+    public int NoOfParticipants { get; init; }
+}
+
+public sealed record UpdateChallengeDto
+{
+    public string? Title { get; init; }
+    public string? Description { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+    public int? NoOfParticipants { get; init; }
+}
