@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260805055544_AddAdminUsers")]
-    partial class AddAdminUsers
+    [Migration("20260808015050_Ver_1.0.13")]
+    partial class Ver_1013
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BikerHub.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAdminUsers : Migration
+    public partial class Ver_1013 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

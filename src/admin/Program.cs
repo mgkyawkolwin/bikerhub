@@ -67,6 +67,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+app.UseStaticFiles();
 
 // Localization configuration
 var supportedCultures = new[] { "en-US", "my-MM" };
@@ -89,7 +90,7 @@ app.UseAuthorization();
 app.UseRequestLocalization(localizationOptions);
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+// app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
