@@ -18,4 +18,6 @@ export default class Directory {
   myRating?: number;
   rating?: number;
   ratingCount?: number;
+  isFavorited?: boolean;
+  favoriteCount?: number;
 }

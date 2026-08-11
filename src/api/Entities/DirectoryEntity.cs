@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-
+using System.ComponentModel.DataAnnotations.Schema;
 namespace BikerHub.Entities;
 
 public class DirectoryEntity : BaseEntity<Guid>
@@ -40,10 +40,12 @@ public class DirectoryEntity : BaseEntity<Guid>
 
     [MaxLength(100)]
     public string? BusinessType { get; set; }
-
-    public bool IsLiked { get; set; }
-    public int LikesCount { get; set; }
+    public int FavoriteCount { get; set; }
     public double? Rating { get; set; }
     public int? RatingCount { get; set; }
+
+    [NotMapped]
+    public bool IsFavorited { get; set; }
+    [NotMapped]
     public double? MyRating { get; set; }
 }

@@ -16,8 +16,8 @@ public sealed record DirectoryDto
     public string? GoogleMapUrl { get; set; }
     public string? BusinessType { get; set; }
     public required Guid CreatedById { get; set; }
-    public bool IsLiked { get; set; }
-    public int LikesCount { get; set; }
+    public bool IsFavorited { get; set; }
+    public int FavoriteCount { get; set; }
     public double? Rating { get; set; }
     public int? RatingCount { get; set; }
     public double? MyRating { get; set; }

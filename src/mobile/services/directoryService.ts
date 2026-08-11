@@ -1,6 +1,5 @@
 import Directory from '@/models/directory';
-import type { PaginatedResult } from '@/models/paginatedResult';
-import { fetchApi, authenticatedFetchApi } from './apiClient';
+import { authenticatedFetchApi } from './apiClient';
 
 export const DirectoryServiceToken = Symbol('DirectoryService');
 
@@ -18,6 +17,8 @@ export interface DirectoryService {
   deleteDirectory(directoryId: string): Promise<Response>;
   uploadDirectoryLogo(directoryId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   uploadDirectoryCoverImage(directoryId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
+  toggleFavorite(directoryId: string): Promise<Response>;
+  rateDirectory(directoryId: string, rating: number): Promise<Response>;
 }
 
 function buildDirectoryQuery(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): string {
@@ -33,11 +34,11 @@ function buildDirectoryQuery(page: number, pageSize: number, query?: string, fil
 
 export class DirectoryServiceClient implements DirectoryService {
   async getDirectories(page: number, pageSize: number, query?: string, filters?: DirectoryFilter): Promise<Response> {
-    return fetchApi(`/directories?${buildDirectoryQuery(page, pageSize, query, filters)}`);
+    return authenticatedFetchApi(`/directories?${buildDirectoryQuery(page, pageSize, query, filters)}`);
   }
 
   async getDirectoryById(id: string): Promise<Response> {
-    return fetchApi(`/directories/${encodeURIComponent(id)}`);
+    return authenticatedFetchApi(`/directories/${encodeURIComponent(id)}`);
   }
 
   async createDirectory(directory: Directory): Promise<Response> {
@@ -85,6 +86,19 @@ export class DirectoryServiceClient implements DirectoryService {
     return authenticatedFetchApi(`/directories/${encodeURIComponent(directoryId)}/cover-image`, {
       method: 'POST',
       body: formData,
+    });
+  }
+
+  async toggleFavorite(directoryId: string): Promise<Response> {
+    return authenticatedFetchApi(`/directories/${encodeURIComponent(directoryId)}/togglefavorite`, {
+      method: 'PATCH',
+    });
+  }
+
+  async rateDirectory(directoryId: string, rating: number): Promise<Response> {
+    return authenticatedFetchApi(`/directories/${encodeURIComponent(directoryId)}/rate`, {
+      method: 'PATCH',
+      body: JSON.stringify({ rating }),
     });
   }
 }

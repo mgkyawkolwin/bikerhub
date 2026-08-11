@@ -13,13 +13,15 @@ namespace BikerHub.Services;
 
 public interface IDirectoryService
 {
-    Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(int page, int pageSize, string? query, string? businessType, string? city, string? stateDivision);
-    Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id);
-    Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto);
-    Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto);
+    Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto, Guid currentUserId);
+    Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id, Guid currentUserId);
+    Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto, Guid currentUserId);
+    Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto, Guid currentUserId);
     Task DeleteDirectoryAsync(Guid directoryId, Guid currentUserId);
     Task<DirectoryDto> UploadDirectoryLogoAsync(Guid directoryId, IFormFile file);
     Task<DirectoryDto> UploadDirectoryCoverImageAsync(Guid directoryId, IFormFile file);
+    Task ToggleFavoriteAsync(Guid entityId, Guid currentUserId);
+    Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, Guid currentUserId, int rating);
 }
 
 public class DirectoryService : IDirectoryService
@@ -37,62 +39,130 @@ public class DirectoryService : IDirectoryService
         _minioSettings = minioOptions?.Value;
     }
 
-    public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(int page, int pageSize, string? query, string? businessType, string? city, string? stateDivision)
+    public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto, Guid currentUserId)
     {
         _logger.LogInformation("CALLED GetDirectoriesAsync()");
         _logger.LogDebug(
-            "GetDirectoriesAsync called with page {Page}, pageSize {PageSize}, query {Query}, businessType {BusinessType}, city {City}, stateDivision {StateDivision}",
-            page, pageSize, query, businessType, city, stateDivision);
+            "GetDirectoriesAsync called with filterDto {@FilterDto}",
+            filterDto);
 
-        var q = _dbContext.Directories.AsQueryable();
+        filterDto = filterDto ?? new GetDirectoriesFilterDto();
 
-        if (!string.IsNullOrWhiteSpace(query))
+        // 1. Start with the base entity queryable
+        var baseQuery = _dbContext.Directories.AsNoTracking();
+
+        // 2. Apply all conditional WHERE filters FIRST
+        if (!string.IsNullOrWhiteSpace(filterDto.Query))
         {
-            q = q.Where(item => item.Name.Contains(query) || item.Address.Contains(query) || item.BusinessType.Contains(query));
+            baseQuery = baseQuery.Where(d =>
+                d.Name.Contains(filterDto.Query)
+            );
         }
 
-        if (!string.IsNullOrWhiteSpace(businessType))
+        if (!string.IsNullOrWhiteSpace(filterDto.BusinessType))
         {
-            q = q.Where(item => item.BusinessType == businessType);
+            baseQuery = baseQuery.Where(d => d.BusinessType == filterDto.BusinessType);
         }
 
-        if (!string.IsNullOrWhiteSpace(city))
+        if (!string.IsNullOrWhiteSpace(filterDto.City))
         {
-            q = q.Where(item => item.City == city);
+            baseQuery = baseQuery.Where(d => d.City == filterDto.City);
         }
 
-        if (!string.IsNullOrWhiteSpace(stateDivision))
+        if (!string.IsNullOrWhiteSpace(filterDto.StateDivision))
         {
-            q = q.Where(item => item.State == stateDivision);
+            baseQuery = baseQuery.Where(d => d.State == filterDto.StateDivision);
         }
 
-        var total = await q.CountAsync();
+        // 3. Count total matching records BEFORE pagination
+        var total = await baseQuery.CountAsync();
         _logger.LogTrace("Found {Total} directories matching filters", total);
 
-        var items = await q.OrderByDescending(item => item.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        // 4. Order, Paginate, AND Project directly to DTO in a single SQL query
+        var items = await baseQuery
+            .OrderByDescending(d => d.Id)
+            .Skip((filterDto.Page - 1) * filterDto.PageSize)
+            .Take(filterDto.PageSize)
+            .Select(d => new DirectoryDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Address = d.Address,
+                City = d.City,
+                State = d.State,
+                Country = d.Country,
+                PostalCode = d.PostalCode,
+                Phone = d.Phone,
+                Email = d.Email,
+                LogoUrl = d.LogoUrl,
+                CoverImageUrl = d.CoverImageUrl,
+                GoogleMapUrl = d.GoogleMapUrl,
+                BusinessType = d.BusinessType,
+                RatingCount = d.RatingCount,
+                Rating = d.Rating,
+                FavoriteCount = d.FavoriteCount,
+                CreatedById = d.CreatedById,
+
+                // Populated directly into DTO without needing [NotMapped] on Entity
+                IsFavorited = _dbContext.Favorites
+                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId),
+
+                MyRating = _dbContext.Ratings
+                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId)
+                    .Select(r => (int?)r.Rating)
+                    .FirstOrDefault()
+            })
             .ToListAsync();
 
-        _logger.LogTrace("Returning {Count} directories from page {Page}", items.Count, page);
-        _logger.LogTrace("Sample directory entry: {@Directory}", JsonSerializer.Serialize(items.FirstOrDefault()));
-        _logger.LogTrace("Sample directory entry mapped to DTO: {@DirectoryDto}", new { Name = "hi hi", Age = 30 });
+        _logger.LogTrace("Returning {Count} directories from page {Page}", items.Count, filterDto.Page);
 
+        // 5. Return result (no MapDirectory step needed!)
         return new PaginatedResultDto<DirectoryDto>(
-            items.Select(MapDirectory).ToList(),
-            page,
-            pageSize,
+            items,
+            filterDto.Page,
+            filterDto.PageSize,
             total,
-            (int)Math.Max(1, Math.Ceiling(total / (double)pageSize))
+            (int)Math.Max(1, Math.Ceiling(total / (double)filterDto.PageSize))
         );
     }
 
-    public async Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id)
+    public async Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id, Guid currentUserId)
     {
         _logger.LogInformation("CALLED GetDirectoryByIdAsync()");
         _logger.LogDebug("GetDirectoryByIdAsync called with id {Id}", id);
 
-        var directory = await _dbContext.Directories.FindAsync(id);
+        var directory = await _dbContext.Directories.AsNoTracking()
+            .Where(d => d.Id == id)
+            .Select(d => new DirectoryDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Address = d.Address,
+                City = d.City,
+                State = d.State,
+                Country = d.Country,
+                PostalCode = d.PostalCode,
+                Phone = d.Phone,
+                Email = d.Email,
+                LogoUrl = d.LogoUrl,
+                CoverImageUrl = d.CoverImageUrl,
+                GoogleMapUrl = d.GoogleMapUrl,
+                BusinessType = d.BusinessType,
+                RatingCount = d.RatingCount,
+                Rating = d.Rating,
+                FavoriteCount = d.FavoriteCount,
+                CreatedById = d.CreatedById,
+
+                // Populated directly into DTO without needing [NotMapped] on Entity
+                IsFavorited = _dbContext.Favorites
+                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId),
+
+                MyRating = _dbContext.Ratings
+                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId)
+                    .Select(r => (int?)r.Rating)
+                    .FirstOrDefault()
+            })
+            .FirstOrDefaultAsync();
         _logger.LogTrace("Found directory entry: {@Directory}", JsonSerializer.Serialize(directory));
         if (directory is null)
         {
@@ -100,10 +170,10 @@ public class DirectoryService : IDirectoryService
             return null;
         }
 
-        return MapDirectory(directory);
+        return directory;
     }
 
-    public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto)
+    public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto, Guid currentUserId)
     {
         _logger.LogInformation("CALLED CreateDirectoryAsync()");
         _logger.LogDebug("CreateDirectoryAsync called with dto {@Dto}", dto);
@@ -124,17 +194,86 @@ public class DirectoryService : IDirectoryService
             CoverImageUrl = dto.CoverImageUrl,
             GoogleMapUrl = dto.GoogleMapUrl,
             BusinessType = dto.BusinessType,
-            CreatedById = dto.UserId ?? Guid.Empty,
+            CreatedById = currentUserId,
         };
 
         _dbContext.Directories.Add(entity);
+
+        var existingBusinessType = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "BUSINESS TYPE" && x.Value == dto.BusinessType);
+        if (existingBusinessType is null)
+        {
+            var newBusinessType = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "BUSINESS TYPE",
+                Code = dto.BusinessType!.ToUpperInvariant(),
+                Value = dto.BusinessType,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newBusinessType);
+        }
+
+        var existingCity = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "CITY" && x.Value == dto.City);
+        if (existingCity is null)
+        {
+            var newCity = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "CITY",
+                Code = dto.City!.ToUpperInvariant(),
+                Value = dto.City,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newCity);
+        }
+        var existingStateDivision = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "STATE DIVISION" && x.Value == dto.State);
+        if (existingStateDivision is null)
+        {
+            var newStateDivision = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "STATE DIVISION",
+                Code = dto.State!.ToUpperInvariant(),
+                Value = dto.State,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newStateDivision);
+        }
+
+        var existingCountry = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "COUNTRY" && x.Value == dto.Country);
+        if (existingCountry is null)
+        {
+            var newCountry = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "COUNTRY",
+                Code = dto.Country!.ToUpperInvariant(),
+                Value = dto.Country,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newCountry);
+        }
+
+
         await _dbContext.SaveChangesAsync();
 
         _logger.LogTrace("Created directory entry with id {DirectoryId}", entity.Id);
         return MapDirectory(entity);
     }
 
-    public async Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto)
+    public async Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto, Guid currentUserId)
     {
         _logger.LogInformation("CALLED UpdateDirectoryAsync()");
         _logger.LogDebug("UpdateDirectoryAsync called with directoryId {DirectoryId} and dto {@Dto}", directoryId, dto);
@@ -148,9 +287,9 @@ public class DirectoryService : IDirectoryService
             throw new CustomException("Directory entry not found.");
         }
 
-        if (dto.UserId is null || directory.CreatedById != dto.UserId.Value)
+        if (directory.CreatedById != currentUserId)
         {
-            _logger.LogWarning("Not authorized to update directory entry {DirectoryId} by user {CurrentUserId}", directoryId, dto.UserId);
+            _logger.LogWarning("Not authorized to update directory entry {DirectoryId} by user {CurrentUserId}", directoryId, currentUserId);
             throw new CustomException("Not authorized to update this directory entry.");
         }
 
@@ -175,10 +314,78 @@ public class DirectoryService : IDirectoryService
             directory.CoverImageUrl = dto.CoverImageUrl;
         }
 
-        directory.UpdatedById = dto.UserId.Value;
+        directory.UpdatedById = currentUserId;
         directory.UpdatedAtUtc = DateTime.UtcNow;
 
         _dbContext.Directories.Update(directory);
+
+        var existingBusinessType = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "BUSINESS TYPE" && x.Value == dto.BusinessType);
+        if (existingBusinessType is null)
+        {
+            var newBusinessType = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "BUSINESS TYPE",
+                Code = dto.BusinessType!.ToUpperInvariant(),
+                Value = dto.BusinessType,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newBusinessType);
+        }
+
+        var existingCity = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "CITY" && x.Value == dto.City);
+        if (existingCity is null)
+        {
+            var newCity = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "CITY",
+                Code = dto.City!.ToUpperInvariant(),
+                Value = dto.City,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newCity);
+        }
+        var existingStateDivision = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "STATE DIVISION" && x.Value == dto.State);
+        if (existingStateDivision is null)
+        {
+            var newStateDivision = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "STATE DIVISION",
+                Code = dto.State!.ToUpperInvariant(),
+                Value = dto.State,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newStateDivision);
+        }
+
+        var existingCountry = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "COUNTRY" && x.Value == dto.Country);
+        if (existingCountry is null)
+        {
+            var newCountry = new LookUpEntity
+            {
+                Id = Guid.NewGuid(),
+                Category = "COUNTRY",
+                Code = dto.Country!.ToUpperInvariant(),
+                Value = dto.Country,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.LookUps.Add(newCountry);
+        }
+
         await _dbContext.SaveChangesAsync();
 
         return MapDirectory(directory);
@@ -204,6 +411,107 @@ public class DirectoryService : IDirectoryService
 
         _dbContext.Directories.Remove(directory);
         await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task ToggleFavoriteAsync(Guid entityId, Guid currentUserId)
+    {
+        _logger.LogInformation("CALLED ToggleFavoriteAsync()");
+        _logger.LogDebug("ToggleFavoriteAsync called with entityId {EntityId} and currentUserId {CurrentUserId}", entityId, currentUserId);
+
+        var directory = await _dbContext.Directories.FindAsync(entityId);
+        if (directory is null)
+        {
+            _logger.LogWarning("Directory entry not found for id {EntityId}", entityId);
+            throw new CustomException("Directory entry not found.");
+        }
+
+        var favorite = await _dbContext.Favorites
+            .FirstOrDefaultAsync(f => f.EntityId == entityId && f.UserId == currentUserId);
+
+        if (favorite is null)
+        {
+            favorite = new FavoriteEntity
+            {
+                Id = Guid.NewGuid(),
+                EntityId = entityId,
+                UserId = currentUserId,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+
+            _dbContext.Favorites.Add(favorite);
+            directory.FavoriteCount += 1;
+        }
+        else
+        {
+            _dbContext.Favorites.Remove(favorite);
+            directory.FavoriteCount = Math.Max(0, directory.FavoriteCount - 1);
+        }
+
+        directory.UpdatedAtUtc = DateTime.UtcNow;
+        directory.UpdatedById = currentUserId;
+
+        _dbContext.Directories.Update(directory);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, Guid currentUserId, int rating)
+    {
+        _logger.LogInformation("CALLED SubmitRatingAsync()");
+        _logger.LogDebug("SubmitRatingAsync called with entityId {EntityId}, rating {Rating} and currentUserId {CurrentUserId}", entityId, rating, currentUserId);
+
+        var directory = await _dbContext.Directories.FindAsync(entityId);
+        if (directory is null)
+        {
+            _logger.LogWarning("Directory entry not found for id {EntityId}", entityId);
+            return null;
+        }
+
+        var existingRating = await _dbContext.Ratings
+            .FirstOrDefaultAsync(r => r.EntityId == entityId && r.UserId == currentUserId);
+
+        if (existingRating is null)
+        {
+            existingRating = new RatingEntity
+            {
+                Id = Guid.NewGuid(),
+                EntityId = entityId,
+                UserId = currentUserId,
+                Rating = rating,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.Ratings.Add(existingRating);
+            var ratingCount = (directory.RatingCount ?? 0) + 1;
+            directory.RatingCount = ratingCount;
+            directory.Rating = directory.Rating.HasValue
+                ? ((directory.Rating.Value * (ratingCount - 1) + rating) / ratingCount)
+                : rating;
+        }
+        else
+        {
+            var totalRating = (directory.Rating ?? 0) * (directory.RatingCount ?? 1);
+            totalRating = totalRating - existingRating.Rating + rating;
+            existingRating.Rating = rating;
+            existingRating.UpdatedAtUtc = DateTime.UtcNow;
+            existingRating.UpdatedById = currentUserId;
+            _dbContext.Ratings.Update(existingRating);
+            directory.Rating = directory.RatingCount.HasValue && directory.RatingCount.Value > 0
+                ? totalRating / directory.RatingCount.Value
+                : rating;
+        }
+
+        directory.UpdatedAtUtc = DateTime.UtcNow;
+        directory.UpdatedById = currentUserId;
+
+        _dbContext.Directories.Update(directory);
+        await _dbContext.SaveChangesAsync();
+
+        return MapDirectory(directory);
     }
 
     public async Task<DirectoryDto> UploadDirectoryLogoAsync(Guid directoryId, IFormFile file)
@@ -290,8 +598,8 @@ public class DirectoryService : IDirectoryService
             GoogleMapUrl = directory.GoogleMapUrl,
             BusinessType = directory.BusinessType,
             CreatedById = directory.CreatedById,
-            IsLiked = directory.IsLiked,
-            LikesCount = directory.LikesCount,
+            IsFavorited = directory.IsFavorited,
+            FavoriteCount = directory.FavoriteCount,
             Rating = directory.Rating,
             RatingCount = directory.RatingCount,
             MyRating = directory.MyRating

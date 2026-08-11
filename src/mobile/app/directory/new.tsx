@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, Text } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -7,79 +7,161 @@ import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
-import { ConfigServiceToken } from '@/services/configService';
 import { DirectoryServiceToken } from '@/services/directoryService';
+import { LookupService, LookupServiceToken } from '@/services/lookupService';
 import type { ApiResponse } from '@/services/apiClient';
-import type { ConfigService } from '@/services/configService';
 import type { DirectoryService } from '@/services/directoryService';
 import type Directory from '@/models/directory';
+import type Lookup from '@/models/lookup';
+import AutoCompleteTextInput from '@/components/autoCompleteTextInput';
 import SnackBar from '@/components/snackbar';
-
-type LookupItem = {
-  id: string;
-  category: string;
-  code: string;
-  value?: string;
-};
-
-type DropdownField = 'businessType' | null;
 
 export default function DirectoryCreateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useI18n();
   const { colors } = useThemeContext();
-  const configService = useMemo(() => container.resolve<ConfigService>(ConfigServiceToken), []);
+  const lookupService = useMemo(() => container.resolve<LookupService>(LookupServiceToken), []);
   const directoryService = useMemo(() => container.resolve<DirectoryService>(DirectoryServiceToken), []);
 
-  const [businessTypes, setBusinessTypes] = useState<LookupItem[]>([]);
+  const [businessTypeOptions, setBusinessTypeOptions] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [businessType, setBusinessType] = useState('');
+  const [businessTypeSuggestionsVisible, setBusinessTypeSuggestionsVisible] = useState(false);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [citySuggestionsVisible, setCitySuggestionsVisible] = useState(false);
   const [stateDivision, setStateDivision] = useState('');
+  const [stateDivisionOptions, setStateDivisionOptions] = useState<string[]>([]);
+  const [stateDivisionSuggestionsVisible, setStateDivisionSuggestionsVisible] = useState(false);
   const [country, setCountry] = useState('');
+  const [countryOptions, setCountryOptions] = useState<string[]>([]);
+  const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
   const [postalCode, setPostalCode] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [googleMapUrl, setGoogleMapUrl] = useState('');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const params = useLocalSearchParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [logoUri, setLogoUri] = useState('');
   const [coverUri, setCoverUri] = useState('');
   const [logoFileUri, setLogoFileUri] = useState('');
   const [coverFileUri, setCoverFileUri] = useState('');
-  const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<'name' | 'businessType' | 'address' | 'city' | 'stateDivision', string>>>({});
-
-  useEffect(() => {
-    void (async () => {
-      const typesResponse = await configService.getBusinessTypes();
-      if (!typesResponse.ok) {
-        SnackBar.Error('Error loading configuration data. Invalid response from server.');
-        return;
-      }
-      const typesJson = (await typesResponse.json());
-      if (typesJson?.success !== true) {
-        SnackBar.Error('Error loading configuration data. Failed response.');
-        return;
-      }
-      setBusinessTypes(typesJson.data || []);
-    })();
-  }, [configService]);
+  const [errors, setErrors] = useState<Partial<Record<'name' | 'businessType' | 'address' | 'city' | 'stateDivision' | 'country', string>>>({});
 
   const isEditing = Boolean(id);
 
-  const getDisplayText = (field: DropdownField) => {
-    if (field === 'businessType') return businessType || t.Title.businessType;
-    return t.Title.selectOption;
+  const handleBusinessTypeTextChange = async (text: string) => {
+    setBusinessType(text);
+    setBusinessTypeSuggestionsVisible(text.trim().length > 0);
+    if (errors.businessType) setErrors((prev) => ({ ...prev, businessType: undefined }));
+
+    if (!text.trim()) {
+      setBusinessTypeOptions([]);
+      return;
+    }
+
+    const response = await lookupService.getLookup('BUSINESS TYPE', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setBusinessTypeOptions(lookups.map((lookup) => lookup.value || lookup.code));
   };
 
-  const selectOption = (option: string, field: DropdownField) => {
-    if (field !== 'businessType') return;
-    setBusinessType(option);
-    setActiveDropdown(null);
+  const businessTypeSuggestions = businessTypeOptions;
+  const citySuggestions = cityOptions;
+  const stateDivisionSuggestions = stateDivisionOptions;
+  const countrySuggestions = countryOptions;
+
+  const handleCityTextChange = async (text: string) => {
+    setCity(text);
+    setCitySuggestionsVisible(text.trim().length > 0);
+    if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
+
+    if (!text.trim()) {
+      setCityOptions([]);
+      return;
+    }
+
+    const response = await lookupService.getLookup('CITY', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCityOptions(lookups.map((lookup) => lookup.value || lookup.code));
+  };
+
+  const handleStateDivisionTextChange = async (text: string) => {
+    setStateDivision(text);
+    setStateDivisionSuggestionsVisible(text.trim().length > 0);
+    if (errors.stateDivision) setErrors((prev) => ({ ...prev, stateDivision: undefined }));
+
+    if (!text.trim()) {
+      setStateDivisionOptions([]);
+      return;
+    }
+
+    const response = await lookupService.getLookup('STATE DIVISION', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setStateDivisionOptions(lookups.map((lookup) => lookup.value || lookup.code));
+  };
+
+  const handleCountryTextChange = async (text: string) => {
+    setCountry(text);
+    setCountrySuggestionsVisible(text.trim().length > 0);
+    if (errors.country) setErrors((prev) => ({ ...prev, country: undefined }));
+
+    if (!text.trim()) {
+      setCountryOptions([]);
+      return;
+    }
+
+    const response = await lookupService.getLookup('COUNTRY', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCountryOptions(lookups.map((lookup) => lookup.value || lookup.code));
   };
 
   const getFileName = (uri: string) => {
@@ -130,6 +212,8 @@ export default function DirectoryCreateScreen() {
       setGoogleMapUrl(directory.googleMapUrl ?? '');
       setLogoUri(directory.logoUrl ?? '');
       setCoverUri(directory.coverImageUrl ?? '');
+      setIsFavorited(directory.isFavorited ?? false);
+      setFavoriteCount(directory.favoriteCount ?? 0);
     })();
   }, [id, directoryService]);
 
@@ -165,13 +249,36 @@ export default function DirectoryCreateScreen() {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!id) {
+      SnackBar.Error('Cannot favorite a directory before it is created.');
+      return;
+    }
+
+    try {
+      const response = await directoryService.toggleFavorite(id);
+      if (!response.ok) {
+        SnackBar.Error('Unable to toggle favorite. Please try again.');
+        return;
+      }
+
+      setIsFavorited((prev) => {
+        setFavoriteCount((count) => Math.max(0, count + (prev ? -1 : 1)));
+        return !prev;
+      });
+    } catch {
+      SnackBar.Error('Unable to toggle favorite. Please try again.');
+    }
+  };
+
   const validateForm = () => {
     const nextErrors: typeof errors = {};
     if (!name.trim()) nextErrors.name = `${t.Title.businessName} is required.`;
-    if (!businessType) nextErrors.businessType = `${t.Title.businessType} is required.`;
+    if (!businessType.trim()) nextErrors.businessType = `${t.Title.businessType} is required.`;
     if (!address.trim()) nextErrors.address = `${t.Title.address} is required.`;
     if (!city) nextErrors.city = `${t.Title.city} is required.`;
     if (!stateDivision) nextErrors.stateDivision = `${t.Title.stateDivision} is required.`;
+    if (!country) nextErrors.country = `${t.Title.country} is required.`;
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -270,9 +377,9 @@ export default function DirectoryCreateScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 28 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.form, { paddingBottom: insets.bottom + 28 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessName}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessName} *</Text>
           <TextInput
             style={[styles.textInput, { borderColor: errors.name ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={name}
@@ -286,19 +393,39 @@ export default function DirectoryCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessType}</Text>
-          <TouchableOpacity
-            style={[styles.dropdown, { borderColor: errors.businessType ? '#E85D04' : colors.border, backgroundColor: colors.card }]}
-            onPress={() => setActiveDropdown('businessType')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.dropdownText, { color: colors.text }]}>{getDisplayText('businessType')}</Text>
-            <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.businessType} *</Text>
+          <AutoCompleteTextInput
+            value={businessType}
+            onBlur={() => setTimeout(() => setBusinessTypeSuggestionsVisible(false), 300)}
+            onTextChange={handleBusinessTypeTextChange}
+            isSuggestionsVisible={businessTypeSuggestionsVisible}
+            suggestions={businessTypeSuggestions}
+            placeholder={t.Title.businessType}
+            placeholderTextColor={colors.secondaryText}
+            style={[styles.textInput, { borderColor: errors.businessType ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
+          />
         </View>
 
+        {isEditing ? (
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>Favorite</Text>
+            <TouchableOpacity
+              style={[styles.favoriteButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+              onPress={handleToggleFavorite}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name={isFavorited ? 'favorite' : 'favorite-border'}
+                size={22}
+                color={isFavorited ? '#E85D04' : colors.secondaryText}
+              />
+              <Text style={[styles.favoriteText, { color: colors.text }]}>{favoriteCount}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.address}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.address} *</Text>
           <TextInput
             style={[styles.textInput, { borderColor: errors.address ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
             value={address}
@@ -312,41 +439,44 @@ export default function DirectoryCreateScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: errors.city ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city} *</Text>
+          <AutoCompleteTextInput
             value={city}
-            onChangeText={(text) => {
-              setCity(text);
-              if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
-            }}
+            onBlur={() => setTimeout(() => setCitySuggestionsVisible(false), 300)}
+            onTextChange={handleCityTextChange}
+            isSuggestionsVisible={citySuggestionsVisible}
+            suggestions={citySuggestions}
             placeholder={t.Title.city}
             placeholderTextColor={colors.secondaryText}
+            style={[styles.textInput, { borderColor: errors.city ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.stateDivision}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: errors.stateDivision ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.stateDivision} *</Text>
+          <AutoCompleteTextInput
             value={stateDivision}
-            onChangeText={(text) => {
-              setStateDivision(text);
-              if (errors.stateDivision) setErrors((prev) => ({ ...prev, stateDivision: undefined }));
-            }}
+            onBlur={() => setTimeout(() => setStateDivisionSuggestionsVisible(false), 300)}
+            onTextChange={handleStateDivisionTextChange}
+            isSuggestionsVisible={stateDivisionSuggestionsVisible}
+            suggestions={stateDivisionSuggestions}
             placeholder={t.Title.stateDivision}
             placeholderTextColor={colors.secondaryText}
+            style={[styles.textInput, { borderColor: errors.stateDivision ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country}</Text>
-          <TextInput
-            style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country} *</Text>
+          <AutoCompleteTextInput
             value={country}
-            onChangeText={setCountry}
+            onBlur={() => setTimeout(() => setCountrySuggestionsVisible(false), 300)}
+            onTextChange={handleCountryTextChange}
+            isSuggestionsVisible={countrySuggestionsVisible}
+            suggestions={countrySuggestions}
             placeholder={t.Title.country}
             placeholderTextColor={colors.secondaryText}
+            style={[styles.textInput, { borderColor: errors.country ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text }]}
           />
         </View>
 
@@ -434,31 +564,6 @@ export default function DirectoryCreateScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
-        <TouchableWithoutFeedback onPress={() => setActiveDropdown(null)}>
-          <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} />
-        </TouchableWithoutFeedback>
-        <View style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}> 
-          <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
-            <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
-              <MaterialIcons name="close" size={22} color={colors.secondaryText} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
-            {activeDropdown === 'businessType' ? businessTypes.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[styles.sheetItem, { borderBottomColor: colors.border }]}
-                onPress={() => selectOption(option.code, activeDropdown)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.sheetItemText, { color: colors.text }]}> {option.value ?? option.code}</Text>
-              </TouchableOpacity>
-            )) : null}
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Linking, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
@@ -10,6 +10,7 @@ import { container } from '@/services';
 import { DirectoryServiceToken } from '@/services/directoryService';
 import type { DirectoryService } from '@/services/directoryService';
 import Directory from '@/models/directory';
+import { Rating } from '@/components/rating';
 
 export default function DirectoryDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -22,6 +23,8 @@ export default function DirectoryDetailScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const [item, setItem] = useState<Directory | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -82,9 +85,86 @@ export default function DirectoryDetailScreen() {
     );
   };
 
+  const handleToggleFavorite = async () => {
+    if (!item?.id) return;
+    setIsTogglingFavorite(true);
+
+    try {
+      const response = await directoryService.toggleFavorite(item.id);
+      if (!response.ok) {
+        Alert.alert('Favorite failed', 'Unable to update favorite. Please try again.');
+        return;
+      }
+
+      setItem((prev) => {
+        if (!prev) return prev;
+        const currentlyFavorited = Boolean(prev.isFavorited);
+        const currentCount = prev.favoriteCount ?? 0;
+        return {
+          ...prev,
+          isFavorited: !currentlyFavorited,
+          favoriteCount: Math.max(0, currentCount + (currentlyFavorited ? -1 : 1)),
+        };
+      });
+    } catch {
+      Alert.alert('Favorite failed', 'Unable to update favorite. Please try again.');
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
+  const handleRate = async (rating: number) => {
+    if (!item?.id || isSubmittingRating) return;
+    setIsSubmittingRating(true);
+
+    try {
+      const response = await directoryService.rateDirectory(item.id, rating);
+      if (!response.ok) {
+        Alert.alert('Rating failed', 'Unable to submit rating. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (responseJson?.success !== true) {
+        Alert.alert('Rating failed', responseJson?.message || 'Unable to submit rating. Please try again.');
+        return;
+      }
+
+      setItem((prev) => {
+        if (!prev) return prev;
+
+        const previousRating = typeof prev.myRating === 'number' ? prev.myRating : null;
+        const currentCount = prev.ratingCount ?? 0;
+        const currentAverage = prev.rating ?? 0;
+        let updatedCount = currentCount;
+        let totalRating = currentAverage * currentCount;
+
+        if (previousRating === null) {
+          updatedCount += 1;
+          totalRating += rating;
+        } else {
+          totalRating += rating - previousRating;
+        }
+
+        const updatedRating = updatedCount > 0 ? totalRating / updatedCount : 0;
+
+        return {
+          ...prev,
+          myRating: rating,
+          rating: updatedRating,
+          ratingCount: updatedCount,
+        };
+      });
+    } catch {
+      Alert.alert('Rating failed', 'Unable to submit rating. Please try again.');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
@@ -93,17 +173,17 @@ export default function DirectoryDetailScreen() {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {item ? (
-          <View style={[styles.page, { backgroundColor: colors.background }]}> 
+          <View style={[styles.page, { backgroundColor: colors.background }]}>
             {item.coverImageUrl ? (
               <Image source={{ uri: item.coverImageUrl }} style={styles.image} />
             ) : (
-              <View style={[styles.coverPlaceholder, { backgroundColor: colors.border }]}> 
+              <View style={[styles.coverPlaceholder, { backgroundColor: colors.border }]}>
                 <MaterialIcons name="image" size={40} color={colors.secondaryText} />
               </View>
             )}
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.logoContainer, { backgroundColor: colors.background }]}> 
+                <View style={[styles.logoContainer, { backgroundColor: colors.background }]}>
                   {item.logoUrl ? (
                     <Image source={{ uri: item.logoUrl }} style={styles.logoImage} />
                   ) : (
@@ -115,28 +195,51 @@ export default function DirectoryDetailScreen() {
                 <View style={styles.titleBlock}>
                   <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.subtitle, { color: colors.secondaryText }]} numberOfLines={1}>{item.businessType}</Text>
+                  <View style={[styles.row, styles.favoriteRow, { alignItems: 'center' }]}> 
+                    <TouchableOpacity
+                      style={[styles.favoriteButton]}
+                      onPress={handleToggleFavorite}
+                      activeOpacity={0.8}
+                      disabled={isTogglingFavorite}
+                    >
+                      <MaterialIcons
+                        name={item.isFavorited ? 'favorite' : 'favorite-border'}
+                        size={24}
+                        color={item.isFavorited ? '#E85D04' : colors.secondaryText}
+                      />
+                      <Text style={[styles.favoriteText, { color: colors.text }]}> {item.favoriteCount ?? 0}</Text>
+                    </TouchableOpacity>
+                    <Rating
+                      value={item.myRating ?? 0}
+                      max={5}
+                      size={20}
+                      color='#E85D04'
+                      onRate={handleRate}
+                      style={styles.ratingBlock}
+                    />
+                  </View>
                 </View>
               </View>
               <View style={styles.row}>
-                <MaterialIcons name="location-on" size={16} color={colors.secondaryText} />
+                <MaterialIcons name="location-on" size={24} color={colors.secondaryText} />
                 <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.address}</Text>
               </View>
               {item.city || item.state || item.country || item.postalCode ? (
                 <View style={[styles.row, styles.wrapRow]}>
-                  <MaterialIcons name="public" size={16} color={colors.secondaryText} />
-                  <Text style={[styles.metaText, { color: colors.secondaryText }]}> 
+                  <MaterialIcons name="public" size={24} color={colors.secondaryText} />
+                  <Text style={[styles.metaText, { color: colors.secondaryText }]}>
                     {[item.city, item.state, item.country].filter(Boolean).join(', ')}{item.postalCode ? ` • ${item.postalCode}` : ''}
                   </Text>
                 </View>
               ) : null}
               {item.email ? (
                 <View style={styles.row}>
-                  <MaterialIcons name="email" size={16} color={colors.secondaryText} />
+                  <MaterialIcons name="email" size={24} color={colors.secondaryText} />
                   <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.email}</Text>
                 </View>
               ) : null}
               <View style={styles.row}>
-                <MaterialIcons name="phone" size={16} color={colors.secondaryText} />
+                <MaterialIcons name="phone" size={24} color={colors.secondaryText} />
                 <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.phone}</Text>
               </View>
               {item.googleMapUrl ? (
@@ -145,14 +248,14 @@ export default function DirectoryDetailScreen() {
                   activeOpacity={0.7}
                   onPress={() => item.googleMapUrl && Linking.openURL(item.googleMapUrl)}
                 >
-                  <MaterialIcons name="map" size={16} color={colors.secondaryText} />
+                  <MaterialIcons name="map" size={24} color={colors.secondaryText} />
                   <Text style={[styles.metaLinkText, { color: colors.accent }]} numberOfLines={1} ellipsizeMode="tail">
                     {item.googleMapUrl}
                   </Text>
                 </TouchableOpacity>
               ) : null}
               <View style={styles.row}>
-                <MaterialIcons name="star" size={16} color={colors.secondaryText} />
+                <MaterialIcons name="star" size={24} color={colors.secondaryText} />
                 <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
               </View>
               {isOwner ? (
@@ -173,7 +276,7 @@ export default function DirectoryDetailScreen() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -184,20 +287,37 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 22 },
   content: { paddingHorizontal: 16, gap: 16 },
   page: { flex: 1, gap: 16 },
-  image: { width: '100%', height: 300, borderRadius: 8 },
-  coverPlaceholder: { width: '100%', height: 300, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  card: { borderRadius: 8, borderWidth: 1, padding: 16, gap: 12 },
+  image: { width: '100%', height: 200, borderRadius: 4 },
+  coverPlaceholder: { width: '100%', height: 300, borderRadius: 2, justifyContent: 'center', alignItems: 'center' },
+  card: { borderRadius: 8, borderWidth: 0, padding: 0, gap: 16 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoContainer: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  logoContainer: { width: 96, height: 96, borderRadius: 96, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   logoImage: { width: '100%', height: '100%' },
   logoPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   titleBlock: { flex: 1, justifyContent: 'center' },
   titleText: { fontSize: 22, fontWeight: '700' },
   subtitle: { fontSize: 14, lineHeight: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   metaText: { fontSize: 14, lineHeight: 20 },
   metaLinkText: { fontSize: 14, lineHeight: 20, textDecorationLine: 'underline' },
   wrapRow: { flexWrap: 'wrap' },
+  favoriteRow: { paddingVertical: 8 },
+  favoriteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  favoriteText: {
+    marginLeft: 2,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  ratingBlock: {
+    marginLeft: 16,
+  },
   actionsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 16 },
   actionButton: { flex: 1, borderWidth: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontSize: 14, fontWeight: '700' },

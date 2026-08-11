@@ -50,7 +50,7 @@ export const Colors = {
     background: '#0D1114',
     surface: '#151718',
     card: '#222222',
-    border: '#666666',
+    border: '#444444',
     separator: '#2F353B',
     placeholder: '#6B7280',
     tint: tintColorDark,

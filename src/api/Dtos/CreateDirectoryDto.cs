@@ -14,5 +14,4 @@ public sealed record CreateDirectoryDto
     public string? CoverImageUrl { get; set; }
     public string? GoogleMapUrl { get; set; }
     public string? BusinessType { get; set; }
-    public Guid? UserId { get; set; }
 }

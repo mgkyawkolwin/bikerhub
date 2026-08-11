@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
@@ -46,7 +46,7 @@ export default function DirectoryScreen() {
       try {
         const response = await directoryService.getDirectories(pageNumber, 10, query, filters);
         if (!response.ok) {
-          SnackBar.Error('Error loading data. Invalid response from server.');
+          SnackBar.Error(`${response.status} ${response.statusText}. Invalid server response. Please try again.`);
           return;
         }
         const responseJson = await response.json();
@@ -105,20 +105,20 @@ export default function DirectoryScreen() {
               <Image source={{ uri: item.coverImageUrl }} style={styles.cardImage} />
             ) : (
               <View style={[styles.placeholderImage, { backgroundColor: colors.background }]}> 
-                <MaterialIcons name="image" size={28} color={colors.secondaryText} />
+                <MaterialIcons name="image" size={48} color={colors.secondaryText} />
               </View>
             )}
           </View>
 
-          <View style={styles.cardBody}>
+          <View style={[ styles.cardBody, {  }]}>
             <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
             <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={1}>
-              {item.businessType} · {item.state} · {item.city} · {item.country}
+              {item.businessType}
             </Text>
-            <Text style={[styles.cardDetail, { color: colors.secondaryText }]} numberOfLines={1}>
-              {item.address}{item.address && item.city ? ' · ' : ''}{item.city}{(item.city || item.address) && item.postalCode ? ' · ' : ''}{item.postalCode}
+            <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={1}>
+              {item.city} · {item.state} · {item.country}
             </Text>
-            <View style={styles.contactRow}>
+            {/* <View style={styles.contactRow}>
               {item.phone ? (
                 <View style={styles.contactItem}>
                   <MaterialIcons name="phone" size={14} color={colors.secondaryText} />
@@ -131,11 +131,11 @@ export default function DirectoryScreen() {
                   <Text style={[styles.cardDetail, { color: colors.secondaryText }]} numberOfLines={1}>{item.email}</Text>
                 </View>
               ) : null}
-            </View>
+            </View> */}
             <View style={styles.cardFooter}>
               <View style={styles.metaRow}>
-                <MaterialIcons name="favorite" size={14} color={colors.secondaryText} />
-                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.likesCount ?? 0}</Text>
+                <MaterialIcons name="favorite" size={14} color={item.isFavorited ? '#E85D04' : colors.secondaryText} />
+                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.favoriteCount ?? 0}</Text>
               </View>
               <View style={styles.metaRow}>
                 <MaterialIcons name="star" size={14} color={colors.secondaryText} />
@@ -149,7 +149,7 @@ export default function DirectoryScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -203,7 +203,7 @@ export default function DirectoryScreen() {
         data={items}
         keyExtractor={(item) => item.id ?? ''}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 20 }]}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
@@ -215,13 +215,13 @@ export default function DirectoryScreen() {
           ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'space-between' },
+  header: { paddingHorizontal: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'space-between' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backButton: { padding: 8 },
   title: { fontSize: 22, fontWeight: '700' },
@@ -230,23 +230,35 @@ const styles = StyleSheet.create({
   iconButton: { padding: 8 },
   searchBarRow: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   searchInputExpanded: { width: '100%' },
-  list: { paddingHorizontal: 16, gap: 12 },
-  card: { borderRadius: 8, borderWidth: 1, overflow: 'hidden', padding: 8 },
+  list: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 16,
+    gap: 12 
+  },
+  card: { 
+    flex: 1,
+    gap: 8,
+    borderRadius: 8, 
+    borderWidth: 1, 
+    overflow: 'hidden', 
+    padding: 8, 
+    alignItems: 'flex-start' 
+  },
   searchInput: { width: 160 },
   filterButton: { padding: 6 },
   cardRow: { flexDirection: 'row', alignItems: 'stretch' },
-  cardImageContainer: { width: 150, minHeight: 150, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  cardImage: { width: 150, height: 150, borderRadius: 8 },
-  placeholderImage: { width: 150, height: 150, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  cardBody: { flex: 1, padding: 16, gap: 6 },
+  cardImageContainer: { width: 100, minHeight: 100, borderRadius: 2, justifyContent: 'center', alignItems: 'center' },
+  cardImage: { width: 100, height: 100, borderRadius: 2 },
+  placeholderImage: { width: 100, height: 100, borderRadius: 2, justifyContent: 'center', alignItems: 'center' },
+  cardBody: { flex: 1, paddingVertical: 8, paddingHorizontal: 16, gap: 6, justifyContent: 'space-between', alignItems: 'flex-start' },
   cardTitle: { fontSize: 16, fontWeight: '700' },
   cardSummary: { fontSize: 13, lineHeight: 18 },
   cardDetail: { fontSize: 12, lineHeight: 18 },
   contactRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 2 },
   contactItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   contactItemSpacing: { marginLeft: 12 },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardFooter: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 8 },
+  metaRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12 },
   emptyState: { paddingTop: 60, alignItems: 'center' },
   emptyText: { fontSize: 14 },

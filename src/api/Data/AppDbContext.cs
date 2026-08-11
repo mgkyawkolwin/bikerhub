@@ -33,6 +33,8 @@ public class AppDbContext : DbContext
     public DbSet<GarageBikeEntity> GarageBikes => Set<GarageBikeEntity>();
     public DbSet<MediaEntity> Medias => Set<MediaEntity>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<FavoriteEntity> Favorites => Set<FavoriteEntity>();
+    public DbSet<RatingEntity> Ratings => Set<RatingEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
