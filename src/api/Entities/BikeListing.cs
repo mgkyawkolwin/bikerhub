@@ -24,9 +24,6 @@ public class BikeListing : BaseEntity<Guid>
     public double? Rating { get; set; }
     public int RatingCount { get; set; }
     public string? Phone { get; set; }
-    [MaxLength(512)]
-    public string? ImageUrl { get; set; }
-    public string? ImagesJson { get; set; }
     public string? Mileage { get; set; }
     public string? Km { get; set; }
     public string? Vin { get; set; }

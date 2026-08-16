@@ -188,7 +188,7 @@ export default function MarketplaceScreen() {
               <Text style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>{item.favoritesCount ?? 0}</Text>
             </View>
           </View>
-          <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+          <Image source={{ uri: item?.medias?.[0]?.url }} style={styles.cardImage} />
           <View style={styles.cardFooter}>
             <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
             <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>

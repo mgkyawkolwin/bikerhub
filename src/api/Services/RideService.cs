@@ -24,14 +24,12 @@ public interface IRideService
 public class RideService : IRideService
 {
     private readonly AppDbContext _dbContext;
-    private readonly IStorageService? _storageService;
-    private readonly MinioSettings? _minioSettings;
+    private readonly IStorageService _storageService;
 
-    public RideService(AppDbContext dbContext, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
+    public RideService(AppDbContext dbContext, IStorageService storageService)
     {
         _dbContext = dbContext;
         _storageService = storageService;
-        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<RideDto>> GetRidesAsync(int page, int pageSize)
@@ -179,7 +177,7 @@ public class RideService : IRideService
                 ObjectName = m.ObjectName,
                 ContentType = m.ContentType,
                 Size = m.Size,
-                Url = BuildObjectUrl(m.ObjectName)
+                Url = _storageService.BuildObjectUrl(m.ObjectName)
             }).ToList();
         }
 
@@ -205,20 +203,8 @@ public class RideService : IRideService
         );
     }
 
-    private string BuildObjectUrl(string objectName)
-    {
-        if (_minioSettings is null) return objectName;
-        if (string.IsNullOrWhiteSpace(_minioSettings.ObjectAccessUrl)) return objectName;
-        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
-    }
-
     public async Task<RideDto> UploadRideMediaAsync(Guid rideId, IFormFile file, Guid currentUserId)
     {
-        if (_storageService is null || _minioSettings is null)
-        {
-            throw new InvalidOperationException("Storage service is not configured.");
-        }
-
         var ride = await _dbContext.Rides.FindAsync(rideId) ?? throw new CustomException("Ride not found.");
         var objectName = await _storageService.UploadFileAsync(file);
 

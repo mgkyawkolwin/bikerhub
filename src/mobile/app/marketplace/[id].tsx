@@ -56,11 +56,11 @@ export default function BikeDetailScreen() {
     };
   }, [id, marketplaceService]);
 
-  const images = listing?.images?.length ? listing.images : listing?.imageUrl ? [listing.imageUrl] : [];
+  const images = listing?.medias?.map((media) => media.url) ?? [];
 
   function handleCall() {
-    if (!listing?.phone) return;
-    Linking.openURL(`tel:${listing.phone}`);
+    if (!listing?.sellerPhone) return;
+    Linking.openURL(`tel:${listing.sellerPhone}`);
   }
 
   const handleOpenGallery = (index: number) => {
@@ -210,7 +210,7 @@ export default function BikeDetailScreen() {
               </View>
               <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{listing.phone ?? '-'}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.sellerPhone ?? '-'}</Text>
               </View>
               <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>Rating</Text>

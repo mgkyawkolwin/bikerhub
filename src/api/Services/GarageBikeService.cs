@@ -24,14 +24,12 @@ public interface IGarageBikeService
 public class GarageBikeService : IGarageBikeService
 {
     private readonly AppDbContext _dbContext;
-    private readonly IStorageService? _storageService;
-    private readonly MinioSettings? _minioSettings;
+    private readonly IStorageService _storageService;
 
-    public GarageBikeService(AppDbContext dbContext, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
+    public GarageBikeService(AppDbContext dbContext, IStorageService storageService)
     {
         _dbContext = dbContext;
         _storageService = storageService;
-        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId)
@@ -224,11 +222,6 @@ public class GarageBikeService : IGarageBikeService
 
     public async Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId)
     {
-        if (_storageService is null || _minioSettings is null)
-        {
-            throw new InvalidOperationException("Storage service is not configured.");
-        }
-
         var garageBike = await _dbContext.GarageBikes.FindAsync(garageBikeId) ?? throw new CustomException("Garage bike not found.");
         var objectName = await _storageService.UploadFileAsync(file);
 
@@ -285,21 +278,6 @@ public class GarageBikeService : IGarageBikeService
         return true;
     }
 
-    private string BuildObjectUrl(string objectName)
-    {
-        if (_minioSettings is null)
-        {
-            throw new InvalidOperationException("Minio settings are not configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(_minioSettings.ObjectAccessUrl))
-        {
-            return objectName;
-        }
-
-        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
-    }
-
     private GarageBikeDto MapToDto(GarageBikeEntity? garageBike, IEnumerable<MediaEntity>? medias = null)
     {
         if (garageBike is null)
@@ -326,7 +304,7 @@ public class GarageBikeService : IGarageBikeService
                     ObjectName = image.ObjectName,
                     ContentType = image.ContentType,
                     Size = image.Size,
-                    Url = BuildObjectUrl(image.ObjectName),
+                    Url = _storageService.BuildObjectUrl(image.ObjectName),
                 })]
         };
     }

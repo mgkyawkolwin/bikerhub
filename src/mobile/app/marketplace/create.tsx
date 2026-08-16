@@ -26,10 +26,6 @@ import type { BikeListing, BikeType } from '@/models/marketplace';
 import { LookupService, LookupServiceToken } from '@/services/lookupService';
 import Lookup from '@/models/lookup';
 
-// const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
-const MODELS = ['MT-15', 'CB500X', 'Classic 350', 'Z650', 'R NineT', 'V-Strom 650', 'Monster 797', 'CB300R', '390 Duke', 'Tiger 900'] as const;
-const TYPES: BikeType[] = ['Cruiser', 'Sport', 'Standard', 'Adventure', 'Touring', 'Custom'];
-
 type DropdownField = 'model' | 'type' | null;
 
 export default function MarketplaceCreateScreen() {
@@ -58,22 +54,29 @@ export default function MarketplaceCreateScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'price' | 'type' | 'sellerCity' | 'sellerCountry', string>>>({});
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [types, setTypes] = useState<BikeType[]>([]);
+  const [sellerPhone, setSellerPhone] = useState('');
+  const [sellerCity, setSellerCity] = useState('');
+  const [sellerCountry, setSellerCountry] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
   const [makeSuggestionsVisible, setMakeSuggestionsVisible] = useState(false);
   const [modelSuggestionsVisible, setModelSuggestionsVisible] = useState(false);
   const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
+  const [citySuggestionsVisible, setCitySuggestionsVisible] = useState(false);
+  const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
 
 
-  const dropdownItems = useMemo(
-    () => ({
-      model: MODELS,
-      type: TYPES,
-    }),
-    [],
-  );
+  // const dropdownItems = useMemo(
+  //   () => ({
+  //     model: MODELS,
+  //     type: TYPES,
+  //   }),
+  //   [],
+  // );
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
@@ -128,6 +131,8 @@ export default function MarketplaceCreateScreen() {
     if (!cc.trim()) nextErrors.cc = `${t.Title.cc} is required.`;
     if (!price.trim()) nextErrors.price = `${t.Title.price} is required.`;
     if (!type) nextErrors.type = `${t.Title.type} is required.`;
+    if (!sellerCity.trim()) nextErrors.sellerCity = `${t.Title.city} is required.`;
+    if (!sellerCountry.trim()) nextErrors.sellerCountry = `${t.Title.country} is required.`;
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -178,11 +183,9 @@ export default function MarketplaceCreateScreen() {
         km: km.trim(),
         vin: vin.trim(),
         type,
-        location: 'Yangon',
-        ratingCount: 0,
-        favoritesCount: 0,
-        likeCount: 0,
-        viewCount: 0,
+        sellerPhone,
+        sellerCity,
+        sellerCountry
       };
 
       const response = await marketplaceService.createListing(listing);
@@ -278,6 +281,40 @@ export default function MarketplaceCreateScreen() {
     setTypes(lookups.map((lookup) => lookup.value));
   }
 
+  const handleCityTextChange = async (text: string) => {
+    setSellerCity(text);
+    const response = await lookupService.getLookup('CITY', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCities(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleCountryTextChange = async (text: string) => {
+    setSellerCountry(text);
+    const response = await lookupService.getLookup('COUNTRY', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCountries(lookups.map((lookup) => lookup.value));
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.card} />
@@ -294,6 +331,7 @@ export default function MarketplaceCreateScreen() {
           style={styles.scrollArea}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.fieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make} *</Text>
@@ -313,7 +351,6 @@ export default function MarketplaceCreateScreen() {
                 { borderColor: errors.make ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
             />
-            {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model} *</Text>
             <AutoCompleteTextInput
               value={model}
@@ -331,7 +368,6 @@ export default function MarketplaceCreateScreen() {
                 { borderColor: errors.model ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
             />
-            {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
 
             <View style={styles.fieldHalf}>
 
@@ -352,7 +388,6 @@ export default function MarketplaceCreateScreen() {
                 { borderColor: errors.type ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
             />
-              {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
             </View>
 
             <View style={styles.fieldHalf}>
@@ -371,7 +406,6 @@ export default function MarketplaceCreateScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
-              {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
             </View>
 
             <View style={styles.fieldHalf}>
@@ -390,7 +424,6 @@ export default function MarketplaceCreateScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
-              {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
             </View>
           </View>
 
@@ -410,7 +443,6 @@ export default function MarketplaceCreateScreen() {
               placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
-            {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
           </View>
 
           <View style={styles.fieldGroup}>
@@ -433,6 +465,57 @@ export default function MarketplaceCreateScreen() {
               onChangeText={setVin}
               placeholder={t.Title.vin}
               placeholderTextColor={colors.placeholder}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.sellerPhone}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={sellerPhone}
+              onChangeText={setSellerPhone}
+              placeholder={t.Title.sellerPhone}
+              placeholderTextColor={colors.placeholder}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city} *</Text>
+              <AutoCompleteTextInput
+              value={sellerCity}
+              onBlur={() => setCitySuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleCityTextChange(text);
+                if (errors.sellerCity) setErrors((prev) => ({ ...prev, sellerCity: undefined }));
+              }}
+              isSuggestionsVisible={citySuggestionsVisible}
+              suggestions={cities}
+              placeholder={t.Title.city}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.sellerCity ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country} *</Text>
+              <AutoCompleteTextInput
+              value={sellerCountry}
+              onBlur={() => setCountrySuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleCountryTextChange(text);
+                if (errors.sellerCountry) setErrors((prev) => ({ ...prev, sellerCountry: undefined }));
+              }}
+              isSuggestionsVisible={countrySuggestionsVisible}
+              suggestions={countries}
+              placeholder={t.Title.country}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.sellerCountry ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
             />
           </View>
 
@@ -506,7 +589,7 @@ export default function MarketplaceCreateScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
-            {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option) => (
+            {/* {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option: any) => (
               <TouchableOpacity
                 key={option}
                 style={[styles.sheetItem, { borderBottomColor: colors.border }]}
@@ -519,7 +602,7 @@ export default function MarketplaceCreateScreen() {
               >
                 <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
-            ))}
+            ))} */}
           </ScrollView>
         </View>
       </Modal>

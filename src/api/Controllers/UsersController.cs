@@ -76,32 +76,32 @@ public class UsersController : BaseController
         }
     }
 
-    [HttpGet("me/favorites")]
-    public async Task<IActionResult> GetFavoriteListings([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        try
-        {
-            _logger.LogDebug("CALLED: GetFavoriteListings()");
-            var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    // [HttpGet("me/favorites")]
+    // public async Task<IActionResult> GetFavoriteListings([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    // {
+    //     try
+    //     {
+    //         _logger.LogDebug("CALLED: GetFavoriteListings()");
+    //         var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+    //         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            // if (string.IsNullOrEmpty(userIdClaim) || !string.TryParse(userIdClaim, out var userId))
-            // {
-            //     return Unauthorized(new { Success = false, Message = "Invalid token claims." });
-            // }
+    //         // if (string.IsNullOrEmpty(userIdClaim) || !string.TryParse(userIdClaim, out var userId))
+    //         // {
+    //         //     return Unauthorized(new { Success = false, Message = "Invalid token claims." });
+    //         // }
 
-            var result = await _userService.GetFavoriteListingsAsync(page, pageSize, userIdClaim);
-            return Ok(new { Success = true, Data = result });
-        }
-        catch (CustomException ex)
-        {
-            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
-            return Ok(new { Success = false, Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error occurred.");
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
-        }
-    }
+    //         var result = await _userService.GetFavoriteListingsAsync(page, pageSize, userIdClaim);
+    //         return Ok(new { Success = true, Data = result });
+    //     }
+    //     catch (CustomException ex)
+    //     {
+    //         _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+    //         return Ok(new { Success = false, Message = ex.Message });
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Unexpected error occurred.");
+    //         return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+    //     }
+    // }
 }

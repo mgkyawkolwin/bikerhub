@@ -29,6 +29,8 @@ public class MarketplaceController : BaseController
         {
             _logger.LogDebug("CALLED: GetListings(make={Make}, model={Model}, modelYear={ModelYear}, priceMin={PriceMin}, priceMax={PriceMax}, cc={CC}, type={Type}, location={Location}, page={Page}, pageSize={PageSize})", make, model, modelYear, priceMin, priceMax, cc, type, location, page, pageSize);
             var result = await _marketplaceService.GetListingsAsync(make, model, modelYear, priceMin, priceMax, cc, type, location, page, pageSize);
+            _logger.LogDebug("Listings count: {Count}", result.Items?.Count() ?? 0);
+            _logger.LogDebug("Listings First/Default: {Result}", JsonSerializer.Serialize(result.Items?.FirstOrDefault()));
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -43,8 +45,8 @@ public class MarketplaceController : BaseController
         }
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetListingById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetListingById(Guid id)
     {
         try
         {
@@ -54,6 +56,7 @@ public class MarketplaceController : BaseController
             {
                 return NotFound(new { Success = false, Message = "Listing not found." });
             }
+            _logger.LogDebug("Listing retrieved successfully: {Listing}", JsonSerializer.Serialize(listing));
 
             return Ok(new { Success = true, Data = listing });
         }
@@ -77,6 +80,7 @@ public class MarketplaceController : BaseController
         {
             _logger.LogDebug("CALLED: CreateListing(CreateBikeListingDto: {Dto})", JsonSerializer.Serialize(dto));
             var listing = await _marketplaceService.CreateListingAsync(dto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            _logger.LogDebug("Listing created successfully: {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }
         catch (CustomException ex)
@@ -91,19 +95,20 @@ public class MarketplaceController : BaseController
         }
     }
 
-    [HttpPost("{id:int}/media")]
+    [HttpPost("{id:guid}/media")]
     [Authorize]
-    public async Task<IActionResult> UploadListingMedia([FromRoute] int id, [FromForm] IFormFile file)
+    public async Task<IActionResult> UploadListingMedia([FromRoute] Guid id, [FromForm] IFormFile file)
     {
         try
         {
-            _logger.LogDebug("CALLED: UploadListingMedia(id={ListingId}, file={File})", id, JsonSerializer.Serialize(file));
+            _logger.LogDebug("CALLED: UploadListingMedia(id={ListingId}, file={File})", id, file.Name);
             if (file is null)
             {
                 return BadRequest(new { Success = false, Message = "A media file is required." });
             }
 
             var listing = await _marketplaceService.UploadListingMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            _logger.LogDebug("Listing : {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }
         catch (CustomException ex)
@@ -118,9 +123,9 @@ public class MarketplaceController : BaseController
         }
     }
 
-    [HttpPost("{id}/favorite")]
+    [HttpPost("{id:guid}/favorite")]
     [Authorize]
-    public async Task<IActionResult> ToggleFavorite(int id)
+    public async Task<IActionResult> ToggleFavorite(Guid id)
     {
         try
         {
@@ -140,9 +145,9 @@ public class MarketplaceController : BaseController
         }
     }
 
-    [HttpPost("{id}/like")]
+    [HttpPost("{id:guid}/like")]
     [Authorize]
-    public async Task<IActionResult> ToggleLike(int id)
+    public async Task<IActionResult> ToggleLike(Guid id)
     {
         try
         {
@@ -170,6 +175,7 @@ public class MarketplaceController : BaseController
         {
             _logger.LogDebug("CALLED: GetFavorites()");
             var favorites = await _marketplaceService.GetFavoritesAsync();
+            _logger.LogDebug("Listing result: {Favorites}", JsonSerializer.Serialize(favorites));
             return Ok(new { Success = true, Data = favorites });
         }
         catch (CustomException ex)
@@ -184,14 +190,15 @@ public class MarketplaceController : BaseController
         }
     }
 
-    [HttpPost("{id}/rating")]
+    [HttpPost("{id:guid}/rating")]
     [Authorize]
-    public async Task<IActionResult> SubmitRating(int id, [FromBody] int rating)
+    public async Task<IActionResult> SubmitRating(Guid id, [FromBody] int rating)
     {
         try
         {
             _logger.LogDebug("CALLED: SubmitRating({ListingId}, {Rating})", id, rating);
             var listing = await _marketplaceService.SubmitRatingAsync(id, rating);
+            _logger.LogDebug("Listing result: {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }
         catch (CustomException ex)

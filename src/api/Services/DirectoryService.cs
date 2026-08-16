@@ -29,14 +29,12 @@ public class DirectoryService : IDirectoryService
     private readonly AppDbContext _dbContext;
     private readonly ILogger<DirectoryService> _logger;
     private readonly IStorageService? _storageService;
-    private readonly MinioSettings? _minioSettings;
 
-    public DirectoryService(AppDbContext dbContext, ILogger<DirectoryService> logger, IStorageService? storageService = null, IOptions<MinioSettings>? minioOptions = null)
+    public DirectoryService(AppDbContext dbContext, ILogger<DirectoryService> logger, IStorageService? storageService = null)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
-        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto, Guid currentUserId)
@@ -531,7 +529,7 @@ public class DirectoryService : IDirectoryService
         }
 
         var objectName = await _storageService.UploadFileAsync(file);
-        directory.LogoUrl = BuildObjectUrl(objectName);
+        directory.LogoUrl = _storageService.BuildObjectUrl(objectName);
 
         _dbContext.Directories.Update(directory);
         await _dbContext.SaveChangesAsync();
@@ -556,28 +554,12 @@ public class DirectoryService : IDirectoryService
         }
 
         var objectName = await _storageService.UploadFileAsync(file);
-        directory.CoverImageUrl = BuildObjectUrl(objectName);
+        directory.CoverImageUrl = _storageService.BuildObjectUrl(objectName);
 
         _dbContext.Directories.Update(directory);
         await _dbContext.SaveChangesAsync();
 
         return MapDirectory(directory);
-    }
-
-    private string BuildObjectUrl(string objectName)
-    {
-        if (_minioSettings is null)
-        {
-            return objectName;
-        }
-
-        var baseUrl = _minioSettings.ObjectAccessUrl?.TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(baseUrl))
-        {
-            return objectName;
-        }
-
-        return $"{baseUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 
     private static DirectoryDto MapDirectory(DirectoryEntity directory)

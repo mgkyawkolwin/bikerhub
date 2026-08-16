@@ -53,15 +53,13 @@ public class SocialService : ISocialService
 {
     private readonly AppDbContext _dbContext;
     private readonly ILogger<SocialService> _logger;
-    private readonly IStorageService? _storageService;
-    private readonly BikerHub.Models.MinioSettings? _minioSettings;
+    private readonly IStorageService _storageService;
 
-    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService? storageService = null, Microsoft.Extensions.Options.IOptions<BikerHub.Models.MinioSettings>? minioOptions = null)
+    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService storageService)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
-        _minioSettings = minioOptions?.Value;
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto)
@@ -672,7 +670,7 @@ public class SocialService : ISocialService
                 MediaGuid = m.MediaGuid,
                 ObjectName = m.ObjectName,
                 ContentType = m.ContentType,
-                Url = $"{_minioSettings!.ObjectAccessUrl}/{_minioSettings!.BucketName}/{m.ObjectName}"
+                Url = _storageService.BuildObjectUrl(m.ObjectName)
             }).ToList();
         }
         _logger.LogTrace("Mapped SocialPostDto: {SocialPostDto}", JsonSerializer.Serialize(socialPostDto, new JsonSerializerOptions
@@ -734,7 +732,7 @@ public class SocialService : ISocialService
         }
 
         var objectName = await _storageService.UploadFileAsync(file);
-        profile.CoverPhotoUrl = BuildObjectUrl(objectName);
+        profile.CoverPhotoUrl = _storageService.BuildObjectUrl(objectName);
 
         _dbContext.SocialProfiles.Update(profile);
         await _dbContext.SaveChangesAsync();
@@ -764,7 +762,7 @@ public class SocialService : ISocialService
         }
 
         var objectName = await _storageService.UploadFileAsync(file);
-        profile.ProfilePhotoUrl = BuildObjectUrl(objectName);
+        profile.ProfilePhotoUrl = _storageService.BuildObjectUrl(objectName);
 
         _dbContext.SocialProfiles.Update(profile);
         await _dbContext.SaveChangesAsync();
@@ -903,22 +901,6 @@ public class SocialService : ISocialService
         }));
 
         return results;
-    }
-
-    private string BuildObjectUrl(string objectName)
-    {
-        if (_minioSettings is null)
-        {
-            return objectName;
-        }
-
-        var baseUrl = _minioSettings.ObjectAccessUrl?.TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(baseUrl))
-        {
-            return objectName;
-        }
-
-        return $"{_minioSettings.ObjectAccessUrl}/{_minioSettings.BucketName}/{objectName}";
     }
 
     public async Task<SocialProfileDto> FollowUserAsync(Guid followerId, Guid followingId)
