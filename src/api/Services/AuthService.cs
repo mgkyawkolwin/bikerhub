@@ -5,14 +5,14 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using BikerHub.Data;
-using BikerHub.Dtos.Auth;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
-using BikerHub.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos.Auth;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Models;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public class AuthService : IAuthService
 {
@@ -38,6 +38,7 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 

@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
 public abstract class BaseEntity<TKey>
     where TKey : struct

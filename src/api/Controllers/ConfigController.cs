@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using BikerHub.Services;
-using BikerHub.Exceptions;
+using BikerHub.Api.Services;
+using BikerHub.Api.Exceptions;
 using System.Net;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

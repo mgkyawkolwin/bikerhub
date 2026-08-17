@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using BikerHub.Dtos;
-using BikerHub.Exceptions;
-using BikerHub.Services;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Services;
 using System.Net;
 using System.Text.Json;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -18,17 +18,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import SnackBar from '@/components/snackbar';
-import { container } from '@/services';
+import AutoCompleteTextInput from '@/components/autoCompleteTextInput';
+import { container, StolenBikeService } from '@/services';
 import { StolenBikeServiceToken } from '@/services/stolenBikeService';
-import type { StolenBikeService } from '@/services/stolenBikeService';
-import type { BikeType } from '@/models/marketplace';
-import type { StolenBikeReport } from '@/models/stolenBikeReport';
+import type { BikeListing, BikeType } from '@/models/marketplace';
+import { LookupService, LookupServiceToken } from '@/services/lookupService';
+import Lookup from '@/models/lookup';
+import { StolenBikeReport } from '@/models/stolenBikeReport';
+import Calendar from '@/components/calendar';
 
-const MAKES = ['Yamaha', 'Honda', 'Royal Enfield', 'Kawasaki', 'BMW', 'Suzuki', 'Ducati', 'KTM', 'Triumph'] as const;
-const MODELS = ['MT-15', 'CB500X', 'Classic 350', 'Z650', 'R NineT', 'V-Strom 650', 'Monster 797', 'CB300R', '390 Duke', 'Tiger 900'] as const;
-const TYPES: BikeType[] = ['Cruiser', 'Sport', 'Standard', 'Adventure', 'Touring', 'Custom'];
-
-type DropdownField = 'make' | 'model' | 'type' | null;
+type DropdownField = 'model' | 'type' | null;
 
 export default function ReportStolenScreen() {
   const insets = useSafeAreaInsets();
@@ -37,57 +36,75 @@ export default function ReportStolenScreen() {
     () => container.resolve<StolenBikeService>(StolenBikeServiceToken),
     [],
   );
+  const lookupService = useMemo(
+    () => container.resolve<LookupService>(LookupServiceToken),
+    [],
+  );
 
-  const { colors } = useThemeContext();
+  const { colorScheme, colors } = useThemeContext();
 
-  const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [modelYear, setModelYear] = useState('');
   const [cc, setCc] = useState('');
-  const [price, setPrice] = useState('');
-  const [km, setKm] = useState('');
+  const [stolenDate, setStolenDate] = useState(new Date());
+  const [mileage, setMileage] = useState('');
   const [vin, setVin] = useState('');
   const [type, setType] = useState<BikeType | undefined>(undefined);
   const [photos, setPhotos] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<'title' | 'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'type' | 'mileage' | 'sellerCity' | 'sellerCountry', string>>>({});
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [types, setTypes] = useState<BikeType[]>([]);
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [makeSuggestionsVisible, setMakeSuggestionsVisible] = useState(false);
+  const [modelSuggestionsVisible, setModelSuggestionsVisible] = useState(false);
+  const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
+  const [citySuggestionsVisible, setCitySuggestionsVisible] = useState(false);
+  const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
+  const [edition, setEdition] = useState('');
 
-  const dropdownItems = useMemo(
-    () => ({
-      make: MAKES,
-      model: MODELS,
-      type: TYPES,
-    }),
-    [],
-  );
 
-  const getDropdownLabel = (field: DropdownField) => {
-    if (!field) return t.Title.selectOption;
 
-    if (field === 'type') {
-      return type || t.Title.selectOption;
-    }
-
-    if (field === 'make') {
-      return make || t.Title.selectOption;
-    }
-
-    if (field === 'model') {
-      return model || t.Title.selectOption;
-    }
-
-    return t.Title.selectOption;
-  };
-
-  const addPhoto = useCallback((uri: string) => {
-    setPhotos((prev) => [uri, ...prev]);
-  }, []);
+  // const dropdownItems = useMemo(
+  //   () => ({
+  //     model: MODELS,
+  //     type: TYPES,
+  //   }),
+  //   [],
+  // );
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
   }, []);
+
+  const getFileName = (uri: string) => {
+    const parts = uri.split('/');
+    return parts[parts.length - 1] ?? `image-${Date.now()}`;
+  };
+
+  const getMimeType = (uri: string) => {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'application/octet-stream';
+    }
+  };
 
   const requestCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -110,18 +127,19 @@ export default function ReportStolenScreen() {
   const validateForm = () => {
     const nextErrors: typeof errors = {};
 
-    if (!title.trim()) nextErrors.title = `${t.Title.bikeTitle} is required.`;
     if (!make) nextErrors.make = `${t.Title.make} is required.`;
     if (!model) nextErrors.model = `${t.Title.model} is required.`;
     if (!modelYear.trim()) nextErrors.year = `${t.Title.modelYear} is required.`;
     if (!cc.trim()) nextErrors.cc = `${t.Title.cc} is required.`;
-    if (!price.trim()) nextErrors.price = `${t.Title.price} is required.`;
     if (!type) nextErrors.type = `${t.Title.type} is required.`;
+    if (!mileage.trim()) nextErrors.mileage = `${t.Title.mileage} is required.`;
+    if (!city.trim()) nextErrors.sellerCity = `${t.Title.city} is required.`;
+    if (!country.trim()) nextErrors.sellerCountry = `${t.Title.country} is required.`;
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-        SnackBar.Error(t.Text.requiredFields);
-        return false;
+      SnackBar.Error(t.Text.requiredFields);
+      return false;
     }
 
     return true;
@@ -134,11 +152,11 @@ export default function ReportStolenScreen() {
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: false })
       : await ImagePicker.launchImageLibraryAsync({
-          quality: 0.6,
-          allowsEditing: false,
-          allowsMultipleSelection: true,
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        });
+        quality: 0.6,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
 
     const imageResult = result as ImagePicker.ImagePickerResult;
     const assets = Array.isArray(imageResult.assets) ? imageResult.assets : [];
@@ -157,114 +175,249 @@ export default function ReportStolenScreen() {
     setIsSubmitting(true);
 
     try {
-      const report: StolenBikeReport = {
-        title: title.trim(),
+      const listing: StolenBikeReport = {
         make,
         model,
+        edition,
         year: Number(modelYear),
         cc: Number(cc),
-        price: Number(price),
-        km: km.trim(),
+        mileage: mileage.trim(),
         vin: vin.trim(),
         type,
-        location: 'Yangon',
-        images: photos,
+        stolenDate,
+        phone,
+        city,
+        country,
       };
 
-      await stolenBikeService.createReport(report);
+      const response = await stolenBikeService.createReport(listing);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const createdListingId = responseJson.data?.id?.toString();
+      if (!createdListingId) {
+        SnackBar.Error('Unable to determine listing ID after creation.');
+        return;
+      }
+
+      if (photos.length > 0) {
+        for (const uri of photos) {
+          const uploadResponse = await stolenBikeService.uploadListingImage(createdListingId, {
+            uri,
+            name: getFileName(uri),
+            type: getMimeType(uri),
+          });
+
+          if (!uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json().catch(() => null);
+            throw new Error(uploadResult?.message || 'Media upload failed.');
+          }
+        }
+      }
+
       SnackBar.Success(t.Text.postSuccess);
-      setTimeout(() => {
-        setTitle('');
-        setMake('');
-        setModel('');
-        setModelYear('');
-        setCc('');
-        setPrice('');
-        setKm('');
-        setVin('');
-        setType(undefined);
-        setPhotos([]);
-        setErrors({});
-      }, 1000);
-    } catch (error) {
-      SnackBar.Error('Unable to submit report. Please try again.');
+      setTimeout(() => router.back(), 1000);
+    } catch {
+      SnackBar.Error('Unable to submit listing. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleMakeTextChange = async (text: string) => {
+    setMake(text);
+    const response = await lookupService.getLookup('MAKE', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setMakes(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleModelTextChange = async (text: string) => {
+    setModel(text);
+    const response = await lookupService.getLookup(make, '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setModels(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleTypeTextChange = async (text: string) => {
+    setType(text);
+    const response = await lookupService.getLookup('BIKE_TYPE', '', text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setTypes(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleCityTextChange = async (text: string) => {
+    setCity(text);
+    const response = await lookupService.getLookup('CITY', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCities(lookups.map((lookup) => lookup.value));
+  }
+
+  const handleCountryTextChange = async (text: string) => {
+    setCountry(text);
+    const response = await lookupService.getLookup('COUNTRY', "", text);
+    if (!response.ok) {
+      SnackBar.Error('Request failed. Please try again.');
+      return;
+    }
+    const responseJson = await response.json();
+    if (!responseJson.success) {
+      SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+      return;
+    }
+
+    const lookups = responseJson.data as Lookup[];
+    setCountries(lookups.map((lookup) => lookup.value));
+  }
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.black, paddingTop: insets.top }]}> 
-      <StatusBar style="light" backgroundColor={colors.black} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.black }]}> 
+    <View style={[styles.root, { backgroundColor: colors.card, paddingTop: insets.top }]}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.card} />
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.white} />
+          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.white }]}>{t.Title.reportStolen}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.reportStolen}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={[styles.body, { backgroundColor: colors.background }]}> 
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.bikeTitle || 'Title'}</Text>
-            <TextInput
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make} *</Text>
+            <AutoCompleteTextInput
+              value={make}
+              onBlur={() => setMakeSuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleMakeTextChange(text);
+                if (errors.make) setErrors((prev) => ({ ...prev, make: undefined }));
+              }}
+              isSuggestionsVisible={makeSuggestionsVisible}
+              suggestions={makes}
+              placeholder={t.Title.make}
+              placeholderTextColor={colors.placeholder}
               style={[
                 styles.textInput,
-                { borderColor: errors.title ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                { borderColor: errors.make ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              value={title}
-              onChangeText={(value) => {
-                setTitle(value);
-                if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
-              }}
-              placeholder={t.Title.bikeTitle || 'Title'}
-              placeholderTextColor={colors.placeholder}
             />
-            {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
-          </View>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model} *</Text>
+            <AutoCompleteTextInput
+              value={model}
+              onBlur={() => setModelSuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleModelTextChange(text);
+                if (errors.model) setErrors((prev) => ({ ...prev, model: undefined }));
+              }}
+              isSuggestionsVisible={modelSuggestionsVisible}
+              suggestions={models}
+              placeholder={t.Title.model}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.model ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make}</Text>
-            <TouchableOpacity
-              style={[
-                styles.dropdown,
-                { borderColor: errors.make ? '#E85D04' : colors.border, backgroundColor: colors.card },
-              ]}
-              onPress={() => setActiveDropdown('make')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}> 
-                {make || t.Title.selectOption}
-              </Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
-            {errors.make ? <Text style={styles.errorText}>{errors.make}</Text> : null}
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model}</Text>
-            <TouchableOpacity
-              style={[
-                styles.dropdown,
-                { borderColor: errors.model ? '#E85D04' : colors.border, backgroundColor: colors.card },
-              ]}
-              onPress={() => setActiveDropdown('model')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}> 
-                {model || t.Title.selectOption}
-              </Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
-            {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
             <View style={styles.fieldHalf}>
-              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear}</Text>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.lostDate} *</Text>
+              <Calendar value={stolenDate} onChange={(date) => setStolenDate(date)} />
+            </View>
+
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.edition}</Text>
               <TextInput
                 style={[
                   styles.textInput,
-                  { borderColor: errors.year ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                  { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={edition}
+                onChangeText={(text) => {
+                  setEdition(text);
+                }}
+                placeholder={t.Title.edition}
+                placeholderTextColor={colors.placeholder}
+              />
+            </View>
+
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type} *</Text>
+              <AutoCompleteTextInput
+              value={type}
+              onBlur={() => setTypeSuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleTypeTextChange(text);
+                if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }));
+              }}
+              isSuggestionsVisible={typeSuggestionsVisible}
+              suggestions={types}
+              placeholder={t.Title.type}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.type ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
+            </View>
+
+            <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.modelYear} *</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: errors.year ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
                 ]}
                 value={modelYear}
                 onChangeText={(text) => {
@@ -275,14 +428,14 @@ export default function ReportStolenScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
-              {errors.year ? <Text style={styles.errorText}>{errors.year}</Text> : null}
             </View>
+
             <View style={styles.fieldHalf}>
-              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.cc} *</Text>
               <TextInput
                 style={[
                   styles.textInput,
-                  { borderColor: errors.cc ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
+                  { borderColor: errors.cc ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
                 ]}
                 value={cc}
                 onChangeText={(text) => {
@@ -293,39 +446,7 @@ export default function ReportStolenScreen() {
                 placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
               />
-              {errors.cc ? <Text style={styles.errorText}>{errors.cc}</Text> : null}
             </View>
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.price}</Text>
-            <TextInput
-              style={[
-                styles.textInput,
-                { borderColor: errors.price ? '#E85D04' : colors.border, backgroundColor: colors.card, color: colors.text },
-              ]}
-              value={price}
-              onChangeText={(text) => {
-                setPrice(text.replace(/[^0-9]/g, ''));
-                if (errors.price) setErrors((prev) => ({ ...prev, price: undefined }));
-              }}
-              placeholder={t.Title.price}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-            {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
-            <TextInput
-              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-              value={km}
-              onChangeText={setKm}
-              placeholder={t.Title.km}
-              placeholderTextColor={colors.placeholder}
-              keyboardType="numeric"
-            />
           </View>
 
           <View style={styles.fieldGroup}>
@@ -340,21 +461,58 @@ export default function ReportStolenScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type}</Text>
-            <TouchableOpacity
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.contactPhone}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder={t.Title.contactPhone}
+              placeholderTextColor={colors.placeholder}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city} *</Text>
+              <AutoCompleteTextInput
+              value={city}
+              onBlur={() => setCitySuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleCityTextChange(text);
+                if (errors.sellerCity) setErrors((prev) => ({ ...prev, sellerCity: undefined }));
+              }}
+              isSuggestionsVisible={citySuggestionsVisible}
+              suggestions={cities}
+              placeholder={t.Title.city}
+              placeholderTextColor={colors.placeholder}
               style={[
-                styles.dropdown,
-                { borderColor: errors.type ? '#E85D04' : colors.border, backgroundColor: colors.card },
+                styles.textInput,
+                { borderColor: errors.sellerCity ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
-              onPress={() => setActiveDropdown('type')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dropdownText, { color: colors.text }]}> 
-                {type || t.Title.selectOption}
-              </Text>
-              <MaterialIcons name="expand-more" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
-            {errors.type ? <Text style={styles.errorText}>{errors.type}</Text> : null}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country} *</Text>
+              <AutoCompleteTextInput
+              value={country}
+              onBlur={() => setCountrySuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleCountryTextChange(text);
+                if (errors.sellerCountry) setErrors((prev) => ({ ...prev, sellerCountry: undefined }));
+              }}
+              isSuggestionsVisible={countrySuggestionsVisible}
+              suggestions={countries}
+              placeholder={t.Title.country}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.sellerCountry ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+
             <View style={styles.photoHeader}>
               <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.photos}</Text>
               <View style={styles.photoActions}>
@@ -394,16 +552,16 @@ export default function ReportStolenScreen() {
                 ))}
               </View>
             ) : (
-              <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}> 
+              <View style={[styles.photoPlaceholder, { borderColor: colors.border }]}>
                 <Text style={[styles.photoPlaceholderText, { color: colors.secondaryText }]}>{t.Text.noPhotos}</Text>
               </View>
             )}
           </View>
         </ScrollView>
 
-        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}> 
+        <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity
-            style={[styles.postButton, { backgroundColor: colors.button }]}
+            style={[styles.postButton, { backgroundColor: colors.accent }]}
             onPress={handlePost}
             disabled={isSubmitting}
           >
@@ -415,7 +573,7 @@ export default function ReportStolenScreen() {
 
       <Modal visible={Boolean(activeDropdown)} animationType="slide" transparent statusBarTranslucent>
         <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]} onPress={() => setActiveDropdown(null)} />
-        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}> 
+        <View style={[styles.sheet, { backgroundColor: colors.sheetBackground, borderTopColor: colors.border }]}>
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: colors.text }]}>{t.Title.selectOption}</Text>
             <TouchableOpacity onPress={() => setActiveDropdown(null)} hitSlop={12}>
@@ -423,12 +581,11 @@ export default function ReportStolenScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetBody}>
-            {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option) => (
+            {/* {(activeDropdown ? dropdownItems[activeDropdown] : []).map((option: any) => (
               <TouchableOpacity
                 key={option}
                 style={[styles.sheetItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
-                  if (activeDropdown === 'make') setMake(option as string);
                   if (activeDropdown === 'model') setModel(option as string);
                   if (activeDropdown === 'type') setType(option as BikeType);
                   setActiveDropdown(null);
@@ -437,7 +594,7 @@ export default function ReportStolenScreen() {
               >
                 <Text style={[styles.sheetItemText, { color: colors.text }]}>{option}</Text>
               </TouchableOpacity>
-            ))}
+            ))} */}
           </ScrollView>
         </View>
       </Modal>
@@ -607,7 +764,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   postButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

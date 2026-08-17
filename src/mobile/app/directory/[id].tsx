@@ -195,7 +195,7 @@ export default function DirectoryDetailScreen() {
                 <View style={styles.titleBlock}>
                   <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.subtitle, { color: colors.secondaryText }]} numberOfLines={1}>{item.businessType}</Text>
-                  <View style={[styles.row, styles.favoriteRow, { alignItems: 'center' }]}> 
+                  <View style={[styles.row, styles.favoriteRow, { alignItems: 'center' }]}>
                     <TouchableOpacity
                       style={[styles.favoriteButton]}
                       onPress={handleToggleFavorite}
@@ -250,13 +250,16 @@ export default function DirectoryDetailScreen() {
                 >
                   <MaterialIcons name="map" size={24} color={colors.secondaryText} />
                   <Text style={[styles.metaLinkText, { color: colors.accent }]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.googleMapUrl}
+                    View On Map
                   </Text>
                 </TouchableOpacity>
               ) : null}
               <View style={styles.row}>
                 <MaterialIcons name="star" size={24} color={colors.secondaryText} />
-                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
+                <View style={styles.ratingValue}>
+                  <Rating value={item.rating ?? 0} />
+                  <Text style={[styles.ratingCount, { color: colors.secondaryText }]}>({item.ratingCount ?? 0})</Text>
+                </View>
               </View>
               {isOwner ? (
                 <View style={styles.actionsRow}>
@@ -296,10 +299,10 @@ const styles = StyleSheet.create({
   logoPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   titleBlock: { flex: 1, justifyContent: 'center' },
   titleText: { fontSize: 22, fontWeight: '700' },
-  subtitle: { fontSize: 14, lineHeight: 20 },
+  subtitle: { fontSize: 16, lineHeight: 20 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  metaText: { fontSize: 14, lineHeight: 20 },
-  metaLinkText: { fontSize: 14, lineHeight: 20, textDecorationLine: 'underline' },
+  metaText: { fontSize: 16, lineHeight: 20 },
+  metaLinkText: { fontSize: 16, lineHeight: 20, textDecorationLine: 'underline' },
   wrapRow: { flexWrap: 'wrap' },
   favoriteRow: { paddingVertical: 8 },
   favoriteButton: {
@@ -312,11 +315,20 @@ const styles = StyleSheet.create({
   },
   favoriteText: {
     marginLeft: 2,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   ratingBlock: {
     marginLeft: 16,
+  },
+  ratingValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratingCount: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   actionsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 16 },
   actionButton: { flex: 1, borderWidth: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },

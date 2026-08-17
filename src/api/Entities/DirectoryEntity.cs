@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
 public class DirectoryEntity : BaseEntity<Guid>
 {

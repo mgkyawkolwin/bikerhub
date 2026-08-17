@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
 [Table("SocialPostMedias")]
 public class SocialPostMediaEntity : BaseEntity<Guid>

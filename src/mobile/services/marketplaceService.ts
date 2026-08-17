@@ -33,11 +33,11 @@ function buildMarketplaceQuery(filter: MarketplaceFilter, page: number, pageSize
 
 export class MarketplaceServiceClient implements MarketplaceService {
   async getListings(filter: MarketplaceFilter, page: number, pageSize: number): Promise<Response> {
-    return fetchApi(`/marketplace?${buildMarketplaceQuery(filter, page, pageSize)}`);
+    return authenticatedFetchApi(`/marketplace?${buildMarketplaceQuery(filter, page, pageSize)}`);
   }
 
   async getListingById(id: string): Promise<Response> {
-    return fetchApi(`/marketplace/${encodeURIComponent(id)}`);
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}`);
   }
 
   async createListing(listing: BikeListing): Promise<Response> {

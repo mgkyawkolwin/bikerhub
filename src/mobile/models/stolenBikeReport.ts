@@ -1,18 +1,19 @@
-import type { BikeType } from '../mobile/constants/bikeType';
+import { Media } from "./media";
 
 export type StolenBikeReport = {
   id?: string;
-  title?: string;
   make?: string;
   model?: string;
+  edition?: string;
   year?: number;
-  price?: number;
   cc?: number;
-  km?: string;
+  mileage?: string;
   vin?: string;
-  type?: BikeType;
+  type?: string;
+  stolenDate?: string | Date;
   description?: string;
-  images?: string[];
-  reportedAt?: string;
-  location?: string;
+  medias?: Media[];
+  phone?: string;
+  city?: string;
+  country?: string;
 };

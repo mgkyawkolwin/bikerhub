@@ -1,4 +1,4 @@
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record SocialLinkDto(string Platform, string Url);
 public sealed record UpdateSocialLinksDto(IEnumerable<SocialLinkDto> SocialLinks);

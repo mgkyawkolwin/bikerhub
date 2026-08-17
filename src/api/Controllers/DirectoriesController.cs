@@ -2,14 +2,14 @@ using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using BikerHub.Dtos;
-using BikerHub.Exceptions;
-using BikerHub.Services;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [Authorize]
 [ApiController]

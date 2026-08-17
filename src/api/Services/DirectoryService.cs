@@ -2,14 +2,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
-using BikerHub.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Models;
 using System.Text.Json;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IDirectoryService
 {

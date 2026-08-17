@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace BikerHub.Migrations
+namespace BikerHub.Api.Migrations
 {
     /// <inheritdoc />
     public partial class Ver_1011 : Migration

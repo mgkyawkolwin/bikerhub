@@ -1,4 +1,4 @@
-namespace BikerHub.Models;
+namespace BikerHub.Api.Models;
 
 public sealed class JwtSettings
 {

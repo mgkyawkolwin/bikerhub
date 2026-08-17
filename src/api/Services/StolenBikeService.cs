@@ -1,44 +1,57 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IStolenBikeService
 {
     Task<StolenBikeReportDto> CreateReportAsync(StolenBikeReportDto dto);
     Task<IEnumerable<StolenBikeReportDto>> GetReportsAsync();
-    Task<StolenBikeReportDto?> GetReportByIdAsync(int id);
+    Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id);
+    Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId);
 }
 
 public class StolenBikeService : IStolenBikeService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IStorageService _storageService;
+    private readonly ILogger<StolenBikeService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public StolenBikeService(AppDbContext dbContext)
+    public StolenBikeService(AppDbContext dbContext, IStorageService storageService, ILogger<StolenBikeService> logger, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _storageService = storageService;
+        _logger = logger;
+        _currentUserService = currentUserService;
     }
 
     public async Task<StolenBikeReportDto> CreateReportAsync(StolenBikeReportDto dto)
     {
-        var entity = new StolenBikeReport
+        var entity = new StolenBikeReportEntity
         {
-            Title = dto.Title ?? string.Empty,
-            Make = dto.Make,
-            Model = dto.Model,
-            Year = dto.Year,
-            Price = dto.Price,
-            Cc = dto.Cc,
-            Km = dto.Km,
+            Make = dto.Make!,
+            Model = dto.Model!,
+            Edition = dto.Edition,
+            Year = dto.Year ?? 0,
+            Cc = dto.Cc ?? 0,
+            Mileage = dto.Mileage ?? 0,
             Vin = dto.Vin,
-            Type = dto.Type,
+            Type = dto.Type!,
+            Phone = dto.Phone,
+            City = dto.City!,
+            Country = dto.Country!,
+            StolenDate = dto.StolenDate ?? DateTime.UtcNow,
             Description = dto.Description,
-            ImagesJson = dto.Images is null ? null : JsonSerializer.Serialize(dto.Images),
-            ReportedAt = dto.ReportedAt ?? DateTime.UtcNow,
-            Location = dto.Location,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
 
         _dbContext.StolenBikeReports.Add(entity);
@@ -48,37 +61,75 @@ public class StolenBikeService : IStolenBikeService
 
     public async Task<IEnumerable<StolenBikeReportDto>> GetReportsAsync()
     {
-        var results = await _dbContext.StolenBikeReports.OrderByDescending(r => r.ReportedAt).ToListAsync();
-        return results.Select(Map);
+        var results = await _dbContext.StolenBikeReports.OrderByDescending(r => r.CreatedAtUtc).ToListAsync();
+        var reportIds = results.Select(r => r.Id).ToList();
+        var medias = await _dbContext.Medias.Where(m => reportIds.Contains(m.OwnerId)).ToListAsync();
+        var mediaLookup = medias
+            .GroupBy(m => m.OwnerId)
+            .ToDictionary(g => g.Key, g => g.Select(m => _storageService.BuildObjectUrl(m.ObjectName)).ToList());
+
+        return results.Select(report => Map(report, mediaLookup.GetValueOrDefault(report.Id)));
     }
 
-    public async Task<StolenBikeReportDto?> GetReportByIdAsync(int id)
+    public async Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id)
     {
         var report = await _dbContext.StolenBikeReports.FindAsync(id);
-        return report is null ? null : Map(report);
+        if (report is null) return null;
+
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == id).ToListAsync();
+        var mediaUrls = medias.Select(m => _storageService.BuildObjectUrl(m.ObjectName));
+        return Map(report, mediaUrls);
     }
 
-    private static StolenBikeReportDto Map(StolenBikeReport entity)
+    public async Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId)
     {
-        var images = string.IsNullOrWhiteSpace(entity.ImagesJson)
-            ? Enumerable.Empty<string>()
-            : JsonSerializer.Deserialize<IEnumerable<string>>(entity.ImagesJson) ?? Enumerable.Empty<string>();
+        var report = await _dbContext.StolenBikeReports.FindAsync(reportId);
+        if (report is null)
+            throw new CustomException("Report not found.");
+
+        var objectName = await _storageService.UploadFileAsync(file);
+        var media = new MediaEntity
+        {
+            OwnerId = report.Id,
+            ObjectName = objectName,
+            ContentType = file.ContentType ?? "application/octet-stream",
+            Size = file.Length,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = currentUserId,
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = currentUserId
+        };
+        _dbContext.Medias.Add(media);
+        await _dbContext.SaveChangesAsync();
+
+        var medias = await _dbContext.Medias.Where(m => m.OwnerId == report.Id).ToListAsync();
+        var mediaUrls = medias.Select(m => _storageService.BuildObjectUrl(m.ObjectName));
+        return Map(report, mediaUrls);
+    }
+
+    private StolenBikeReportDto Map(StolenBikeReportEntity entity, IEnumerable<string>? mediaUrls = null)
+    {
 
         return new StolenBikeReportDto(
             entity.Id,
-            entity.Title,
             entity.Make,
             entity.Model,
+            entity.Edition,
             entity.Year,
-            entity.Price,
             entity.Cc,
-            entity.Km,
+            entity.Mileage,
             entity.Vin,
             entity.Type,
+            entity.Phone,
+            entity.City,
+            entity.Country,
+            entity.StolenDate,
             entity.Description,
-            images,
-            entity.ReportedAt,
-            entity.Location
+            [],
+            entity.CreatedById,
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc,
+            entity.UpdatedById
         );
     }
 }

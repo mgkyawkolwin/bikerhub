@@ -1,14 +1,14 @@
 using System.Text.Json;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
-using BikerHub.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IGarageBikeService
 {

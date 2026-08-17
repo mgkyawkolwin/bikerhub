@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
 [Table("AdminUsers")]
 public class AdminUser : BaseEntity<Guid>

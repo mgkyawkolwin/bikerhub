@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using BikerHub.Dtos;
-using BikerHub.Services;
-using BikerHub.Exceptions;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Services;
+using BikerHub.Api.Exceptions;
 using System.Net;
 using System.Text.Json;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
+
 
 [ApiController]
 [Route("api/[controller]")]
@@ -23,12 +24,12 @@ public class MarketplaceController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetListings([FromQuery] string? make = null, [FromQuery] string? model = null, [FromQuery] string? modelYear = null, [FromQuery] decimal? priceMin = null, [FromQuery] decimal? priceMax = null, [FromQuery] string? cc = null, [FromQuery] string? type = null, [FromQuery] string? location = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetListings([FromQuery] BikeListingFilterDto filter)
     {
         try
         {
-            _logger.LogDebug("CALLED: GetListings(make={Make}, model={Model}, modelYear={ModelYear}, priceMin={PriceMin}, priceMax={PriceMax}, cc={CC}, type={Type}, location={Location}, page={Page}, pageSize={PageSize})", make, model, modelYear, priceMin, priceMax, cc, type, location, page, pageSize);
-            var result = await _marketplaceService.GetListingsAsync(make, model, modelYear, priceMin, priceMax, cc, type, location, page, pageSize);
+            _logger.LogDebug("CALLED: GetListings({Filter})", JsonSerializer.Serialize(filter));
+            var result = await _marketplaceService.GetListingsAsync(filter);
             _logger.LogDebug("Listings count: {Count}", result.Items?.Count() ?? 0);
             _logger.LogDebug("Listings First/Default: {Result}", JsonSerializer.Serialize(result.Items?.FirstOrDefault()));
             return Ok(new { Success = true, Data = result });
@@ -79,7 +80,7 @@ public class MarketplaceController : BaseController
         try
         {
             _logger.LogDebug("CALLED: CreateListing(CreateBikeListingDto: {Dto})", JsonSerializer.Serialize(dto));
-            var listing = await _marketplaceService.CreateListingAsync(dto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var listing = await _marketplaceService.CreateListingAsync(dto);
             _logger.LogDebug("Listing created successfully: {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }
@@ -107,7 +108,7 @@ public class MarketplaceController : BaseController
                 return BadRequest(new { Success = false, Message = "A media file is required." });
             }
 
-            var listing = await _marketplaceService.UploadListingMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var listing = await _marketplaceService.UploadListingMediaAsync(id, file);
             _logger.LogDebug("Listing : {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }
@@ -192,12 +193,12 @@ public class MarketplaceController : BaseController
 
     [HttpPost("{id:guid}/rating")]
     [Authorize]
-    public async Task<IActionResult> SubmitRating(Guid id, [FromBody] int rating)
+    public async Task<IActionResult> SubmitRating(Guid id, RateDto dto)
     {
         try
         {
-            _logger.LogDebug("CALLED: SubmitRating({ListingId}, {Rating})", id, rating);
-            var listing = await _marketplaceService.SubmitRatingAsync(id, rating);
+            _logger.LogDebug("CALLED: SubmitRating({ListingId}, {Rating})", id, dto.Rating);
+            var listing = await _marketplaceService.SubmitRatingAsync(id, dto.Rating);
             _logger.LogDebug("Listing result: {Listing}", JsonSerializer.Serialize(listing));
             return Ok(new { Success = true, Data = listing });
         }

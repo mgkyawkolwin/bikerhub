@@ -29,6 +29,7 @@ export default function BikeDetailScreen() {
   const [listing, setListing] = useState<BikeListing | null>(null);
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -104,20 +105,57 @@ export default function BikeDetailScreen() {
   };
 
   const handleRate = async (value: number) => {
-    if (!listing?.id) return;
-    const updatedResponse = await marketplaceService.submitRating(listing.id, value);
-    if (!updatedResponse.ok) {
+    if (!listing?.id || isSubmittingRating) return;
+    setIsSubmittingRating(true);
+
+    try {
+      const updatedResponse = await marketplaceService.submitRating(listing.id, value);
+      if (!updatedResponse.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const updatedJson = await updatedResponse.json();
+      if (!updatedJson.success) {
+        SnackBar.Error(updatedJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const updated = updatedJson.data as BikeListing;
+      if (updated) {
+        setListing(updated);
+        return;
+      }
+
+      setListing((prev) => {
+        if (!prev) return prev;
+
+        const previousRating = typeof prev.myRating === 'number' ? prev.myRating : null;
+        const currentCount = prev.ratingCount ?? 0;
+        const currentAverage = prev.rating ?? 0;
+        let updatedCount = currentCount;
+        let totalRating = currentAverage * currentCount;
+
+        if (previousRating === null) {
+          updatedCount += 1;
+          totalRating += value;
+        } else {
+          totalRating += value - previousRating;
+        }
+
+        const updatedRating = updatedCount > 0 ? totalRating / updatedCount : 0;
+
+        return {
+          ...prev,
+          myRating: value,
+          rating: updatedRating,
+          ratingCount: updatedCount,
+        };
+      });
+    } catch {
       SnackBar.Error('Request failed. Please try again.');
-      return;
-    }
-    const updatedJson = await updatedResponse.json();
-    if (!updatedJson.success) {
-      SnackBar.Error(updatedJson.message || 'Failed response. Please try again.');
-      return;
-    }
-    const updated = updatedJson.data as BikeListing;
-    if (updated) {
-      setListing(updated);
+    } finally {
+      setIsSubmittingRating(false);
     }
   };
 
@@ -158,17 +196,17 @@ export default function BikeDetailScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scroll, { backgroundColor: colors.background, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {listing ? (
           <>
-            <ImageCarousel images={images} imageHeight={260} onImagePress={handleOpenGallery} />
+            <ImageCarousel images={images} imageHeight={240} onImagePress={handleOpenGallery} />
             <View style={styles.photoText}>
-              <Text style={[styles.title, { color: colors.text }]}>{listing.title}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>{listing.make} {listing.model} {listing.cc}cc {listing.year} {listing.edition}</Text>
               <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
             </View>
 
-            <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.specs}</Text>
+            <View style={[styles.group, { backgroundColor: colors.background }]}> 
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.specification}</Text>
               <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.make}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.make}</Text>
@@ -176,6 +214,10 @@ export default function BikeDetailScreen() {
               <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.model}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.model}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.edition}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.edition}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.type}</Text>
@@ -187,26 +229,30 @@ export default function BikeDetailScreen() {
               </View>
               <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.cc}</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{listing.cc}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.cc} cc</Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.km}</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{listing.km}</Text>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.mileage} ({t.Title.km})</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.mileage} km</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.vin ? listing.vin : "NA"}</Text>
               </View>
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.card, borderColor: colors.border }]}> 
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t.Title.sellerInfo}</Text>
-                <Rating value={listing.rating ?? 0} onRate={handleRate} />
+                <Rating value={listing.myRating ?? 0} onRate={handleRate} />
               </View>
               <View style={styles.sellerRow}>
-                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerInfo}</Text>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.sellerName}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.sellerName}</Text>
               </View>
               <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.location}</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{listing.location}</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{listing.sellerCity} {listing.sellerCity && listing.sellerCountry && ", "} {listing.sellerCountry}</Text>
               </View>
               <View style={styles.sellerRow}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.phone}</Text>
@@ -221,7 +267,7 @@ export default function BikeDetailScreen() {
               </View>
 
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={[styles.actionButton, { borderColor: colors.border }]} onPress={handleCall}>
+                <TouchableOpacity disabled={!listing.sellerPhone} style={[styles.actionButton, { borderColor: colors.border }]} onPress={handleCall}>
                   <MaterialIcons name="call" size={16} color={colors.accent} />
                   <Text style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.call}</Text>
                 </TouchableOpacity>
@@ -318,7 +364,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
   },
   price: {
@@ -329,7 +375,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     marginBottom: 10,
   },
@@ -368,11 +414,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#999999',
   },
   value: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   buttonRow: {

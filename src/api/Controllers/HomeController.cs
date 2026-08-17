@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using BikerHub.Dtos;
+using BikerHub.Api.Dtos;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 public class HomeController : BaseController
 {
@@ -32,12 +32,6 @@ public class HomeController : BaseController
 
         _logger.LogDebug("Application version retrieved: {Version}", version);
 
-        return Json(new { version });
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        return Ok(new { version });
     }
 }

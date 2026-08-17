@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record UpdateRideInfoDto(
     [property: JsonPropertyName("name")] string? Name = null,

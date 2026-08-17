@@ -1,7 +1,7 @@
 using System.Net.Mail;
-using BikerHub.Exceptions;
+using BikerHub.Api.Exceptions;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public static class DtoValidationHelper
 {

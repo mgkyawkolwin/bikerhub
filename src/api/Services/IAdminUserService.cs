@@ -1,7 +1,7 @@
-using BikerHub.Dtos;
-using BikerHub.Entities;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IAdminUserService
 {

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View, TouchableOpacity, RefreshControl, Image, Text } from 'react-native';
+import { FlatList, StyleSheet, View, TouchableOpacity, RefreshControl, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -11,6 +11,7 @@ import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
 import type { BikeListing, MarketplaceFilter, BikeType } from '@/models/marketplace';
 import SnackBar from '@/components/snackbar';
+import MarketplaceCardItem from './carditem';
 
 export default function MarketplaceScreen() {
   const insets = useSafeAreaInsets();
@@ -168,55 +169,13 @@ export default function MarketplaceScreen() {
   }
 
   function renderBikeCard({ item }: { item: BikeListing }) {
-
     return (
-      <TouchableOpacity
-        activeOpacity={0.85}
+      <MarketplaceCardItem
+        item={item}
         onPress={() => router.push(`/marketplace/${item.id}`)}
-      >
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.make} {item.model} {item.year}</Text>
-            <View style={styles.favoriteWrapper}>
-              <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
-                <MaterialIcons
-                  name={item.isFavorite ? 'favorite' : 'favorite-border'}
-                  size={22}
-                  color={item.isFavorite ? '#E85D04' : colors.secondaryText}
-                />
-              </TouchableOpacity>
-              <Text style={[styles.countText, { color: item.isFavorite ? '#E85D04' : colors.secondaryText }]}>{item.favoritesCount ?? 0}</Text>
-            </View>
-          </View>
-          <Image source={{ uri: item?.medias?.[0]?.url }} style={styles.cardImage} />
-          <View style={styles.cardFooter}>
-            <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
-            <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>
-          </View>
-          <View style={[styles.cardLocationRow, { justifyContent: 'space-between' }]}>
-            <View style={styles.locationRowLeft}>
-              <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-              <Text style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</Text>
-            </View>
-            <View style={styles.statsRow}>
-              <View style={styles.viewsWrapper}>
-                <MaterialIcons name="visibility" size={16} color={colors.secondaryText} />
-                <Text style={[styles.countText, { color: colors.secondaryText }]}>{item.viewCount ?? 0}</Text>
-              </View>
-              <View style={styles.likeWrapper}>
-                <TouchableOpacity onPress={() => void toggleLike(item.id ?? '')} hitSlop={10}>
-                  <MaterialIcons
-                    name={item.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
-                    size={22}
-                    color={item.isLiked ? '#E85D04' : colors.secondaryText}
-                  />
-                </TouchableOpacity>
-                <Text style={[styles.countText, { color: item.isLiked ? '#E85D04' : colors.secondaryText }]}>{item.likeCount ?? 0}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
+        onToggleFavorite={toggleFavorite}
+        onToggleLike={toggleLike}
+      />
     );
   }
 

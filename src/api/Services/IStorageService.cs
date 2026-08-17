@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IStorageService
 {

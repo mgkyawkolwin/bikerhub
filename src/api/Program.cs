@@ -4,14 +4,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using BikerHub.Data;
-using BikerHub.Entities;
-using BikerHub.Models;
-using BikerHub.Services;
+using BikerHub.Api.Data;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Models;
+using BikerHub.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BikerHub.Filters;
+using BikerHub.Api.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,7 +71,10 @@ builder.Services.AddControllersWithViews(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 });
+// System Services
+builder.Services.AddHttpContextAccessor();
 
+// Custom Services
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.Parse("8.0.32-mysql")));
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -93,6 +96,7 @@ builder.Services.AddScoped<IStolenBikeService, StolenBikeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -107,7 +111,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // });
 
 var app = builder.Build();
-
 // auto migration for development environment
 if (app.Environment.IsDevelopment())
 {

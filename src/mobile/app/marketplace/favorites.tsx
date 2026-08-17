@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity, Image, Text } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -7,9 +7,11 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
+import MarketplaceCardItem from './carditem';
 import type { BikeListing } from '@/models/bikeListing';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
+import SnackBar from '@/components/snackbar';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
@@ -24,14 +26,59 @@ export default function FavoritesScreen() {
   const loadListings = useCallback(
     async () => {
       try {
-        const result = await marketplaceService.getFavorites();
-        setFavorites(result);
+        const response = await marketplaceService.getFavorites();
+        if (!response.ok) {
+          // Handle error response
+          SnackBar.Error('Request failed. Please try again.');
+          return;
+        }
+        const responseJson = await response.json();
+        console.log('Load Favorites Response:', responseJson);
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+          return;
+        }
+        const responseData = responseJson.data as BikeListing[];
+        setFavorites(responseData);
       } finally {
         setRefreshing(false);
       }
     },
     [marketplaceService],
   );
+
+  const loadListingById = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      const response = await marketplaceService.getListingById(listingId);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again later.');
+        return;
+      }
+      const responseJson = await response.json();
+      console.log('Load Listing By ID Response:', responseJson);
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again later.');
+        return;
+      }
+      const updated = responseJson.data as BikeListing;
+      if (updated) {
+        setFavorites((prev) => prev.map((item) => (item.id === listingId ? updated : item)));
+      }
+    },
+    [marketplaceService],
+  );
+
+
+  const toggleLike = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      await marketplaceService.toggleLike(listingId);
+      await Promise.all([loadListingById(listingId), loadListings()]);
+    },
+    [marketplaceService, loadListingById, loadListings],
+  );
+
 
   const toggleFavorite = useCallback(
     async (listingId: string) => {
@@ -42,41 +89,27 @@ export default function FavoritesScreen() {
     [marketplaceService, loadListings],
   );
 
-    useFocusEffect(
-      useCallback(() => {
-        void loadListings();
-      }, [loadListings]),
-    );
-  
-    function handleRefresh() {
-      setRefreshing(true);
+  useFocusEffect(
+    useCallback(() => {
       void loadListings();
-    }
-
-  const renderBikeCard = ({ item }: { item: BikeListing }) => (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={() => router.push(`/marketplace/${item.id}`)}
-    >
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
-          <TouchableOpacity onPress={() => void toggleFavorite(item.id ?? '')} hitSlop={10}>
-            <MaterialIcons name="favorite" size={22} color={colors.accent} />
-          </TouchableOpacity>
-        </View>
-        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
-        <View style={styles.cardFooter}>
-          <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
-          <Text style={[styles.cardSeller, { color: colors.secondaryText }]}>{item.sellerName}</Text>
-        </View>
-        <View style={styles.cardLocationRow}>
-          <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-          <Text style={[styles.cardLocationText, { color: colors.secondaryText }]}>{item.location}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    }, [loadListings]),
   );
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void loadListings();
+  }
+
+  const renderBikeCard = ({ item }: { item: BikeListing }) => {
+    return (
+      <MarketplaceCardItem
+        item={item}
+        onPress={() => router.push(`/marketplace/${item.id}`)}
+        onToggleFavorite={toggleFavorite}
+        onToggleLike={toggleLike}
+      />
+    );
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -184,5 +217,51 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+  },
+
+  locationRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  viewsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewCountText: {
+    fontSize: 13,
+  },
+  likeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  countText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  favoriteWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  likeCountBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  likeCountText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

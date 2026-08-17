@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using BikerHub.Models;
+using BikerHub.Api.Models;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IRideService
 {

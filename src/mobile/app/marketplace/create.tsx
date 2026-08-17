@@ -42,19 +42,18 @@ export default function MarketplaceCreateScreen() {
 
   const { colorScheme, colors } = useThemeContext();
 
-  const [title] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [modelYear, setModelYear] = useState('');
   const [cc, setCc] = useState('');
   const [price, setPrice] = useState('');
-  const [km, setKm] = useState('');
+  const [mileage, setMileage] = useState('');
   const [vin, setVin] = useState('');
   const [type, setType] = useState<BikeType | undefined>(undefined);
   const [photos, setPhotos] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'price' | 'type' | 'sellerCity' | 'sellerCountry', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record< 'make' | 'model' | 'year' | 'cc' | 'price' | 'type' | 'mileage' | 'sellerCity' | 'sellerCountry', string>>>({});
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [types, setTypes] = useState<BikeType[]>([]);
@@ -68,6 +67,8 @@ export default function MarketplaceCreateScreen() {
   const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
   const [citySuggestionsVisible, setCitySuggestionsVisible] = useState(false);
   const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
+  const [edition, setEdition] = useState('');
+
 
 
   // const dropdownItems = useMemo(
@@ -131,6 +132,7 @@ export default function MarketplaceCreateScreen() {
     if (!cc.trim()) nextErrors.cc = `${t.Title.cc} is required.`;
     if (!price.trim()) nextErrors.price = `${t.Title.price} is required.`;
     if (!type) nextErrors.type = `${t.Title.type} is required.`;
+    if (!mileage.trim()) nextErrors.mileage = `${t.Title.mileage} is required.`;
     if (!sellerCity.trim()) nextErrors.sellerCity = `${t.Title.city} is required.`;
     if (!sellerCountry.trim()) nextErrors.sellerCountry = `${t.Title.country} is required.`;
 
@@ -174,13 +176,13 @@ export default function MarketplaceCreateScreen() {
 
     try {
       const listing: BikeListing = {
-        title: title.trim(),
         make,
         model,
+        edition,
         year: Number(modelYear),
         cc: cc,
         price: Number(price),
-        km: km.trim(),
+        mileage: mileage.trim(),
         vin: vin.trim(),
         type,
         sellerPhone,
@@ -222,7 +224,7 @@ export default function MarketplaceCreateScreen() {
       }
 
       SnackBar.Success(t.Text.postSuccess);
-      setTimeout(() => router.replace('/marketplace'), 1000);
+      setTimeout(() => router.back(), 1000);
     } catch {
       SnackBar.Error('Unable to submit listing. Please try again.');
     } finally {
@@ -370,7 +372,22 @@ export default function MarketplaceCreateScreen() {
             />
 
             <View style={styles.fieldHalf}>
+              <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.edition}</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+                ]}
+                value={edition}
+                onChangeText={(text) => {
+                  setEdition(text);
+                }}
+                placeholder={t.Title.edition}
+                placeholderTextColor={colors.placeholder}
+              />
+            </View>
 
+            <View style={styles.fieldHalf}>
               <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type} *</Text>
               <AutoCompleteTextInput
               value={type}
@@ -446,11 +463,11 @@ export default function MarketplaceCreateScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.km}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.mileage}({t.Title.km})</Text>
             <TextInput
               style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-              value={km}
-              onChangeText={setKm}
+              value={mileage}
+              onChangeText={setMileage}
               placeholder={t.Title.km}
               placeholderTextColor={colors.placeholder}
               keyboardType="numeric"
@@ -569,7 +586,7 @@ export default function MarketplaceCreateScreen() {
 
         <View style={[styles.footer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
           <TouchableOpacity
-            style={[styles.postButton, { backgroundColor: colors.button }]}
+            style={[styles.postButton, { backgroundColor: colors.accent }]}
             onPress={handlePost}
             disabled={isSubmitting}
           >
@@ -772,7 +789,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   postButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

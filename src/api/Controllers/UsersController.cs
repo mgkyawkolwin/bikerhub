@@ -3,13 +3,13 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Services;
-using BikerHub.Exceptions;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Services;
+using BikerHub.Api.Exceptions;
 using System.Net;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Authorize]

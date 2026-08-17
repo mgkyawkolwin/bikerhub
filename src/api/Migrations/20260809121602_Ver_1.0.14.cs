@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace BikerHub.Migrations
+namespace BikerHub.Api.Migrations
 {
     /// <inheritdoc />
     public partial class Ver_1014 : Migration

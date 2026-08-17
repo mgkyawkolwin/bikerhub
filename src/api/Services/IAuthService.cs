@@ -1,6 +1,6 @@
-using BikerHub.Dtos.Auth;
+using BikerHub.Api.Dtos.Auth;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IAuthService
 {

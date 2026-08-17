@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BikerHub.Dtos;
-using BikerHub.Exceptions;
-using BikerHub.Services;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Services;
 using System.Net;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Authorize]

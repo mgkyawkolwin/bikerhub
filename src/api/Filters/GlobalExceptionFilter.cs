@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace BikerHub.Filters;
+namespace BikerHub.Api.Filters;
 
 public class GlobalExceptionFilter : IExceptionFilter
 {

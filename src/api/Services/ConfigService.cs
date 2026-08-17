@@ -1,6 +1,6 @@
-using BikerHub.Dtos;
+using BikerHub.Api.Dtos;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IConfigService
 {

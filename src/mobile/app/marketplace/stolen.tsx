@@ -77,8 +77,8 @@ export default function StolenListScreen() {
         }
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-            {item.images?.[0] ? (
-              <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
+            {item.medias?.[0] ? (
+              <Image source={{ uri: item.medias[0] }} style={styles.cardImage} />
             ) : null}
             <View style={styles.cardContent}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>

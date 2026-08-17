@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IMessageService
 {

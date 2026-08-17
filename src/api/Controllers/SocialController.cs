@@ -5,14 +5,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Services;
-using BikerHub.Exceptions;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Services;
+using BikerHub.Api.Exceptions;
 using System.Net;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -34,10 +34,6 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED UploadPostMedia()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-
             var dto = await _socialService.UploadPostMediaAsync(postId, file);
             return Ok(new { Success = true, Data = dto });
         }
@@ -118,13 +114,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED TogglePostLove()");
             _logger.LogDebug("TogglePostLove called with postId {PostId}", postId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.TogglePostLoveAsync(postId, currentUserId.Value);
+            var result = await _socialService.TogglePostLoveAsync(postId);
             if (result is null)
             {
                 return NotFound(new { Success = false, Message = "Post not found." });
@@ -174,18 +164,12 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED CreatePostComment()");
             _logger.LogDebug("CreatePostComment called with postId {PostId} and parentCommentId {@createPostCommentDto}", postId, createPostCommentDto);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
             if (createPostCommentDto.PostId != postId)
             {
                 return BadRequest(new { Success = false, Message = "Post ID mismatch." });
             }
 
-            var comment = await _socialService.CreatePostCommentAsync(currentUserId.Value, createPostCommentDto);
+            var comment = await _socialService.CreatePostCommentAsync(createPostCommentDto);
             return Ok(new { Success = true, Data = comment });
         }
         catch (CustomException ex)
@@ -208,13 +192,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED DeletePostComment()");
             _logger.LogDebug("DeletePostComment called with postId {PostId} and commentId {CommentId}", postId, commentId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var deletedCount = await _socialService.DeletePostCommentAsync(currentUserId.Value, postId, commentId);
+            var deletedCount = await _socialService.DeletePostCommentAsync(postId, commentId);
             return Ok(new { Success = true, Data = deletedCount });
         }
         catch (CustomException ex)
@@ -260,13 +238,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED DeletePost()");
             _logger.LogDebug("DeletePost called with postId {PostId}", postId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            await _socialService.DeletePostAsync(currentUserId.Value, postId);
+            await _socialService.DeletePostAsync(postId);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -289,13 +261,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED DeletePostMedia()");
             _logger.LogDebug("DeletePostMedia called with postId {PostId} and mediaId {MediaId}", postId, mediaId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            await _socialService.DeletePostMediaAsync(currentUserId.Value, postId, mediaId);
+            await _socialService.DeletePostMediaAsync(postId, mediaId);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -318,8 +284,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED GetPostById()");
             _logger.LogDebug("GetPostById called with postId {PostId}", postId);
-            var currentUserId = GetCurrentUserId();
-            var post = await _socialService.GetPostByIdAsync(postId, currentUserId);
+            var post = await _socialService.GetPostByIdAsync(postId);
             if (post is null)
             {
                 return NotFound(new { Success = false, Message = "Post not found." });
@@ -338,28 +303,6 @@ public class SocialController : BaseController
         }
     }
 
-    // [HttpGet("posts/by-creator")]
-    // public async Task<IActionResult> GetPostsByUserr([FromQuery] Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    // {
-    //     try
-    //     {
-    //         _logger.LogInformation("CALLED GetPostsByCreator()");
-    //         _logger.LogDebug("GetPostsByCreator called with userId {UserId}, page {Page}, and pageSize {PageSize}", userId, page, pageSize);
-    //         var result = await _socialService.GetPostsByCreatorAsync(userId, page, pageSize, GetCurrentUserId());
-    //         return Ok(new { Success = true, Data = result });
-    //     }
-    //     catch (CustomException ex)
-    //     {
-    //         _logger.LogWarning(ex, "Custom exception occurred in GetPostsByCreator");
-    //         return BadRequest(new { Success = false, Message = ex.Message });
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Unexpected error occurred in GetPostsByCreator");
-    //         return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
-    //     }
-    // }
-
     [HttpGet("profiles/{userId}")]
     public async Task<IActionResult> GetProfileByIdAsync([FromRoute] Guid userId)
     {
@@ -367,12 +310,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED GetProfileById()");
             _logger.LogDebug("GetProfileById called with id {Id}", userId);
-            var currentUserId = GetCurrentUserId();
-            if(!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-            var profile = await _socialService.GetProfileByIdAsync(userId, currentUserId.Value);
+            var profile = await _socialService.GetProfileByIdAsync(userId);
             if (profile is null)
             {
                 return NotFound(new { Success = false, Message = "Social profile not found." });
@@ -400,13 +338,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED UpdateSocialLinks()");
             _logger.LogDebug("UpdateSocialLinks called with payload {@Payload}", updateSocialLinksDto);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.UpdateSocialLinksAsync(currentUserId.Value, updateSocialLinksDto.SocialLinks ?? Enumerable.Empty<SocialLinkDto>());
+            var result = await _socialService.UpdateSocialLinksAsync(updateSocialLinksDto.SocialLinks ?? Enumerable.Empty<SocialLinkDto>());
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -428,14 +360,10 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED UploadProfileCoverPhoto()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-
             if (file is null)
                 return BadRequest(new { Success = false, Message = "A cover photo file is required." });
 
-            var result = await _socialService.UploadProfileCoverPhotoAsync(currentUserId.Value, file);
+            var result = await _socialService.UploadProfileCoverPhotoAsync(file);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -457,14 +385,10 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED UploadProfilePhoto()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-
             if (file is null)
                 return BadRequest(new { Success = false, Message = "A profile photo file is required." });
 
-            var result = await _socialService.UploadProfilePhotoAsync(currentUserId.Value, file);
+            var result = await _socialService.UploadProfilePhotoAsync(file);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -486,11 +410,7 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED DeleteProfileCoverPhoto()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-
-            var result = await _socialService.DeleteProfileCoverPhotoAsync(currentUserId.Value);
+            var result = await _socialService.DeleteProfileCoverPhotoAsync();
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -512,11 +432,7 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED DeleteProfilePhoto()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-
-            var result = await _socialService.DeleteProfilePhotoAsync(currentUserId.Value);
+            var result = await _socialService.DeleteProfilePhotoAsync();
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -567,13 +483,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED FollowUser()");
             _logger.LogDebug("FollowUser called with followingId {FollowingId}", followingId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.FollowUserAsync(currentUserId.Value, followingId);
+            var result = await _socialService.FollowUserAsync(followingId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -596,13 +506,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED UnfollowUser()");
             _logger.LogDebug("UnfollowUser called with followingId {FollowingId}", followingId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.UnfollowUserAsync(currentUserId.Value, followingId);
+            var result = await _socialService.UnfollowUserAsync(followingId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -625,13 +529,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED IsFollowing()");
             _logger.LogDebug("IsFollowing called with followingId {FollowingId}", followingId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var isFollowing = await _socialService.IsFollowingAsync(currentUserId.Value, followingId);
+            var isFollowing = await _socialService.IsFollowingAsync(followingId);
             return Ok(new { Success = true, Data = new { IsFollowing = isFollowing } });
         }
         catch (CustomException ex)
@@ -692,18 +590,12 @@ public class SocialController : BaseController
 
     [Authorize]
     [HttpGet("friends")]
-    public async Task<IActionResult> GetFriends()
+    public async Task<IActionResult> GetFriends([FromQuery] Guid userId)
     {
         try
         {
             _logger.LogInformation("CALLED GetFriends()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var friends = await _socialService.GetFriendsAsync(currentUserId.Value);
+            var friends = await _socialService.GetFriendsAsync(userId);
             return Ok(new { Success = true, Data = friends });
         }
         catch (CustomException ex)
@@ -726,13 +618,8 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED RemoveFriend()");
             _logger.LogDebug("RemoveFriend called with userId {UserId}", userId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
 
-            var result = await _socialService.RemoveFriendAsync(currentUserId.Value, userId);
+            var result = await _socialService.RemoveFriendAsync(userId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -755,13 +642,8 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED SendFriendRequest()");
             _logger.LogDebug("SendFriendRequest called with: {@dto}", sendFriendRequestDto);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
 
-            var result = await _socialService.AddFriendRequestAsync(currentUserId.Value, sendFriendRequestDto.ToProfileId);
+            var result = await _socialService.AddFriendRequestAsync(sendFriendRequestDto.ToProfileId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -784,13 +666,8 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED CancelFriendRequest()");
             _logger.LogDebug("CancelFriendRequest called with toProfileId {ToProfileId}", toProfileId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
 
-            var result = await _socialService.CancelFriendRequestAsync(currentUserId.Value, toProfileId);
+            var result = await _socialService.CancelFriendRequestAsync(toProfileId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -813,13 +690,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED ApproveFriendRequest()");
             _logger.LogDebug("ApproveFriendRequest called with requestId {RequestId}", requestId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.ApproveFriendRequestAsync(requestId, currentUserId.Value);
+            var result = await _socialService.ApproveFriendRequestAsync(requestId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -842,13 +713,7 @@ public class SocialController : BaseController
         {
             _logger.LogInformation("CALLED RejectFriendRequest()");
             _logger.LogDebug("RejectFriendRequest called with requestId {RequestId}", requestId);
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var result = await _socialService.RejectFriendRequestAsync(requestId, currentUserId.Value);
+            var result = await _socialService.RejectFriendRequestAsync(requestId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -870,13 +735,7 @@ public class SocialController : BaseController
         try
         {
             _logger.LogInformation("CALLED GetPendingFriendRequests()");
-            var currentUserId = GetCurrentUserId();
-            if (!currentUserId.HasValue)
-            {
-                return Unauthorized(new { Success = false, Message = "Authentication required." });
-            }
-
-            var requests = await _socialService.GetPendingFriendRequestsAsync(currentUserId.Value);
+            var requests = await _socialService.GetPendingFriendRequestsAsync();
             return Ok(new { Success = true, Data = requests });
         }
         catch (CustomException ex)

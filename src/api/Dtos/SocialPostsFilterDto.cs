@@ -1,6 +1,6 @@
-using BikerHub.Constants;
+using BikerHub.Api.Constants;
 
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record SocialPostsFilterDto
 {

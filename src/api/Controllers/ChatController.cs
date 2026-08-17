@@ -1,13 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BikerHub.Dtos;
-using BikerHub.Services;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Services;
 using System.Net;
-using BikerHub.Exceptions;
+using BikerHub.Api.Exceptions;
 using System.Text.Json;
 
-namespace BikerHub.Controllers;
+namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

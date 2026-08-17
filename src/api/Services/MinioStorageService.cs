@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.Exceptions;
-using BikerHub.Models;
-using BikerHub.Data;
-using BikerHub.Entities;
+using BikerHub.Api.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Entities;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public class MinioStorageService : IStorageService
 {

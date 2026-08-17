@@ -4,49 +4,48 @@ using System.Linq;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
-using BikerHub.Utilities;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Utilities;
 using System.Text.Json.Serialization;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface ISocialService
 {
     Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto);
     Task<PaginatedResultDto<SocialPostDto>> GetPostsAsync(SocialPostsFilterDto filterDto);
-    Task<SocialPostDto?> GetPostByIdAsync(Guid postId, Guid? currentUserId = null);
-    Task DeletePostAsync(Guid currentUserId, Guid postId);
-    Task DeletePostMediaAsync(Guid currentUserId, Guid postId, Guid mediaId);
-    // Task<PaginatedResultDto<SocialPostDto>> GetPostsByCreatorAsync(Guid createdById, int page, int pageSize, Guid? currentUserId = null);
+    Task<SocialPostDto?> GetPostByIdAsync(Guid postId);
+    Task DeletePostAsync(Guid postId);
+    Task DeletePostMediaAsync(Guid postId, Guid mediaId);
     Task<SocialPostDto> CreatePostAsync(CreatePostDto createPostDto);
     Task<SocialPostMediaDto> UploadPostMediaAsync(Guid postId, IFormFile file);
-    Task<SocialProfileDto> UploadProfileCoverPhotoAsync(Guid currentUserId, IFormFile file);
-    Task<SocialProfileDto> UploadProfilePhotoAsync(Guid currentUserId, IFormFile file);
-    Task<SocialProfileDto> DeleteProfileCoverPhotoAsync(Guid currentUserId);
-    Task<SocialProfileDto> DeleteProfilePhotoAsync(Guid currentUserId);
+    Task<SocialProfileDto> UploadProfileCoverPhotoAsync(IFormFile file);
+    Task<SocialProfileDto> UploadProfilePhotoAsync(IFormFile file);
+    Task<SocialProfileDto> DeleteProfileCoverPhotoAsync();
+    Task<SocialProfileDto> DeleteProfilePhotoAsync();
     Task<IEnumerable<SocialPostMediaDto>> GetPostMediaAsync(Guid postId);
-    Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId, Guid currentUserId);
-    Task<SocialProfileDto> UpdateSocialLinksAsync(Guid currentUserId, IEnumerable<SocialLinkDto> socialLinks);
+    Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId);
+    Task<SocialProfileDto> UpdateSocialLinksAsync(IEnumerable<SocialLinkDto> socialLinks);
     Task<IEnumerable<SocialProfileDto>> SearchProfilesAsync(string query);
-    Task<SocialPostDto?> TogglePostLoveAsync(Guid postId, Guid currentUserId);
+    Task<SocialPostDto?> TogglePostLoveAsync(Guid postId);
     Task<IEnumerable<SocialPostCommentDto>> GetCommentsForPostAsync(Guid postId);
-    Task<SocialPostCommentDto> CreatePostCommentAsync(Guid currentUserId, CreatePostCommentDto createPostCommentDto);
-    Task<int> DeletePostCommentAsync(Guid currentUserId, Guid postId, Guid commentId);
-    Task<SocialProfileDto> FollowUserAsync(Guid followerId, Guid followingId);
-    Task<SocialProfileDto> UnfollowUserAsync(Guid followerId, Guid followingId);
-    Task<bool> IsFollowingAsync(Guid followerId, Guid followingId);
+    Task<SocialPostCommentDto> CreatePostCommentAsync(CreatePostCommentDto createPostCommentDto);
+    Task<int> DeletePostCommentAsync(Guid postId, Guid commentId);
+    Task<SocialProfileDto> FollowUserAsync(Guid userId);
+    Task<SocialProfileDto> UnfollowUserAsync(Guid userId);
+    Task<bool> IsFollowingAsync(Guid userId);
     Task<IEnumerable<FollowerDto>> GetFollowersAsync(Guid userId);
     Task<IEnumerable<FollowerDto>> GetFriendsAsync(Guid userId);
     Task<IEnumerable<FollowingDto>> GetFollowingAsync(Guid userId);
-    Task<SocialProfileDto> AddFriendRequestAsync(Guid fromUserId, Guid toProfileId);
-    Task<SocialProfileDto> ApproveFriendRequestAsync(Guid requestId, Guid currentUserId);
-    Task<SocialProfileDto> RejectFriendRequestAsync(Guid requestId, Guid currentUserId);
-    Task<SocialProfileDto> CancelFriendRequestAsync(Guid fromUserId, Guid toUserId);
-    Task<SocialProfileDto> RemoveFriendAsync(Guid currentUserId, Guid friendUserId);
-    Task<IEnumerable<PendingFriendRequestDto>> GetPendingFriendRequestsAsync(Guid userId);
+    Task<SocialProfileDto> AddFriendRequestAsync(Guid userId);
+    Task<SocialProfileDto> ApproveFriendRequestAsync(Guid requestId);
+    Task<SocialProfileDto> RejectFriendRequestAsync(Guid requestId);
+    Task<SocialProfileDto> CancelFriendRequestAsync(Guid userId);
+    Task<SocialProfileDto> RemoveFriendAsync(Guid friendUserId);
+    Task<IEnumerable<PendingFriendRequestDto>> GetPendingFriendRequestsAsync();
 }
 
 public class SocialService : ISocialService
@@ -54,12 +53,14 @@ public class SocialService : ISocialService
     private readonly AppDbContext _dbContext;
     private readonly ILogger<SocialService> _logger;
     private readonly IStorageService _storageService;
+    private readonly ICurrentUserService _currentUserService;
 
-    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService storageService)
+    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService storageService, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto)
@@ -159,56 +160,15 @@ public class SocialService : ISocialService
         return new PaginatedResultDto<SocialPostDto>(items.Select(item => MapPost(item.post, item.currentProfileId, item.profilePhotoUrl)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
     }
 
-    // public async Task<PaginatedResultDto<SocialPostDto>> GetPostsByCreatorAsync(Guid createdByUserId, int page, int pageSize, Guid? currentUserId = null)
-    // {
-    //     _logger.LogInformation("CALLED GetPostsByCreatorAsync()");
-    //     _logger.LogDebug("GetPostsByCreatorAsync called with userId {UserId}, page {Page}, pageSize {PageSize}, and currentUserId {CurrentUserId}", createdByUserId, page, pageSize, currentUserId);
-
-    //     Guid? currentProfileId = null;
-    //     if (currentUserId.HasValue)
-    //     {
-    //         currentProfileId = await _dbContext.SocialProfiles
-    //             .Where(profile => profile.UserId == currentUserId.Value)
-    //             .Select(profile => profile.Id)
-    //             .FirstOrDefaultAsync();
-
-    //         if (currentProfileId == Guid.Empty)
-    //         {
-    //             currentProfileId = null;
-    //         }
-    //     }
-
-    //     var query = _dbContext.Posts
-    //         .Include(post => post.SocialProfile)
-    //             .ThenInclude(profile => profile.User)
-    //         .Include(post => post.Likes)
-    //         .Where(post => post.SocialProfile.UserId == createdByUserId)
-    //         .OrderByDescending(post => post.CreatedAtUTC);
-
-    //     var total = await query.CountAsync();
-    //     var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-    //     return new PaginatedResultDto<SocialPostDto>(items.Select(post => MapPost(post, currentProfileId)).ToList(), page, pageSize, total,
-    //         Pagination.GetTotalPages(total, pageSize));
-    // }
-
-    public async Task<SocialPostDto?> GetPostByIdAsync(Guid postId, Guid? currentUserId = null)
+    public async Task<SocialPostDto?> GetPostByIdAsync(Guid postId)
     {
         _logger.LogInformation("CALLED GetPostByIdAsync()");
-        _logger.LogDebug("GetPostByIdAsync called with postId {PostId} and currentUserId {CurrentUserId}", postId, currentUserId);
+        _logger.LogDebug("GetPostByIdAsync called with postId {PostId}", postId);
 
-        Guid currentProfileId = Guid.Empty;
-        if (currentUserId.HasValue)
-        {
-            currentProfileId = await _dbContext.SocialProfiles
-                .Where(profile => profile.UserId == currentUserId.Value)
+        Guid currentProfileId = await _dbContext.SocialProfiles
+                .Where(profile => profile.UserId == Guid.Parse(_currentUserService.UserId!))
                 .Select(profile => profile.Id)
                 .FirstOrDefaultAsync();
-            if (currentProfileId == Guid.Empty)
-            {
-                currentProfileId = Guid.Empty;
-            }
-        }
 
         var post = await _dbContext.Posts
             .Include(p => p.Likes)
@@ -256,9 +216,10 @@ public class SocialService : ISocialService
         return MapPost(postEntity, Guid.Empty, "");
     }
 
-    public async Task DeletePostAsync(Guid currentUserId, Guid postId)
+    public async Task DeletePostAsync(Guid postId)
     {
         _logger.LogInformation("CALLED DeletePostAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("DeletePostAsync called with currentUserId {CurrentUserId} and postId {PostId}", currentUserId, postId);
 
         var post = await _dbContext.Posts
@@ -271,9 +232,9 @@ public class SocialService : ISocialService
             throw new CustomException("Post not found.");
         }
 
-        if (post.UserId != currentUserId)
+        if (post.UserId != Guid.Parse(_currentUserService.UserId!))
         {
-            _logger.LogWarning("User {UserId} is not authorized to delete post {PostId}", currentUserId, postId);
+            _logger.LogWarning("User {UserId} is not authorized to delete post {PostId}", Guid.Parse(_currentUserService.UserId!), postId);
             throw new CustomException("Not authorized to delete this post.");
         }
 
@@ -296,10 +257,10 @@ public class SocialService : ISocialService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task DeletePostMediaAsync(Guid currentUserId, Guid postId, Guid mediaId)
+    public async Task DeletePostMediaAsync(Guid postId, Guid mediaId)
     {
         _logger.LogInformation("CALLED DeletePostMediaAsync()");
-        _logger.LogDebug("DeletePostMediaAsync called with currentUserId {CurrentUserId}, postId {PostId}, mediaId {MediaId}", currentUserId, postId, mediaId);
+        _logger.LogDebug("DeletePostMediaAsync called with currentUserId {CurrentUserId}, postId {PostId}, mediaId {MediaId}", Guid.Parse(_currentUserService.UserId!), postId, mediaId);
 
         var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
         if (post is null)
@@ -308,9 +269,9 @@ public class SocialService : ISocialService
             throw new CustomException("Post not found.");
         }
 
-        if (post.UserId != currentUserId)
+        if (post.UserId != Guid.Parse(_currentUserService.UserId!))
         {
-            _logger.LogWarning("User {UserId} is not authorized to delete media for post {PostId}", currentUserId, postId);
+            _logger.LogWarning("User {UserId} is not authorized to delete media for post {PostId}", Guid.Parse(_currentUserService.UserId!), postId);
             throw new CustomException("Not authorized to delete this media.");
         }
 
@@ -337,17 +298,10 @@ public class SocialService : ISocialService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<SocialPostDto?> TogglePostLoveAsync(Guid postId, Guid currentUserId)
+    public async Task<SocialPostDto?> TogglePostLoveAsync(Guid postId)
     {
         _logger.LogInformation("CALLED TogglePostLoveAsync()");
-        _logger.LogDebug("TogglePostLoveAsync called with postId {PostId} and currentUserId {CurrentUserId}", postId, currentUserId);
-
-        // var currentProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(profile => profile.UserId == currentUserId);
-        // if (currentProfile is null)
-        // {
-        //     _logger.LogWarning("Social profile not found for current user ID {CurrentUserId}", currentUserId);
-        //     throw new Exception("Social profile not found for the current user.");
-        // }
+        _logger.LogDebug("TogglePostLoveAsync called with postId {PostId} and currentUserId {CurrentUserId}", postId, Guid.Parse(_currentUserService.UserId!));
 
         var post = await _dbContext.Posts
             .Include(p => p.Likes)
@@ -360,21 +314,21 @@ public class SocialService : ISocialService
             return null;
         }
 
-        var existingLike = post.Likes.FirstOrDefault(like => like.UserId == currentUserId);
+        var existingLike = post.Likes.FirstOrDefault(like => like.UserId == Guid.Parse(_currentUserService.UserId!));
         if (existingLike is null)
         {
-            _logger.LogInformation("Adding like for post {PostId} by user {UserId}", postId, currentUserId);
+            _logger.LogInformation("Adding like for post {PostId} by user {UserId}", postId, Guid.Parse(_currentUserService.UserId!));
             post.Likes.Add(new SocialPostLikeEntity
             {
                 PostId = postId,
-                UserId = currentUserId,
+                UserId = Guid.Parse(_currentUserService.UserId!),
                 LikedAtUTC = DateTime.UtcNow
             });
             post.LoveCount += 1;
         }
         else
         {
-            _logger.LogInformation("Removing like for post {PostId} by user {UserId}", postId, currentUserId);
+            _logger.LogInformation("Removing like for post {PostId} by user {UserId}", postId, Guid.Parse(_currentUserService.UserId!));
             _dbContext.SocialPostLikes.Remove(existingLike);
             post.Likes.Remove(existingLike);
             post.LoveCount = Math.Max(0, post.LoveCount - 1);
@@ -383,20 +337,21 @@ public class SocialService : ISocialService
         _dbContext.Posts.Update(post);
         await _dbContext.SaveChangesAsync();
 
-        return MapPost(post, currentUserId);
+        return MapPost(post, Guid.Parse(_currentUserService.UserId!));
     }
 
-    public async Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId, Guid currentUserId)
+    public async Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId)
     {
         _logger.LogInformation("CALLED GetProfileByIdAsync()");
-        _logger.LogDebug("GetProfileByIdAsync called with userId {UserId} and currentUserId {CurrentUserId}", userId, currentUserId);
+        _logger.LogDebug("GetProfileByIdAsync called with userId {UserId} and currentUserId {CurrentUserId}", userId, Guid.Parse(_currentUserService.UserId!));
         var profile = await _dbContext.SocialProfiles
             .Include(p => p.User)
             .Include(p => p.Followers)
             .Include(p => p.Friends)
             .FirstOrDefaultAsync(p => p.UserId == userId);
         _logger.LogTrace("Fetched profile: {@profile}", profile);
-        if (profile == null) {
+        if (profile == null)
+        {
             _logger.LogWarning("Social profile not found for user ID {UserId}", userId);
             return null;
         }
@@ -405,28 +360,28 @@ public class SocialService : ISocialService
         var isFollowing = false;
         var isFriendRequestPending = false;
 
-        isFriend = profile.Friends.Any(friend => friend.Id == currentUserId);
-        isFollowing = profile.Followers.Any(follower => follower.Id == currentUserId);
+        isFriend = profile.Friends.Any(friend => friend.Id == Guid.Parse(_currentUserService.UserId!));
+        isFollowing = profile.Followers.Any(follower => follower.Id == Guid.Parse(_currentUserService.UserId!));
         isFriendRequestPending = await _dbContext.FriendRequests.AnyAsync(r =>
             r.Status == FriendRequestStatus.Pending &&
-            ((r.FromUserId == currentUserId && r.ToUserId == profile.UserId) ||
-             (r.FromUserId == profile.UserId && r.ToUserId == currentUserId)));
+            ((r.FromUserId == Guid.Parse(_currentUserService.UserId!) && r.ToUserId == profile.UserId) ||
+             (r.FromUserId == profile.UserId && r.ToUserId == Guid.Parse(_currentUserService.UserId!))));
 
         var profileDto = MapProfile(profile, isFriend, isFriendRequestPending, isFollowing);
         _logger.LogTrace("Mapped profile DTO: {@profileDto}", profileDto);
         return profileDto;
     }
 
-    public async Task<SocialProfileDto> UpdateSocialLinksAsync(Guid currentUserId, IEnumerable<SocialLinkDto> socialLinks)
+    public async Task<SocialProfileDto> UpdateSocialLinksAsync(IEnumerable<SocialLinkDto> socialLinks)
     {
         _logger.LogInformation("CALLED UpdateSocialLinksAsync()");
-        _logger.LogDebug("UpdateSocialLinksAsync called with currentUserId {CurrentUserId} and socialLinks {@SocialLinks}", currentUserId, socialLinks);
+        _logger.LogDebug("UpdateSocialLinksAsync called with currentUserId {CurrentUserId} and socialLinks {@SocialLinks}", Guid.Parse(_currentUserService.UserId!), socialLinks);
 
         var profile = await _dbContext.SocialProfiles
             .Include(p => p.User)
             .Include(p => p.Followers)
             .Include(p => p.Friends)
-            .FirstOrDefaultAsync(p => p.UserId == currentUserId);
+            .FirstOrDefaultAsync(p => p.UserId == Guid.Parse(_currentUserService.UserId!));
 
         if (profile is null)
         {
@@ -499,13 +454,13 @@ public class SocialService : ISocialService
         return commentDtos.Values.Where(comment => !comment.ParentCommentId.HasValue).ToList();
     }
 
-    public async Task<SocialPostCommentDto> CreatePostCommentAsync(Guid currentUserId, CreatePostCommentDto createPostCommentDto)
+    public async Task<SocialPostCommentDto> CreatePostCommentAsync(CreatePostCommentDto createPostCommentDto)
     {
         _logger.LogInformation("CALLED CreatePostCommentAsync()");
-        _logger.LogDebug("CreatePostCommentAsync called with postId {PostId}, parentCommentId {ParentCommentId}, currentUserId {CurrentUserId}", createPostCommentDto.PostId, createPostCommentDto.ParentCommentId, currentUserId);
+        _logger.LogDebug("CreatePostCommentAsync called with postId {PostId}, parentCommentId {ParentCommentId}, currentUserId {CurrentUserId}", createPostCommentDto.PostId, createPostCommentDto.ParentCommentId, Guid.Parse(_currentUserService.UserId!));
 
-        _logger.LogTrace("Fetching social profile for current user ID {CurrentUserId}", currentUserId);
-        var profile = await _dbContext.SocialProfiles.Include(p => p.User).FirstOrDefaultAsync(p => p.UserId == currentUserId);
+        _logger.LogTrace("Fetching social profile for current user ID {CurrentUserId}", Guid.Parse(_currentUserService.UserId!));
+        var profile = await _dbContext.SocialProfiles.Include(p => p.User).FirstOrDefaultAsync(p => p.UserId == Guid.Parse(_currentUserService.UserId!));
         _logger.LogTrace("Fetched social profile: {profile}", JsonSerializer.Serialize(profile, new JsonSerializerOptions
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles,
@@ -513,7 +468,7 @@ public class SocialService : ISocialService
         }));
         if (profile is null)
         {
-            _logger.LogWarning("Social profile not found for current user ID {CurrentUserId}", currentUserId);
+            _logger.LogWarning("Social profile not found for current user ID {CurrentUserId}", Guid.Parse(_currentUserService.UserId!));
             throw new Exception("Social profile not found for the current user.");
         }
 
@@ -549,7 +504,7 @@ public class SocialService : ISocialService
         var commentEntity = new SocialPostCommentEntity
         {
             PostId = createPostCommentDto.PostId,
-            UserId = currentUserId,
+            UserId = Guid.Parse(_currentUserService.UserId!),
             ParentCommentId = createPostCommentDto.ParentCommentId,
             Content = createPostCommentDto.Content,
             CreatedAtUtc = DateTime.UtcNow
@@ -575,15 +530,15 @@ public class SocialService : ISocialService
         };
     }
 
-    public async Task<int> DeletePostCommentAsync(Guid currentUserId, Guid postId, Guid commentId)
+    public async Task<int> DeletePostCommentAsync(Guid postId, Guid commentId)
     {
         _logger.LogInformation("CALLED DeletePostCommentAsync()");
-        _logger.LogDebug("DeletePostCommentAsync called with postId {PostId}, commentId {CommentId}, currentUserId {CurrentUserId}", postId, commentId, currentUserId);
+        _logger.LogDebug("DeletePostCommentAsync called with postId {PostId}, commentId {CommentId}, currentUserId {CurrentUserId}", postId, commentId, Guid.Parse(_currentUserService.UserId!));
 
-        var profile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == currentUserId);
+        var profile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == Guid.Parse(_currentUserService.UserId!));
         if (profile is null)
         {
-            _logger.LogWarning("Social profile not found for current user ID {CurrentUserId}", currentUserId);
+            _logger.LogWarning("Social profile not found for current user ID {CurrentUserId}", Guid.Parse(_currentUserService.UserId!));
             throw new Exception("Social profile not found for the current user.");
         }
 
@@ -601,11 +556,11 @@ public class SocialService : ISocialService
             throw new Exception("Post not found.");
         }
 
-        var isAuthor = comment.UserId == currentUserId;
-        var isPostOwner = post.UserId == currentUserId;
+        var isAuthor = comment.UserId == Guid.Parse(_currentUserService.UserId!);
+        var isPostOwner = post.UserId == Guid.Parse(_currentUserService.UserId!);
         if (!isAuthor && !isPostOwner)
         {
-            _logger.LogWarning("User {UserId} is not authorized to delete comment {CommentId}", currentUserId, commentId);
+            _logger.LogWarning("User {UserId} is not authorized to delete comment {CommentId}", Guid.Parse(_currentUserService.UserId!), commentId);
             throw new Exception("Not authorized to delete this comment.");
         }
 
@@ -710,9 +665,10 @@ public class SocialService : ISocialService
         };
     }
 
-    public async Task<SocialProfileDto> UploadProfileCoverPhotoAsync(Guid currentUserId, IFormFile file)
+    public async Task<SocialProfileDto> UploadProfileCoverPhotoAsync(IFormFile file)
     {
         _logger.LogInformation("CALLED UploadProfileCoverPhotoAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         if (_storageService is null)
         {
             _logger.LogWarning("Storage service is not configured for upload");
@@ -740,9 +696,10 @@ public class SocialService : ISocialService
         return MapProfile(profile, false, false, false);
     }
 
-    public async Task<SocialProfileDto> UploadProfilePhotoAsync(Guid currentUserId, IFormFile file)
+    public async Task<SocialProfileDto> UploadProfilePhotoAsync(IFormFile file)
     {
         _logger.LogInformation("CALLED UploadProfilePhotoAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         if (_storageService is null)
         {
             _logger.LogWarning("Storage service is not configured for upload");
@@ -770,9 +727,10 @@ public class SocialService : ISocialService
         return MapProfile(profile, false, false, false);
     }
 
-    public async Task<SocialProfileDto> DeleteProfileCoverPhotoAsync(Guid currentUserId)
+    public async Task<SocialProfileDto> DeleteProfileCoverPhotoAsync()
     {
         _logger.LogInformation("CALLED DeleteProfileCoverPhotoAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         var profile = await _dbContext.SocialProfiles
             .Include(p => p.User)
             .Include(p => p.Followers)
@@ -808,9 +766,10 @@ public class SocialService : ISocialService
         return MapProfile(profile, false, false, false);
     }
 
-    public async Task<SocialProfileDto> DeleteProfilePhotoAsync(Guid currentUserId)
+    public async Task<SocialProfileDto> DeleteProfilePhotoAsync()
     {
         _logger.LogInformation("CALLED DeleteProfilePhotoAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         var profile = await _dbContext.SocialProfiles
             .Include(p => p.User)
             .Include(p => p.Followers)
@@ -903,9 +862,10 @@ public class SocialService : ISocialService
         return results;
     }
 
-    public async Task<SocialProfileDto> FollowUserAsync(Guid followerId, Guid followingId)
+    public async Task<SocialProfileDto> FollowUserAsync(Guid followingId)
     {
         _logger.LogInformation("CALLED FollowUserAsync()");
+        var followerId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("FollowUserAsync called with followerId {FollowerId} and followingId {FollowingId}", followerId, followingId);
 
         if (followerId == followingId)
@@ -982,13 +942,14 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("User {FollowerId} successfully followed {FollowingId}", followerId, followingId);
 
-        var result = await GetProfileByIdAsync(followingId, followerId);
+        var result = await GetProfileByIdAsync(followerId);
         return result ?? throw new Exception("Failed to load updated profile after follow.");
     }
 
-    public async Task<SocialProfileDto> UnfollowUserAsync(Guid followerId, Guid followingId)
+    public async Task<SocialProfileDto> UnfollowUserAsync(Guid followingId)
     {
         _logger.LogInformation("CALLED UnfollowUserAsync()");
+        var followerId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("UnfollowUserAsync called with followerId {FollowerId} and followingId {FollowingId}", followerId, followingId);
 
         if (followerId == followingId)
@@ -1064,13 +1025,14 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("User {FollowerId} successfully unfollowed {FollowingId}", followerId, followingId);
 
-        var result = await GetProfileByIdAsync(followingId, followerId);
+        var result = await GetProfileByIdAsync(followerId);
         return result ?? throw new Exception("Failed to load updated profile after unfollow.");
     }
 
-    public async Task<bool> IsFollowingAsync(Guid followerId, Guid followingId)
+    public async Task<bool> IsFollowingAsync(Guid followingId)
     {
         _logger.LogInformation("CALLED IsFollowingAsync()");
+        var followerId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("IsFollowingAsync called with followerId {FollowerId} and followingId {FollowingId}", followerId, followingId);
 
         var followerProfile = await _dbContext.SocialProfiles
@@ -1191,10 +1153,11 @@ public class SocialService : ISocialService
         return following;
     }
 
-    public async Task<SocialProfileDto> AddFriendRequestAsync(Guid fromUserId, Guid toUserId)
+    public async Task<SocialProfileDto> AddFriendRequestAsync(Guid userId)
     {
-        _logger.LogInformation("CALLED SendFriendRequestAsync()");
-        _logger.LogDebug("SendFriendRequestAsync called with fromUserId {FromUserId} and toProfileId {ToProfileId}", fromUserId, toUserId);
+        _logger.LogInformation("CALLED AddFriendRequestAsync()");
+        var fromUserId = Guid.Parse(_currentUserService.UserId!);
+        _logger.LogDebug("AddFriendRequestAsync called with fromUserId {FromUserId} and toUserId {ToUserId}", fromUserId, userId);
 
         var fromProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == fromUserId);
         if (fromProfile is null)
@@ -1203,10 +1166,10 @@ public class SocialService : ISocialService
             throw new Exception("Your profile not found.");
         }
 
-        var toProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == toUserId);
+        var toProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
         if (toProfile is null)
         {
-            _logger.LogWarning("To profile not found for ID {toUserId}", toUserId);
+            _logger.LogWarning("To profile not found for ID {ToUserId}", userId);
             throw new Exception("User profile not found.");
         }
 
@@ -1239,22 +1202,23 @@ public class SocialService : ISocialService
         await _dbContext.SaveChangesAsync();
 
         // Automatically follow the recipient when sending a friend request.
-        if (!await IsFollowingAsync(fromUserId, toProfile.UserId))
+        if (!await IsFollowingAsync(toProfile.UserId))
         {
             _logger.LogInformation("Automatically following recipient {ToUserId} after friend request from {FromUserId}", toProfile.UserId, fromUserId);
-            await FollowUserAsync(fromUserId, toProfile.UserId);
+            await FollowUserAsync(toProfile.UserId);
         }
 
         _logger.LogInformation("Friend request sent from user {FromUserId} to user {ToUserId}", fromProfile.UserId, toProfile.UserId);
 
-        var result = await GetProfileByIdAsync(toProfile.UserId, fromUserId);
+        var result = await GetProfileByIdAsync(toProfile.UserId);
         return result ?? throw new Exception("Failed to load updated profile after sending friend request.");
     }
 
-    public async Task<SocialProfileDto> ApproveFriendRequestAsync(Guid requestId, Guid currentUserId)
+    public async Task<SocialProfileDto> ApproveFriendRequestAsync(Guid requestId)
     {
         _logger.LogInformation("CALLED ApproveFriendRequestAsync()");
-        _logger.LogDebug("ApproveFriendRequestAsync called with requestId {RequestId} and currentUserId {CurrentUserId}", requestId, currentUserId);
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        _logger.LogDebug("ApproveFriendRequestAsync called with requestId {RequestId}", requestId);
 
         var request = await _dbContext.FriendRequests
             .Include(r => r.FromUser)
@@ -1347,13 +1311,14 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("Friend request {RequestId} approved, users {FromProfileId} and {ToProfileId} are now friends and mutually following", requestId, fromProfile.Id, toProfile.Id);
 
-        var result = await GetProfileByIdAsync(fromProfile.UserId, currentUserId);
+        var result = await GetProfileByIdAsync(fromProfile.UserId);
         return result ?? throw new Exception("Failed to load updated profile after approving friend request.");
     }
 
-    public async Task<SocialProfileDto> RejectFriendRequestAsync(Guid requestId, Guid currentUserId)
+    public async Task<SocialProfileDto> RejectFriendRequestAsync(Guid requestId)
     {
         _logger.LogInformation("CALLED RejectFriendRequestAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("RejectFriendRequestAsync called with requestId {RequestId} and currentUserId {CurrentUserId}", requestId, currentUserId);
 
         var request = await _dbContext.FriendRequests
@@ -1382,35 +1347,37 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("Friend request {RequestId} rejected", requestId);
 
-        var result = await GetProfileByIdAsync(request.FromUserId, currentUserId);
+        var result = await GetProfileByIdAsync(request.FromUserId);
         return result ?? throw new Exception("Failed to load updated profile after rejecting friend request.");
     }
 
-    public async Task<SocialProfileDto> CancelFriendRequestAsync(Guid fromUserId, Guid toUserId)
+    public async Task<SocialProfileDto> CancelFriendRequestAsync(Guid userId)
     {
         _logger.LogInformation("CALLED CancelFriendRequestAsync()");
-        _logger.LogDebug("CancelFriendRequestAsync called with fromUserId {FromUserId} and toUserId {ToUserId}", fromUserId, toUserId);
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        _logger.LogDebug("CancelFriendRequestAsync called with fromUserId {FromUserId} and toUserId {ToUserId}", currentUserId, userId);
 
         var friendRequest = await _dbContext.FriendRequests
-            .FirstOrDefaultAsync(r => r.FromUserId == fromUserId && r.ToUserId == toUserId && r.Status == FriendRequestStatus.Pending);
+            .FirstOrDefaultAsync(r => ((r.FromUserId == currentUserId && r.ToUserId == userId) || (r.FromUserId == userId && r.ToUserId == currentUserId)) && r.Status == FriendRequestStatus.Pending);
 
         if (friendRequest is null)
         {
-            _logger.LogWarning("No pending friend request found from {FromUserId} to {ToUserId}", fromUserId, toUserId);
+            _logger.LogWarning("No pending friend request found from {FromUserId} to {ToUserId}", currentUserId, userId);
             throw new Exception("No pending friend request found.");
         }
 
         await _dbContext.FriendRequests.Where(r => r.Id == friendRequest.Id).ExecuteDeleteAsync();
 
-        _logger.LogInformation("Friend request from {FromUserId} to {ToUserId} cancelled", fromUserId, toUserId);
+        _logger.LogInformation("Friend request from {FromUserId} to {ToUserId} cancelled", currentUserId, userId);
 
-        var result = await GetProfileByIdAsync(toUserId, fromUserId);
+        var result = await GetProfileByIdAsync(userId);
         return result ?? throw new Exception("Failed to load updated profile after cancelling friend request.");
     }
 
-    public async Task<SocialProfileDto> RemoveFriendAsync(Guid currentUserId, Guid friendUserId)
+    public async Task<SocialProfileDto> RemoveFriendAsync(Guid friendUserId)
     {
         _logger.LogInformation("CALLED RemoveFriendAsync()");
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
         _logger.LogDebug("RemoveFriendAsync called with currentUserId {CurrentUserId} and friendUserId {FriendUserId}", currentUserId, friendUserId);
 
         if (currentUserId == friendUserId)
@@ -1479,19 +1446,20 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("Users {CurrentUserId} and {FriendUserId} are no longer friends", currentUserId, friendUserId);
 
-        var result = await GetProfileByIdAsync(friendUserId, currentUserId);
+        var result = await GetProfileByIdAsync(friendUserId);
         return result ?? throw new Exception("Failed to load updated profile after removing friend.");
     }
 
-    public async Task<IEnumerable<PendingFriendRequestDto>> GetPendingFriendRequestsAsync(Guid userId)
+    public async Task<IEnumerable<PendingFriendRequestDto>> GetPendingFriendRequestsAsync()
     {
         _logger.LogInformation("CALLED GetPendingFriendRequestsAsync()");
-        _logger.LogDebug("GetPendingFriendRequestsAsync called with userId {UserId}", userId);
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        _logger.LogDebug("GetPendingFriendRequestsAsync called with userId {UserId}", currentUserId);
 
-        var profile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        var profile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(p => p.UserId == currentUserId);
         if (profile is null)
         {
-            _logger.LogWarning("Profile not found for user ID {UserId}", userId);
+            _logger.LogWarning("Profile not found for user ID {UserId}", currentUserId);
             return Enumerable.Empty<PendingFriendRequestDto>();
         }
 
@@ -1514,7 +1482,7 @@ public class SocialService : ISocialService
             CreatedAtUTC = r.CreatedAtUtc
         }).ToList();
 
-        _logger.LogInformation("Retrieved {Count} pending friend requests for user {UserId}", result.Count, userId);
+        _logger.LogInformation("Retrieved {Count} pending friend requests for user {UserId}", result.Count, currentUserId);
         return result;
     }
 

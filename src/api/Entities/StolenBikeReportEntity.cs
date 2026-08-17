@@ -1,27 +1,35 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
-public class StolenBikeReport : BaseEntity<Guid>
+public class StolenBikeReportEntity : BaseEntity<Guid>
 {
     [Required]
-    [MaxLength(200)]
-    public string Title { get; set; } = string.Empty;
-
     [MaxLength(100)]
-    public string? Make { get; set; }
-
+    public required string Make { get; set; }
+    [Required]
     [MaxLength(100)]
-    public string? Model { get; set; }
-
-    public int? Year { get; set; }
-    public decimal? Price { get; set; }
-    public string? Cc { get; set; }
-    public string? Km { get; set; }
+    public required string Model { get; set; }
+    [MaxLength(100)]
+    public string? Edition { get; set; }
+    [Required]
+    public int Year { get; set; }
+    [Required]
+    public int Cc { get; set; }
+    [Required]
+    public int Mileage { get; set; }
     public string? Vin { get; set; }
-    public string? Type { get; set; }
+    [Required]
+    public required string Type { get; set; }
+    [MaxLength(50)]
+    public string? Phone { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public required string City { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public required string Country { get; set; }
+    [Required]
+    public required DateTime StolenDate { get; set; }
     public string? Description { get; set; }
-    public string? ImagesJson { get; set; }
-    public DateTime ReportedAt { get; set; } = DateTime.UtcNow;
-    public string? Location { get; set; }
 }

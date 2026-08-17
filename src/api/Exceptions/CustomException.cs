@@ -1,6 +1,6 @@
 using System;
 
-namespace BikerHub.Exceptions;
+namespace BikerHub.Api.Exceptions;
 
 public class CustomException : Exception
 {

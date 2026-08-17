@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record GarageBikeDto
 {

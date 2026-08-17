@@ -3,7 +3,7 @@ import { Media } from './media';
 
 export class BikeListing {
   id?: string;
-  title?: string;
+  edition?: string;
   make?: string;
   model?: string;
   year?: number;
@@ -16,9 +16,9 @@ export class BikeListing {
   sellerCountry?: string;
   rating?: number;
   ratingCount?: number = 0;
+  myRating?: number;
   sellerPhone?: string;
   mileage?: string;
-  km?: string;
   vin?: string;
   description?: string;
   favoritesCount?: number = 0;

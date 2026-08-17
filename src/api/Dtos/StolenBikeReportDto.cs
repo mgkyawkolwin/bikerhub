@@ -1,22 +1,23 @@
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record StolenBikeReportDto(
     Guid Id,
-    string? Title = null,
     string? Make = null,
     string? Model = null,
+    string? Edition = null,
     int? Year = null,
-    decimal? Price = null,
-    string? Cc = null,
-    string? Km = null,
+    int? Cc = null,
+    int? Mileage = null,
     string? Vin = null,
     string? Type = null,
+    string? Phone = null,
+    string? City = null,
+    string? Country = null,
+    DateTime? StolenDate = null,
     string? Description = null,
-    IEnumerable<string>? Images = null,
-    DateTime? ReportedAt = null,
-    string? Location = null,
-    int? CreatedById = null,
+    IEnumerable<MediaDto>? Medias = null,
+    Guid? CreatedById = null,
     DateTime? CreatedAtUTC = null,
     DateTime? UpdatedAtUTC = null,
-    int? UpdatedById = null
+    Guid? UpdatedById = null
 );

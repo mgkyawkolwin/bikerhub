@@ -1,4 +1,4 @@
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record PaginatedResultDto<T>(
     IEnumerable<T> Items,

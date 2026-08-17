@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace BikerHub.Dtos;
+namespace BikerHub.Api.Dtos;
 
 public sealed record CreatePostDto
 {

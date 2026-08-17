@@ -2,12 +2,12 @@ using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Models;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public enum ChallengePeriod
 {

@@ -10,6 +10,7 @@ import { container } from '@/services';
 import { DirectoryServiceToken, type DirectoryFilter, type DirectoryService } from '@/services/directoryService';
 import Directory from '@/models/directory';
 import SnackBar from '@/components/snackbar';
+import { Rating } from '@/components/rating';
 
 const getParamValue = (value?: string | string[]) => {
   if (Array.isArray(value)) {
@@ -138,8 +139,7 @@ export default function DirectoryScreen() {
                 <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.favoriteCount ?? 0}</Text>
               </View>
               <View style={styles.metaRow}>
-                <MaterialIcons name="star" size={14} color={colors.secondaryText} />
-                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.rating ?? 0} ({item.ratingCount ?? 0})</Text>
+                <Rating value={item.rating ?? 0} />
               </View>
             </View>
           </View>

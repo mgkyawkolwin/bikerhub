@@ -1,4 +1,4 @@
-namespace BikerHub.Utilities;
+namespace BikerHub.Api.Utilities;
 
 public static class Pagination
 {

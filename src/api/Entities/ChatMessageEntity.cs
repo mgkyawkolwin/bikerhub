@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BikerHub.Entities;
+namespace BikerHub.Api.Entities;
 
 public class ChatMessage : BaseEntity<Guid>
 {

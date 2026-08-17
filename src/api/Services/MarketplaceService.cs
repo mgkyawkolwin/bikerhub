@@ -2,22 +2,23 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
-using BikerHub.Data;
-using BikerHub.Dtos;
-using BikerHub.Entities;
-using BikerHub.Exceptions;
-using BikerHub.Models;
+using BikerHub.Api.Data;
+using BikerHub.Api.Dtos;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Exceptions;
+using BikerHub.Api.Models;
+using BikerHub.Api.Extensions;
 
-namespace BikerHub.Services;
+namespace BikerHub.Api.Services;
 
 public interface IMarketplaceService
 {
-    Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize);
+    Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(BikeListingFilterDto filter);
     Task<BikeListingDto?> GetListingByIdAsync(Guid id);
-    Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto, Guid currentUserId);
-    Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file, Guid currentUserId);
-    Task ToggleFavoriteAsync(Guid listingId);
-    Task ToggleLikeAsync(Guid listingId);
+    Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto);
+    Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file);
+    Task<BikeListingDto> ToggleFavoriteAsync(Guid listingId);
+    Task<BikeListingDto> ToggleLikeAsync(Guid listingId);
     Task<IEnumerable<BikeListingDto>> GetFavoritesAsync();
     Task<BikeListingDto?> SubmitRatingAsync(Guid listingId, int rating);
 }
@@ -27,88 +28,82 @@ public class MarketplaceService : IMarketplaceService
     private readonly AppDbContext _dbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<MarketplaceService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public MarketplaceService(AppDbContext dbContext, ILogger<MarketplaceService> logger, IStorageService storageService)
+    public MarketplaceService(AppDbContext dbContext, ILogger<MarketplaceService> logger, IStorageService storageService, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _storageService = storageService;
         _logger = logger;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(string? make, string? model, string? modelYear, decimal? priceMin, decimal? priceMax, string? cc, string? type, string? location, int page, int pageSize)
+    public async Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(BikeListingFilterDto filter)
     {
         var query = _dbContext.BikeListings.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(make)) query = query.Where(x => x.Make == make);
-        if (!string.IsNullOrWhiteSpace(model)) query = query.Where(x => x.Model == model);
-        if (!string.IsNullOrWhiteSpace(modelYear) && int.TryParse(modelYear, out var parsedYear))
+        if (!string.IsNullOrWhiteSpace(filter.Make)) query = query.Where(x => x.Make == filter.Make);
+        if (!string.IsNullOrWhiteSpace(filter.Model)) query = query.Where(x => x.Model == filter.Model);
+        if (!string.IsNullOrWhiteSpace(filter.ModelYear) && int.TryParse(filter.ModelYear, out var parsedYear))
         {
             query = query.Where(x => x.Year == parsedYear);
         }
-        if (priceMin.HasValue) query = query.Where(x => x.Price >= priceMin.Value);
-        if (priceMax.HasValue) query = query.Where(x => x.Price <= priceMax.Value);
-        if (!string.IsNullOrWhiteSpace(cc)) query = query.Where(x => x.Cc == cc);
-        if (!string.IsNullOrWhiteSpace(type)) query = query.Where(x => x.Type == type);
-        if (!string.IsNullOrWhiteSpace(location)) query = query.Where(x => x.Location == location);
+        if (filter.PriceMin.HasValue) query = query.Where(x => x.Price >= filter.PriceMin.Value);
+        if (filter.PriceMax.HasValue) query = query.Where(x => x.Price <= filter.PriceMax.Value);
+        if (!string.IsNullOrWhiteSpace(filter.Cc)) query = query.Where(x => x.Cc == filter.Cc);
+        if (!string.IsNullOrWhiteSpace(filter.Type)) query = query.Where(x => x.Type == filter.Type);
+        if (!string.IsNullOrWhiteSpace(filter.Location)) query = query.Where(x => x.SellerCity == filter.Location);
 
         var total = await query.CountAsync();
-        var items = await query.OrderByDescending(x => x.CreatedAtUtc)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        var listingIds = items.Select(x => x.Id).ToList();
-        var medias = await _dbContext.Medias.Where(m => listingIds.Contains(m.OwnerId)).ToListAsync();
-        var mediaLookup = medias.GroupBy(m => m.OwnerId).ToDictionary(g => g.Key, g => g.ToList());
+        var items = (await query.ProjectToDto(_dbContext, _currentUserService)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync()).ResolveMediaUrls(_storageService);
 
         return new PaginatedResultDto<BikeListingDto>(
-            [.. items.Select(item => Map(item, mediaLookup.ContainsKey(item.Id) ? mediaLookup[item.Id] : null))],
-            page,
-            pageSize,
+            items,
+            filter.Page,
+            filter.PageSize,
             total,
-            (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
+            (int)Math.Max(1, Math.Ceiling(total / (double)filter.PageSize)));
     }
 
     public async Task<BikeListingDto?> GetListingByIdAsync(Guid id)
     {
         var listing = await _dbContext.BikeListings
-        .GroupJoin(
-            _dbContext.Medias,
-            listing => listing.Id,
-            media => media.OwnerId,
-            (listing, medias) => new { Listing = listing, Medias = medias }
-        )
-        .FirstOrDefaultAsync(x => x.Listing.Id == id);
+        .ProjectToDto(_dbContext, _currentUserService)
+        .FirstOrDefaultAsync(x => x.Id == id);
         if (listing is null) return null;
 
-        var medias = listing.Medias.ToList();
-        return Map(listing.Listing, medias);
+        return listing.ResolveMediaUrls(_storageService);
     }
 
-    public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto, Guid currentUserId)
+    public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto)
     {
         DtoValidationHelper.ValidateRequiredString(dto.Make, "Make");
         DtoValidationHelper.ValidateRequiredString(dto.Model, "Model");
         DtoValidationHelper.ValidateRequiredString(dto.Type, "Type");
 
-        var entity = new BikeListing
+        var entity = new BikeListingEntity
         {
             Make = dto.Make,
             Model = dto.Model,
+            Edition = dto.Edition,
             Year = dto.Year,
             Price = dto.Price,
             Cc = dto.Cc,
             Type = dto.Type,
-            Location = dto.Location,
-            Phone = dto.Phone,
+            SellerPhone = dto.SellerPhone,
             Mileage = dto.Mileage,
-            Km = dto.Km,
             Vin = dto.Vin,
+            SellerCity = dto.SellerCity,
+            SellerCountry = dto.SellerCountry,
             Description = dto.Description,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
             UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedById = currentUserId
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
 
         _dbContext.BikeListings.Add(entity);
@@ -124,9 +119,9 @@ public class MarketplaceService : IMarketplaceService
                 Code = dto.Make!.ToUpperInvariant(),
                 Value = dto.Make,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newMake);
         }
@@ -144,9 +139,9 @@ public class MarketplaceService : IMarketplaceService
                     Code = dto.Model!.ToUpperInvariant(),
                     Value = dto.Model,
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedById = currentUserId,
+                    CreatedById = Guid.Parse(_currentUserService.UserId!),
                     UpdatedAtUtc = DateTime.UtcNow,
-                    UpdatedById = currentUserId
+                    UpdatedById = Guid.Parse(_currentUserService.UserId!)
                 };
                 _dbContext.LookUps.Add(newModel);
             }
@@ -165,19 +160,19 @@ public class MarketplaceService : IMarketplaceService
                     Code = dto.Type!.ToUpperInvariant(),
                     Value = dto.Type,
                     CreatedAtUtc = DateTime.UtcNow,
-                    CreatedById = currentUserId,
+                    CreatedById = Guid.Parse(_currentUserService.UserId!),
                     UpdatedAtUtc = DateTime.UtcNow,
-                    UpdatedById = currentUserId
+                    UpdatedById = Guid.Parse(_currentUserService.UserId!)
                 };
                 _dbContext.LookUps.Add(newType);
             }
         }
 
         await _dbContext.SaveChangesAsync();
-        return Map(entity);
+        return (await _dbContext.BikeListings.Where(x => x.Id == entity.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
     }
 
-    public async Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file, Guid currentUserId)
+    public async Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file)
     {
         var entity = await _dbContext.BikeListings.FindAsync(listingId);
         if (entity is null)
@@ -191,52 +186,91 @@ public class MarketplaceService : IMarketplaceService
             ContentType = file.ContentType ?? "application/octet-stream",
             Size = file.Length,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
             UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedById = currentUserId
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
         _dbContext.Medias.Add(media);
 
         await _dbContext.SaveChangesAsync();
 
-        var medias = await _dbContext.Medias.Where(m => m.OwnerId == entity.Id).ToListAsync();
-        return Map(entity, medias);
+        return (await _dbContext.BikeListings.Where(x => x.Id == entity.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
     }
 
-    public async Task ToggleFavoriteAsync(Guid listingId)
+    public async Task<BikeListingDto?> ToggleFavoriteAsync(Guid listingId)
     {
-        var entity = await _dbContext.BikeListings.FindAsync(listingId);
-        if (entity is null) return;
+        var bikeListing = await _dbContext.BikeListings.FindAsync(listingId);
+        if (bikeListing is null) return null;
 
-        entity.IsFavorite = !entity.IsFavorite;
-        entity.FavoritesCount += entity.IsFavorite ? 1 : -1;
-        if (entity.FavoritesCount < 0) entity.FavoritesCount = 0;
+        var favorite = await _dbContext.Favorites.FirstOrDefaultAsync(f => f.EntityId == listingId && f.UserId == Guid.Parse(_currentUserService.UserId!));
+        if (favorite != null)
+        {
+            _dbContext.Favorites.Remove(favorite);
+        }
+        else
+        {
+            var newFavorite = new FavoriteEntity
+            {
+                EntityId = listingId,
+                UserId = Guid.Parse(_currentUserService.UserId!),
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
+            };
+            _dbContext.Favorites.Add(newFavorite);
+        }
+        bikeListing.FavoritesCount += favorite != null ? -1 : 1;
 
-        _dbContext.BikeListings.Update(entity);
+        _dbContext.BikeListings.Update(bikeListing);
         await _dbContext.SaveChangesAsync();
+
+        return (await _dbContext.BikeListings.Where(x => x.Id == bikeListing.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
     }
 
-    public async Task ToggleLikeAsync(Guid listingId)
+    public async Task<BikeListingDto?> ToggleLikeAsync(Guid listingId)
     {
-        var entity = await _dbContext.BikeListings.FindAsync(listingId);
-        if (entity is null) return;
+        var bikeListing = await _dbContext.BikeListings.FindAsync(listingId);
+        if (bikeListing is null) return null;
 
-        entity.IsLiked = !entity.IsLiked;
-        entity.LikeCount += entity.IsLiked ? 1 : -1;
-        if (entity.LikeCount < 0) entity.LikeCount = 0;
+        var like = await _dbContext.Likes.FirstOrDefaultAsync(l => l.EntityId == listingId && l.UserId == Guid.Parse(_currentUserService.UserId!));
+        if (like != null)
+        {
+            _dbContext.Likes.Remove(like);
+        }
+        else
+        {
+            var newLike = new LikeEntity
+            {
+                EntityId = listingId,
+                UserId = Guid.Parse(_currentUserService.UserId!),
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
+            };
+            _dbContext.Likes.Add(newLike);
+        }
 
-        _dbContext.BikeListings.Update(entity);
+        bikeListing.LikeCount += like != null ? -1 : 1;
+        _dbContext.BikeListings.Update(bikeListing);
         await _dbContext.SaveChangesAsync();
+        return (await _dbContext.BikeListings.Where(x => x.Id == bikeListing.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
     }
 
     public async Task<IEnumerable<BikeListingDto>> GetFavoritesAsync()
     {
-        var favorites = await _dbContext.BikeListings.Where(x => x.IsFavorite).OrderByDescending(x => x.CreatedAtUtc).ToListAsync();
-        var favoriteIds = favorites.Select(x => x.Id).ToList();
-        var medias = await _dbContext.Medias.Where(m => favoriteIds.Contains(m.OwnerId)).ToListAsync();
-        var mediaLookup = medias.GroupBy(m => m.OwnerId).ToDictionary(g => g.Key, g => g.ToList());
+        var userFavoriteBikes = (await _dbContext.BikeListings
+        .Join(
+            _dbContext.Favorites.Where(f => f.UserId == Guid.Parse(_currentUserService.UserId!)),
+            bike => bike.Id,
+            fav => fav.EntityId,
+            (bike, fav) => bike
+        )
+        .ProjectToDto(_dbContext, _currentUserService)
+        .ToListAsync()).ResolveMediaUrls(_storageService);
 
-        return favorites.Select(f => Map(f, mediaLookup.ContainsKey(f.Id) ? mediaLookup[f.Id] : null));
+        return userFavoriteBikes;
     }
 
     public async Task<BikeListingDto?> SubmitRatingAsync(Guid listingId, int rating)
@@ -244,50 +278,45 @@ public class MarketplaceService : IMarketplaceService
         var entity = await _dbContext.BikeListings.FindAsync(listingId);
         if (entity is null) return null;
 
-        entity.RatingCount += 1;
-        entity.Rating = entity.Rating.HasValue ? ((entity.Rating.Value * (entity.RatingCount - 1) + rating) / entity.RatingCount) : rating;
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        var existingRating = await _dbContext.Ratings.FirstOrDefaultAsync(r => r.EntityId == listingId && r.UserId == currentUserId);
 
+        if (existingRating is null)
+        {
+            var ratingCount = entity.RatingCount + 1;
+            entity.Rating = entity.RatingCount > 0
+                ? ((entity.Rating * entity.RatingCount) + rating) / ratingCount
+                : rating;
+            entity.RatingCount = ratingCount;
+
+            var ratingEntity = new RatingEntity
+            {
+                EntityId = listingId,
+                UserId = currentUserId,
+                Rating = rating,
+                CreatedAtUtc = DateTime.UtcNow,
+                CreatedById = currentUserId,
+                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedById = currentUserId
+            };
+            _dbContext.Ratings.Add(ratingEntity);
+        }
+        else
+        {
+            var totalRating = entity.Rating * entity.RatingCount - existingRating.Rating + rating;
+            existingRating.Rating = rating;
+            existingRating.UpdatedAtUtc = DateTime.UtcNow;
+            existingRating.UpdatedById = currentUserId;
+            _dbContext.Ratings.Update(existingRating);
+            entity.Rating = entity.RatingCount > 0 ? totalRating / entity.RatingCount : rating;
+        }
+
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.UpdatedById = currentUserId;
         _dbContext.BikeListings.Update(entity);
+
         await _dbContext.SaveChangesAsync();
 
-        return Map(entity, await _dbContext.Medias.Where(m => m.OwnerId == entity.Id).ToListAsync());
-    }
-
-    private BikeListingDto Map(BikeListing entity, IEnumerable<MediaEntity>? medias = null)
-    {
-        return new BikeListingDto(
-            entity.Id,
-            entity.Make,
-            entity.Model,
-            entity.Year,
-            entity.Price,
-            entity.Cc,
-            entity.Type,
-            entity.SellerId,
-            entity.SellerName,
-            entity.Location,
-            entity.Rating,
-            entity.RatingCount,
-            entity.Phone,
-            medias?.Select(m => new MediaDto
-            {
-                Id = m.Id,
-                OwnerId = m.OwnerId,
-                ObjectName = m.ObjectName,
-                ContentType = m.ContentType,
-                Size = m.Size,
-                Url = _storageService.BuildObjectUrl(m.ObjectName)
-            }).ToList(),
-            entity.Mileage,
-            entity.Km,
-            entity.Vin,
-            entity.Description,
-            entity.FavoritesCount,
-            entity.IsFavorite,
-            entity.IsLiked,
-            entity.LikeCount,
-            entity.ViewCount,
-            entity.CreatedAtUtc
-        );
+        return (await _dbContext.BikeListings.Where(x => x.Id == entity.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
     }
 }
