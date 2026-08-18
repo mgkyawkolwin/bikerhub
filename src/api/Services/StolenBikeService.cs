@@ -5,13 +5,14 @@ using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
 using BikerHub.Api.Entities;
 using BikerHub.Api.Exceptions;
+using BikerHub.Api.Extensions;
 
 namespace BikerHub.Api.Services;
 
 public interface IStolenBikeService
 {
     Task<StolenBikeReportDto> CreateReportAsync(StolenBikeReportDto dto);
-    Task<IEnumerable<StolenBikeReportDto>> GetReportsAsync();
+    Task<PaginatedResultDto<StolenBikeReportDto>> GetReportsAsync(StolenBikeReportFilterDto filter);
     Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id);
     Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId);
 }
@@ -56,29 +57,60 @@ public class StolenBikeService : IStolenBikeService
 
         _dbContext.StolenBikeReports.Add(entity);
         await _dbContext.SaveChangesAsync();
-        return Map(entity);
+
+        var createdReport = await _dbContext.StolenBikeReports
+            .Where(r => r.Id == entity.Id)
+            .ProjectToDto(_dbContext)
+            .FirstOrDefaultAsync();
+
+        return createdReport?.ResolveMediaUrls(_storageService)
+            ?? throw new CustomException("Failed to load created report.");
     }
 
-    public async Task<IEnumerable<StolenBikeReportDto>> GetReportsAsync()
+    public async Task<PaginatedResultDto<StolenBikeReportDto>> GetReportsAsync(StolenBikeReportFilterDto filter)
     {
-        var results = await _dbContext.StolenBikeReports.OrderByDescending(r => r.CreatedAtUtc).ToListAsync();
-        var reportIds = results.Select(r => r.Id).ToList();
-        var medias = await _dbContext.Medias.Where(m => reportIds.Contains(m.OwnerId)).ToListAsync();
-        var mediaLookup = medias
-            .GroupBy(m => m.OwnerId)
-            .ToDictionary(g => g.Key, g => g.Select(m => _storageService.BuildObjectUrl(m.ObjectName)).ToList());
+        if (filter.Page < 1) filter = filter with { Page = 1 };
+        if (filter.PageSize < 1) filter = filter with { PageSize = 10 };
 
-        return results.Select(report => Map(report, mediaLookup.GetValueOrDefault(report.Id)));
+        var query = _dbContext.StolenBikeReports.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.Make)) query = query.Where(x => x.Make == filter.Make);
+        if (!string.IsNullOrWhiteSpace(filter.Model)) query = query.Where(x => x.Model == filter.Model);
+        if (filter.Year.HasValue) query = query.Where(x => x.Year == filter.Year.Value);
+        if (filter.Cc.HasValue) query = query.Where(x => x.Cc == filter.Cc.Value);
+        if (!string.IsNullOrWhiteSpace(filter.Type)) query = query.Where(x => x.Type == filter.Type);
+        if (!string.IsNullOrWhiteSpace(filter.City)) query = query.Where(x => x.City == filter.City);
+        if (!string.IsNullOrWhiteSpace(filter.Country)) query = query.Where(x => x.Country == filter.Country);
+        if (filter.StolenDate.HasValue)
+        {
+            var stolenDate = filter.StolenDate.Value.Date;
+            query = query.Where(x => x.StolenDate >= stolenDate && x.StolenDate < stolenDate.AddDays(1));
+        }
+
+        var total = await query.CountAsync();
+        var items = (await query
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ProjectToDto(_dbContext)
+            .ToListAsync()).ResolveMediaUrls(_storageService);
+
+        return new PaginatedResultDto<StolenBikeReportDto>(
+            items,
+            filter.Page,
+            filter.PageSize,
+            total,
+            (int)Math.Max(1, Math.Ceiling(total / (double)filter.PageSize)));
     }
 
     public async Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id)
     {
-        var report = await _dbContext.StolenBikeReports.FindAsync(id);
-        if (report is null) return null;
+        var report = await _dbContext.StolenBikeReports
+            .Where(r => r.Id == id)
+            .ProjectToDto(_dbContext)
+            .FirstOrDefaultAsync();
 
-        var medias = await _dbContext.Medias.Where(m => m.OwnerId == id).ToListAsync();
-        var mediaUrls = medias.Select(m => _storageService.BuildObjectUrl(m.ObjectName));
-        return Map(report, mediaUrls);
+        return report?.ResolveMediaUrls(_storageService);
     }
 
     public async Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId)
@@ -102,34 +134,12 @@ public class StolenBikeService : IStolenBikeService
         _dbContext.Medias.Add(media);
         await _dbContext.SaveChangesAsync();
 
-        var medias = await _dbContext.Medias.Where(m => m.OwnerId == report.Id).ToListAsync();
-        var mediaUrls = medias.Select(m => _storageService.BuildObjectUrl(m.ObjectName));
-        return Map(report, mediaUrls);
-    }
+        var createdReport = await _dbContext.StolenBikeReports
+            .Where(r => r.Id == report.Id)
+            .ProjectToDto(_dbContext)
+            .FirstOrDefaultAsync();
 
-    private StolenBikeReportDto Map(StolenBikeReportEntity entity, IEnumerable<string>? mediaUrls = null)
-    {
-
-        return new StolenBikeReportDto(
-            entity.Id,
-            entity.Make,
-            entity.Model,
-            entity.Edition,
-            entity.Year,
-            entity.Cc,
-            entity.Mileage,
-            entity.Vin,
-            entity.Type,
-            entity.Phone,
-            entity.City,
-            entity.Country,
-            entity.StolenDate,
-            entity.Description,
-            [],
-            entity.CreatedById,
-            entity.CreatedAtUtc,
-            entity.UpdatedAtUtc,
-            entity.UpdatedById
-        );
+        return createdReport?.ResolveMediaUrls(_storageService)
+            ?? throw new CustomException("Failed to load report after upload.");
     }
 }

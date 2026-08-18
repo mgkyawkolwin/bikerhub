@@ -49,6 +49,7 @@ export default function MarketplaceCreateScreen() {
   const [price, setPrice] = useState('');
   const [mileage, setMileage] = useState('');
   const [vin, setVin] = useState('');
+  const [description, setDescription] = useState('');
   const [type, setType] = useState<BikeType | undefined>(undefined);
   const [photos, setPhotos] = useState<string[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
@@ -184,6 +185,7 @@ export default function MarketplaceCreateScreen() {
         price: Number(price),
         mileage: mileage.trim(),
         vin: vin.trim(),
+        description: description.trim(),
         type,
         sellerPhone,
         sellerCity,
@@ -533,6 +535,18 @@ export default function MarketplaceCreateScreen() {
                 styles.textInput,
                 { borderColor: errors.sellerCountry ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.description}</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text, minHeight: 100, textAlignVertical: 'top' }]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t.Title.description}
+              placeholderTextColor={colors.placeholder}
+              multiline
             />
           </View>
 

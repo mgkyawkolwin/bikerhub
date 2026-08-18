@@ -173,10 +173,10 @@ export default function BikeDetailScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.bikeDetail}</Text>
         </View>
         <View style={styles.headerActions}>
-          <View style={styles.statAction}>
+          {/* <View style={styles.statAction}>
             <MaterialIcons name="visibility" size={20} color={colors.text} />
             <Text style={[styles.countText, { color: colors.text }]}>{listing?.viewCount ?? 0}</Text>
-          </View>
+          </View> */}
           <TouchableOpacity style={styles.statAction} onPress={toggleFavorite} hitSlop={10}>
             <MaterialIcons
               name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
@@ -238,6 +238,10 @@ export default function BikeDetailScreen() {
               <View style={styles.row}>
                 <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.vin}</Text>
                 <Text style={[styles.value, { color: colors.text }]}>{listing.vin ? listing.vin : "NA"}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: colors.secondaryText }]}>{t.Title.description}</Text>
+                <Text style={[styles.value, { color: colors.text, flex: 1, textAlign: 'right' }]} numberOfLines={3}>{listing.description ? listing.description : '-'}</Text>
               </View>
             </View>
 

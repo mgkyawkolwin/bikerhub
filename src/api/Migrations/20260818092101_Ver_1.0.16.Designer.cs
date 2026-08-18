@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260817103554_StolenBikeReportFieldsUpdate")]
-    partial class StolenBikeReportFieldsUpdate
+    [Migration("20260818092101_Ver_1.0.16")]
+    partial class Ver_1016
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1264,20 +1264,22 @@ namespace BikerHub.Api.Migrations
                     b.ToTable("SocialProfiles");
                 });
 
-            modelBuilder.Entity("BikerHub.Api.Entities.StolenBikeReport", b =>
+            modelBuilder.Entity("BikerHub.Api.Entities.StolenBikeReportEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("Cc")
-                        .HasColumnType("longtext");
+                    b.Property<int>("Cc")
+                        .HasColumnType("int");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
                     b.Property<string>("Country")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
@@ -1294,23 +1296,16 @@ namespace BikerHub.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("ImagesJson")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Km")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Location")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Make")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("Mileage")
-                        .HasColumnType("longtext");
+                    b.Property<int>("Mileage")
+                        .HasColumnType("int");
 
                     b.Property<string>("Model")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
@@ -1318,25 +1313,15 @@ namespace BikerHub.Api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<DateTime>("ReportedAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<Guid>("RowVersion")
                         .IsConcurrencyToken()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime?>("StolenDate")
+                    b.Property<DateTime>("StolenDate")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
                     b.Property<string>("Type")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<DateTime>("UpdatedAtUtc")
@@ -1348,7 +1333,7 @@ namespace BikerHub.Api.Migrations
                     b.Property<string>("Vin")
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("Year")
+                    b.Property<int>("Year")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

@@ -1,7 +1,7 @@
 namespace BikerHub.Api.Dtos;
 
 public sealed record StolenBikeReportDto(
-    Guid Id,
+    Guid? Id,
     string? Make = null,
     string? Model = null,
     string? Edition = null,
@@ -16,6 +16,8 @@ public sealed record StolenBikeReportDto(
     DateTime? StolenDate = null,
     string? Description = null,
     IEnumerable<MediaDto>? Medias = null,
+    Guid? ReportedById = null,
+    string? ReportedByName = null,
     Guid? CreatedById = null,
     DateTime? CreatedAtUTC = null,
     DateTime? UpdatedAtUTC = null,

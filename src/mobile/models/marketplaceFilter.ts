@@ -1,4 +1,3 @@
-import type { BikeType } from '../mobile/constants/bikeType';
 
 export type MarketplaceFilterProps = {
   make?: string;
@@ -7,8 +6,9 @@ export type MarketplaceFilterProps = {
   priceMin?: number;
   priceMax?: number;
   cc?: string;
-  type?: BikeType;
-  location?: string;
+  type?: string;
+  city?: string;
+  country?: string;
 };
 
 export class MarketplaceFilter implements MarketplaceFilterProps {
@@ -18,8 +18,9 @@ export class MarketplaceFilter implements MarketplaceFilterProps {
   priceMin?: number;
   priceMax?: number;
   cc?: string;
-  type?: BikeType;
-  location?: string;
+  type?: string;
+  city?: string;
+  country?: string;
 
   constructor(props: MarketplaceFilterProps = {}) {
     Object.assign(this, props);

@@ -52,7 +52,11 @@ public class MarketplaceService : IMarketplaceService
         if (filter.PriceMax.HasValue) query = query.Where(x => x.Price <= filter.PriceMax.Value);
         if (!string.IsNullOrWhiteSpace(filter.Cc)) query = query.Where(x => x.Cc == filter.Cc);
         if (!string.IsNullOrWhiteSpace(filter.Type)) query = query.Where(x => x.Type == filter.Type);
-        if (!string.IsNullOrWhiteSpace(filter.Location)) query = query.Where(x => x.SellerCity == filter.Location);
+        if (!string.IsNullOrWhiteSpace(filter.City))
+        {
+            query = query.Where(x => x.SellerCity == filter.City);
+        }
+        if (!string.IsNullOrWhiteSpace(filter.Country)) query = query.Where(x => x.SellerCountry == filter.Country);
 
         var total = await query.CountAsync();
         var items = (await query.ProjectToDto(_dbContext, _currentUserService)

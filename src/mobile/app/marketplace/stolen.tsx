@@ -1,39 +1,116 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { StolenBikeServiceToken } from '@/services/stolenBikeService';
 import type { StolenBikeService } from '@/services/stolenBikeService';
+import type { BikeType, MarketplaceFilter } from '@/models/marketplace';
 import type { StolenBikeReport } from '@/models/stolenBikeReport';
+import SnackBar from '@/components/snackbar';
+import StolenCardItem from './stolencarditem';
+
+function getParamValue(value?: string | string[]) {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value ?? '';
+}
 
 export default function StolenListScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { colors } = useThemeContext();
+  const params = useLocalSearchParams();
   const stolenBikeService = useMemo(
     () => container.resolve<StolenBikeService>(StolenBikeServiceToken),
     [],
   );
-  const [reports, setReports] = useState<StolenBikeReport[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const loadReports = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await stolenBikeService.getReports();
-      setReports(result);
-    } finally {
-      setLoading(false);
-    }
-  }, [stolenBikeService]);
+  const filter: MarketplaceFilter = useMemo(
+    () => ({
+      make: getParamValue(params.make),
+      model: getParamValue(params.model),
+      modelYear: getParamValue(params.modelYear),
+      priceMin: getParamValue(params.priceMin),
+      priceMax: getParamValue(params.priceMax),
+      cc: getParamValue(params.cc),
+      type: getParamValue(params.type) as BikeType | undefined,
+      city: getParamValue(params.city),
+      country: getParamValue(params.country),
+    } as any as MarketplaceFilter),
+    [
+      params.make,
+      params.model,
+      params.modelYear,
+      params.priceMin,
+      params.priceMax,
+      params.cc,
+      params.type,
+      params.city,
+      params.country,
+    ],
+  );
+
+  const [reports, setReports] = useState<StolenBikeReport[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadReports = useCallback(
+    async (currentFilter: MarketplaceFilter, pageNumber = 1, reset = false) => {
+      setLoading(true);
+      try {
+        const response = await stolenBikeService.getReports(currentFilter, pageNumber, 10);
+        if (!response.ok) {
+          SnackBar.Error('Request failed. Please try again later.');
+          return;
+        }
+        const responseJson = await response.json();
+        console.log('Load Reports Response:', responseJson);
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Failed response. Please try again later.');
+          return;
+        }
+        const responseData = responseJson.data as {
+          items: StolenBikeReport[];
+          page: number;
+          pageSize: number;
+          total: number;
+          totalPages?: number;
+        };
+
+        setReports((prev) => (reset ? responseData.items : [...prev, ...responseData.items]));
+        setPage(responseData.page ?? pageNumber);
+        setTotalPages(responseData.totalPages ?? Math.max(1, Math.ceil((responseData.total ?? 0) / (responseData.pageSize ?? 10))));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [stolenBikeService],
+  );
 
   function openFilter() {
-    router.push('/marketplace/filter');
+    router.push({
+      pathname: '/marketplace/stolenbikefilter',
+      params: {
+        make: filter.make,
+        model: filter.model,
+        modelYear: filter.modelYear,
+        priceMin: filter.priceMin?.toString(),
+        priceMax: filter.priceMax?.toString(),
+        cc: filter.cc,
+        type: filter.type,
+        city: filter.city,
+        country: filter.country,
+      },
+    });
   }
 
   function openReportForm() {
@@ -42,9 +119,20 @@ export default function StolenListScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadReports();
-    }, [loadReports]),
+      void loadReports(filter, 1, true);
+    }, [loadReports, filter]),
   );
+
+  function handleRefresh() {
+    setRefreshing(true);
+    void loadReports(filter, 1, true);
+  }
+
+  function handleEndReached() {
+    if (!loading && page < totalPages) {
+      void loadReports(filter, page + 1, false);
+    }
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -67,6 +155,9 @@ export default function StolenListScreen() {
         data={reports}
         keyExtractor={(item) => item.id ?? ''}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
@@ -76,23 +167,13 @@ export default function StolenListScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-            {item.medias?.[0] ? (
-              <Image source={{ uri: item.medias[0] }} style={styles.cardImage} />
-            ) : null}
-            <View style={styles.cardContent}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.cardSubtitle, { color: colors.secondaryText }]}>{`${item.make} ${item.model} • ${item.year}`}</Text>
-              <View style={styles.metaRow}>
-                <MaterialIcons name="location-on" size={14} color={colors.secondaryText} />
-                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{item.location}</Text>
-              </View>
-              <View style={styles.metaRow}>
-                <MaterialIcons name="schedule" size={14} color={colors.secondaryText} />
-                <Text style={[styles.metaText, { color: colors.secondaryText }]}>{new Date(item.reportedAt ?? '').toLocaleDateString()}</Text>
-              </View>
-            </View>
-          </View>
+          <StolenCardItem
+            item={item}
+            onPress={() => {
+              if (!item.id) return;
+              router.push(`/marketplace/stolen/${item.id}`);
+            }}
+          />
         )}
       />
     </View>

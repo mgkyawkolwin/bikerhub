@@ -6,11 +6,31 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BikerHub.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class aaa : Migration
+    public partial class Ver_1016 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "ImagesJson",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Km",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Location",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Price",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Title",
+                table: "StolenBikeReports");
+
             migrationBuilder.DropColumn(
                 name: "IsFavorite",
                 table: "BikeListings");
@@ -36,9 +56,134 @@ namespace BikerHub.Api.Migrations
                 table: "BikeListings");
 
             migrationBuilder.RenameColumn(
+                name: "ReportedAt",
+                table: "StolenBikeReports",
+                newName: "StolenDate");
+
+            migrationBuilder.RenameColumn(
                 name: "SellerName",
                 table: "BikeListings",
                 newName: "SellerPhone");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "Year",
+                table: "StolenBikeReports",
+                type: "int",
+                nullable: false,
+                defaultValue: 0,
+                oldClrType: typeof(int),
+                oldType: "int",
+                oldNullable: true);
+
+            migrationBuilder.UpdateData(
+                table: "StolenBikeReports",
+                keyColumn: "Type",
+                keyValue: null,
+                column: "Type",
+                value: "");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Type",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "longtext",
+                oldNullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.UpdateData(
+                table: "StolenBikeReports",
+                keyColumn: "Model",
+                keyValue: null,
+                column: "Model",
+                value: "");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Model",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "varchar(100)",
+                oldMaxLength: 100,
+                oldNullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.UpdateData(
+                table: "StolenBikeReports",
+                keyColumn: "Make",
+                keyValue: null,
+                column: "Make",
+                value: "");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Make",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "varchar(100)",
+                oldMaxLength: 100,
+                oldNullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "Cc",
+                table: "StolenBikeReports",
+                type: "int",
+                nullable: false,
+                defaultValue: 0,
+                oldClrType: typeof(string),
+                oldType: "longtext",
+                oldNullable: true)
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "City",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValue: "")
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Country",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValue: "")
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Edition",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<int>(
+                name: "Mileage",
+                table: "StolenBikeReports",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Phone",
+                table: "StolenBikeReports",
+                type: "varchar(50)",
+                maxLength: 50,
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.AlterColumn<int>(
                 name: "Year",
@@ -225,6 +370,26 @@ namespace BikerHub.Api.Migrations
                 name: "Likes");
 
             migrationBuilder.DropColumn(
+                name: "City",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Country",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Edition",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Mileage",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
+                name: "Phone",
+                table: "StolenBikeReports");
+
+            migrationBuilder.DropColumn(
                 name: "SellerCity",
                 table: "BikeListings");
 
@@ -233,9 +398,101 @@ namespace BikerHub.Api.Migrations
                 table: "BikeListings");
 
             migrationBuilder.RenameColumn(
+                name: "StolenDate",
+                table: "StolenBikeReports",
+                newName: "ReportedAt");
+
+            migrationBuilder.RenameColumn(
                 name: "SellerPhone",
                 table: "BikeListings",
                 newName: "SellerName");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "Year",
+                table: "StolenBikeReports",
+                type: "int",
+                nullable: true,
+                oldClrType: typeof(int),
+                oldType: "int");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Type",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "longtext")
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Model",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "varchar(100)",
+                oldMaxLength: 100)
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Make",
+                table: "StolenBikeReports",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "varchar(100)",
+                oldMaxLength: 100)
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .OldAnnotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Cc",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: true,
+                oldClrType: typeof(int),
+                oldType: "int")
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "ImagesJson",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Km",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Location",
+                table: "StolenBikeReports",
+                type: "longtext",
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "Price",
+                table: "StolenBikeReports",
+                type: "decimal(65,30)",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Title",
+                table: "StolenBikeReports",
+                type: "varchar(200)",
+                maxLength: 200,
+                nullable: false,
+                defaultValue: "")
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.AlterColumn<int>(
                 name: "Year",

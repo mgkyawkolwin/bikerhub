@@ -20,7 +20,7 @@ function getParamValue(value?: string | string[]) {
   return value ?? '';
 }
 
-export default function MarketplaceFilterScreen() {
+export default function StolenBikeFilterScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { colors } = useThemeContext();
@@ -31,8 +31,6 @@ export default function MarketplaceFilterScreen() {
   const paramMake = getParamValue(params.make);
   const paramModel = getParamValue(params.model);
   const paramModelYear = getParamValue(params.modelYear);
-  const paramPriceMin = params.priceMin ? Number(getParamValue(params.priceMin)) : undefined;
-  const paramPriceMax = params.priceMax ? Number(getParamValue(params.priceMax)) : undefined;
   const paramCc = getParamValue(params.cc);
   const paramType = getParamValue(params.type) as BikeType | undefined;
   const paramCity = getParamValue(params.city);
@@ -43,8 +41,6 @@ export default function MarketplaceFilterScreen() {
       make: paramMake,
       model: paramModel,
       modelYear: paramModelYear,
-      priceMin: paramPriceMin,
-      priceMax: paramPriceMax,
       cc: paramCc,
       type: paramType,
       city: paramCity,
@@ -54,8 +50,6 @@ export default function MarketplaceFilterScreen() {
       paramMake,
       paramModel,
       paramModelYear,
-      paramPriceMin,
-      paramPriceMax,
       paramCc,
       paramType,
       paramCity,
@@ -178,7 +172,7 @@ export default function MarketplaceFilterScreen() {
   function applyFilter() {
     router.back();
     router.replace({
-      pathname: '/marketplace',
+      pathname: '/marketplace/stolen',
       params: {
         make: draftFilter.make || undefined,
         model: draftFilter.model || undefined,
@@ -275,34 +269,6 @@ export default function MarketplaceFilterScreen() {
             placeholderTextColor={colors.secondaryText}
             keyboardType="number-pad"
           />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.priceRange}</Text>
-          <View style={styles.priceRow}>
-            <TextInput
-              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-              value={draftFilter.priceMin != null ? draftFilter.priceMin.toString() : ''}
-              onChangeText={(text) => {
-                const cleaned = text.replace(/[^0-9]/g, '');
-                setDraftFilter((prev) => ({ ...prev, priceMin: cleaned ? Number(cleaned) : undefined }));
-              }}
-              placeholder={t.Title.priceMin}
-              placeholderTextColor={colors.secondaryText}
-              keyboardType="number-pad"
-            />
-            <TextInput
-              style={[styles.textInput, styles.halfInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.text }]}
-              value={draftFilter.priceMax != null ? draftFilter.priceMax.toString() : ''}
-              onChangeText={(text) => {
-                const cleaned = text.replace(/[^0-9]/g, '');
-                setDraftFilter((prev) => ({ ...prev, priceMax: cleaned ? Number(cleaned) : undefined }));
-              }}
-              placeholder={t.Title.priceRangeMax}
-              placeholderTextColor={colors.secondaryText}
-              keyboardType="number-pad"
-            />
-          </View>
         </View>
 
         <View style={styles.footerActions}>

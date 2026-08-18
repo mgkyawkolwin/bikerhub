@@ -7,7 +7,7 @@ export type StolenBikeReport = {
   edition?: string;
   year?: number;
   cc?: number;
-  mileage?: string;
+  mileage?: number;
   vin?: string;
   type?: string;
   stolenDate?: string | Date;
@@ -16,4 +16,9 @@ export type StolenBikeReport = {
   phone?: string;
   city?: string;
   country?: string;
+  reportedById?: string;
+  reportedByName?:string;
+  createdById?: string;
+  createdAtUTC?: string;
+  updatedAtUTC?: string;
 };

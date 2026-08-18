@@ -25,7 +25,8 @@ function buildMarketplaceQuery(filter: MarketplaceFilter, page: number, pageSize
   if (filter.priceMax !== undefined) params.set('priceMax', String(filter.priceMax));
   if (filter.cc) params.set('cc', filter.cc);
   if (filter.type) params.set('type', String(filter.type));
-  if (filter.location) params.set('location', filter.location);
+  if (filter.city) params.set('city', filter.city);
+  if (filter.country) params.set('country', filter.country);
   params.set('page', String(page));
   params.set('pageSize', String(pageSize));
   return params.toString();

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -21,7 +21,7 @@ import SnackBar from '@/components/snackbar';
 import AutoCompleteTextInput from '@/components/autoCompleteTextInput';
 import { container, StolenBikeService } from '@/services';
 import { StolenBikeServiceToken } from '@/services/stolenBikeService';
-import type { BikeListing, BikeType } from '@/models/marketplace';
+import type { BikeType } from '@/models/marketplace';
 import { LookupService, LookupServiceToken } from '@/services/lookupService';
 import Lookup from '@/models/lookup';
 import { StolenBikeReport } from '@/models/stolenBikeReport';
@@ -63,6 +63,7 @@ export default function ReportStolenScreen() {
   const [country, setCountry] = useState('');
   const [cities, setCities] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
+  const [description, setDescription] = useState('');
   const [makeSuggestionsVisible, setMakeSuggestionsVisible] = useState(false);
   const [modelSuggestionsVisible, setModelSuggestionsVisible] = useState(false);
   const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
@@ -70,6 +71,41 @@ export default function ReportStolenScreen() {
   const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
   const [edition, setEdition] = useState('');
 
+  useEffect(() => {
+    let active = true;
+
+    const fetchLookupValues = async (category: string, code = '', query = '') => {
+      try {
+        const response = await lookupService.getLookup(category, code, query);
+        if (!response.ok) return [] as string[];
+        const responseJson = await response.json();
+        if (!responseJson.success) return [] as string[];
+        return (responseJson.data as Lookup[]).map((lookup) => lookup.value);
+      } catch {
+        return [] as string[];
+      }
+    };
+
+    const loadInitialLookups = async () => {
+      const [initialMakes, initialTypes, initialCities, initialCountries] = await Promise.all([
+        fetchLookupValues('MAKE'),
+        fetchLookupValues('BIKE_TYPE'),
+        fetchLookupValues('CITY'),
+        fetchLookupValues('COUNTRY'),
+      ]);
+
+      if (!active) return;
+      setMakes(initialMakes);
+      setTypes(initialTypes as BikeType[]);
+      setCities(initialCities);
+      setCountries(initialCountries);
+    };
+
+    void loadInitialLookups();
+    return () => {
+      active = false;
+    };
+  }, [lookupService]);
 
 
   // const dropdownItems = useMemo(
@@ -132,7 +168,6 @@ export default function ReportStolenScreen() {
     if (!modelYear.trim()) nextErrors.year = `${t.Title.modelYear} is required.`;
     if (!cc.trim()) nextErrors.cc = `${t.Title.cc} is required.`;
     if (!type) nextErrors.type = `${t.Title.type} is required.`;
-    if (!mileage.trim()) nextErrors.mileage = `${t.Title.mileage} is required.`;
     if (!city.trim()) nextErrors.sellerCity = `${t.Title.city} is required.`;
     if (!country.trim()) nextErrors.sellerCountry = `${t.Title.country} is required.`;
 
@@ -181,13 +216,14 @@ export default function ReportStolenScreen() {
         edition,
         year: Number(modelYear),
         cc: Number(cc),
-        mileage: mileage.trim(),
+        mileage: Number(mileage.trim()),
         vin: vin.trim(),
         type,
         stolenDate,
         phone,
         city,
         country,
+        description: description.trim(),
       };
 
       const response = await stolenBikeService.createReport(listing);
@@ -234,7 +270,9 @@ export default function ReportStolenScreen() {
 
   const handleMakeTextChange = async (text: string) => {
     setMake(text);
-    const response = await lookupService.getLookup('MAKE', "", text);
+    setModel('');
+    setModels([]);
+    const response = await lookupService.getLookup('MAKE', '', text);
     if (!response.ok) {
       SnackBar.Error('Request failed. Please try again.');
       return;
@@ -246,7 +284,9 @@ export default function ReportStolenScreen() {
     }
 
     const lookups = responseJson.data as Lookup[];
-    setMakes(lookups.map((lookup) => lookup.value));
+    const values = lookups.map((lookup) => lookup.value);
+    setMakes(values);
+    setMakeSuggestionsVisible(text.trim().length > 0 && values.length > 0);
   }
 
   const handleModelTextChange = async (text: string) => {
@@ -263,11 +303,13 @@ export default function ReportStolenScreen() {
     }
 
     const lookups = responseJson.data as Lookup[];
-    setModels(lookups.map((lookup) => lookup.value));
+    const values = lookups.map((lookup) => lookup.value);
+    setModels(values);
+    setModelSuggestionsVisible(text.trim().length > 0 && values.length > 0);
   }
 
   const handleTypeTextChange = async (text: string) => {
-    setType(text);
+    setType(text as BikeType);
     const response = await lookupService.getLookup('BIKE_TYPE', '', text);
     if (!response.ok) {
       SnackBar.Error('Request failed. Please try again.');
@@ -280,12 +322,14 @@ export default function ReportStolenScreen() {
     }
 
     const lookups = responseJson.data as Lookup[];
-    setTypes(lookups.map((lookup) => lookup.value));
+    const values = lookups.map((lookup) => lookup.value as BikeType);
+    setTypes(values);
+    setTypeSuggestionsVisible(text.trim().length > 0 && values.length > 0);
   }
 
   const handleCityTextChange = async (text: string) => {
     setCity(text);
-    const response = await lookupService.getLookup('CITY', "", text);
+    const response = await lookupService.getLookup('CITY', '', text);
     if (!response.ok) {
       SnackBar.Error('Request failed. Please try again.');
       return;
@@ -297,12 +341,14 @@ export default function ReportStolenScreen() {
     }
 
     const lookups = responseJson.data as Lookup[];
-    setCities(lookups.map((lookup) => lookup.value));
+    const values = lookups.map((lookup) => lookup.value);
+    setCities(values);
+    setCitySuggestionsVisible(text.trim().length > 0 && values.length > 0);
   }
 
   const handleCountryTextChange = async (text: string) => {
     setCountry(text);
-    const response = await lookupService.getLookup('COUNTRY', "", text);
+    const response = await lookupService.getLookup('COUNTRY', '', text);
     if (!response.ok) {
       SnackBar.Error('Request failed. Please try again.');
       return;
@@ -314,7 +360,9 @@ export default function ReportStolenScreen() {
     }
 
     const lookups = responseJson.data as Lookup[];
-    setCountries(lookups.map((lookup) => lookup.value));
+    const values = lookups.map((lookup) => lookup.value);
+    setCountries(values);
+    setCountrySuggestionsVisible(text.trim().length > 0 && values.length > 0);
   }
 
   return (
@@ -339,7 +387,8 @@ export default function ReportStolenScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.make} *</Text>
             <AutoCompleteTextInput
               value={make}
-              onBlur={() => setMakeSuggestionsVisible(false)}
+              onFocus={() => setMakeSuggestionsVisible(makes.length > 0)}
+              onBlur={() => setTimeout(() => setMakeSuggestionsVisible(false), 200)}
               onTextChange={(text) => {
                 handleMakeTextChange(text);
                 if (errors.make) setErrors((prev) => ({ ...prev, make: undefined }));
@@ -356,7 +405,8 @@ export default function ReportStolenScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.model} *</Text>
             <AutoCompleteTextInput
               value={model}
-              onBlur={() => setModelSuggestionsVisible(false)}
+              onFocus={() => setModelSuggestionsVisible(models.length > 0)}
+              onBlur={() => setTimeout(() => setModelSuggestionsVisible(false), 200)}
               onTextChange={(text) => {
                 handleModelTextChange(text);
                 if (errors.model) setErrors((prev) => ({ ...prev, model: undefined }));
@@ -396,7 +446,8 @@ export default function ReportStolenScreen() {
               <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.type} *</Text>
               <AutoCompleteTextInput
               value={type}
-              onBlur={() => setTypeSuggestionsVisible(false)}
+              onFocus={() => setTypeSuggestionsVisible(types.length > 0)}
+              onBlur={() => setTimeout(() => setTypeSuggestionsVisible(false), 200)}
               onTextChange={(text) => {
                 handleTypeTextChange(text);
                 if (errors.type) setErrors((prev) => ({ ...prev, type: undefined }));
@@ -475,7 +526,8 @@ export default function ReportStolenScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.city} *</Text>
               <AutoCompleteTextInput
               value={city}
-              onBlur={() => setCitySuggestionsVisible(false)}
+              onFocus={() => setCitySuggestionsVisible(cities.length > 0)}
+              onBlur={() => setTimeout(() => setCitySuggestionsVisible(false), 200)}
               onTextChange={(text) => {
                 handleCityTextChange(text);
                 if (errors.sellerCity) setErrors((prev) => ({ ...prev, sellerCity: undefined }));
@@ -495,7 +547,8 @@ export default function ReportStolenScreen() {
             <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.country} *</Text>
               <AutoCompleteTextInput
               value={country}
-              onBlur={() => setCountrySuggestionsVisible(false)}
+              onFocus={() => setCountrySuggestionsVisible(countries.length > 0)}
+              onBlur={() => setTimeout(() => setCountrySuggestionsVisible(false), 200)}
               onTextChange={(text) => {
                 handleCountryTextChange(text);
                 if (errors.sellerCountry) setErrors((prev) => ({ ...prev, sellerCountry: undefined }));
@@ -508,6 +561,24 @@ export default function ReportStolenScreen() {
                 styles.textInput,
                 { borderColor: errors.sellerCountry ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
               ]}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.description}</Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                styles.textArea,
+                { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t.Title.description}
+              placeholderTextColor={colors.placeholder}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
             />
           </View>
 
@@ -755,6 +826,9 @@ const styles = StyleSheet.create({
   photoPlaceholderText: {
     fontSize: 13,
     textAlign: 'center',
+  },
+  textArea: {
+    minHeight: 120,
   },
   postButton: {
     marginHorizontal: 16,

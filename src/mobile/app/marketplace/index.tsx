@@ -9,7 +9,7 @@ import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
-import type { BikeListing, MarketplaceFilter, BikeType } from '@/models/marketplace';
+import type { BikeListing, MarketplaceFilter } from '@/models/marketplace';
 import SnackBar from '@/components/snackbar';
 import MarketplaceCardItem from './carditem';
 
@@ -31,15 +31,16 @@ export default function MarketplaceScreen() {
 
   const filter: MarketplaceFilter = useMemo(
     () => ({
-      make: Array.isArray(params.make) ? params.make[0] : params.make ?? '',
-      model: Array.isArray(params.model) ? params.model[0] : params.model ?? '',
-      modelYear: Array.isArray(params.modelYear) ? params.modelYear[0] : params.modelYear ?? '',
-      priceMin: params.priceMin ? Number(Array.isArray(params.priceMin) ? params.priceMin[0] : params.priceMin) : undefined,
-      priceMax: params.priceMax ? Number(Array.isArray(params.priceMax) ? params.priceMax[0] : params.priceMax) : undefined,
-      cc: Array.isArray(params.cc) ? params.cc[0] : params.cc ?? '',
-      type: (Array.isArray(params.type) ? params.type[0] : params.type) as BikeType | undefined,
-      location: Array.isArray(params.location) ? params.location[0] : params.location ?? '',
-    }),
+      make: params.make as string ?? '',
+      model: params.model as string ?? '',
+      modelYear: params.modelYear as string ?? '',
+      priceMin: params.priceMin as string ?? '',
+      priceMax: params.priceMax as string ?? '',
+      cc: params.cc as string ?? '',
+      type: params.type as string ?? '',
+      city: params.city as string ?? '',
+      country: params.country as string ?? '',
+    } as any as MarketplaceFilter),
     [
       params.make,
       params.model,
@@ -48,41 +49,43 @@ export default function MarketplaceScreen() {
       params.priceMax,
       params.cc,
       params.type,
-      params.location,
+      params.city,
+      params.country,
     ],
   );
 
+  const filterString = JSON.stringify(filter);
+
   const loadListings = useCallback(
-    async (pageNumber: number, reset = false) => {
-      setIsLoading(true);
+  async (currentFilter: MarketplaceFilter, pageNumber: number, reset = false) => {
+    setIsLoading(true);
 
-      try {
-        const response = await marketplaceService.getListings(filter, pageNumber, 10);
-        if (!response.ok) {
-          // Handle error response
-          SnackBar.Error('Request failed. Please try again.');
-          return;
-        }
-        const responseJson = await response.json();
-        if (!responseJson.success) {
-          SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
-          return;
-        }
-        const responseData = responseJson.data as { items: BikeListing[]; page: number; total: number };
-        setListings((prev) => (reset ? responseData.items : [...prev, ...responseData.items]));
-        setPage(responseData.page);
-        setTotal(responseData.total);
-
-      } catch (error) {
-        console.error('Error loading listings:', error);
-        SnackBar.Error('Client exception occurred. Please try again.');
-      } finally {
-        setIsLoading(false);
-        setRefreshing(false);
+    try {
+      const response = await marketplaceService.getListings(currentFilter, pageNumber, 10);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
       }
-    },
-    [filter, marketplaceService],
-  );
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+      const responseData = responseJson.data as { items: BikeListing[]; page: number; total: number };
+      setListings((prev) => (reset ? responseData.items : [...prev, ...responseData.items]));
+      setPage(responseData.page);
+      setTotal(responseData.total);
+
+    } catch (error) {
+      console.error('Error loading listings:', error);
+      SnackBar.Error('Client exception occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  },
+  [marketplaceService], // Stable dependency! No lint errors, no re-render loops.
+);
 
   const loadListingById = useCallback(
     async (listingId: string) => {
@@ -109,7 +112,7 @@ export default function MarketplaceScreen() {
     async (listingId: string) => {
       if (!listingId) return;
       await marketplaceService.toggleFavorite(listingId);
-      await Promise.all([loadListingById(listingId), loadListings(page, true)]);
+      await Promise.all([loadListingById(listingId), loadListings(filter, page, true)]);
     },
     [marketplaceService, loadListingById, loadListings, page],
   );
@@ -118,25 +121,25 @@ export default function MarketplaceScreen() {
     async (listingId: string) => {
       if (!listingId) return;
       await marketplaceService.toggleLike(listingId);
-      await Promise.all([loadListingById(listingId), loadListings(page, true)]);
+      await Promise.all([loadListingById(listingId), loadListings(filter, page, true)]);
     },
     [marketplaceService, loadListingById, loadListings, page],
   );
 
   useFocusEffect(
     useCallback(() => {
-      void loadListings(1, true);
+      void loadListings(filter, 1, true);
     }, [loadListings]),
   );
 
   function handleRefresh() {
     setRefreshing(true);
-    void loadListings(1, true);
+    void loadListings(filter, 1, true);
   }
 
   function handleEndReached() {
     if (!isLoading && listings?.length < total) {
-      void loadListings(page + 1);
+      void loadListings(filter, page + 1, false);
     }
   }
 
@@ -151,7 +154,6 @@ export default function MarketplaceScreen() {
         priceMax: filter.priceMax?.toString(),
         cc: filter.cc,
         type: filter.type,
-        location: filter.location,
       },
     });
   }

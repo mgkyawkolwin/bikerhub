@@ -22,13 +22,14 @@ public class StolenBikesController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetReports()
+    public async Task<IActionResult> GetReports([FromQuery] StolenBikeReportFilterDto filter)
     {
-
         try
         {
-            _logger.LogDebug("CALLED: GetReports()");
-            var reports = await _stolenBikeService.GetReportsAsync();
+            _logger.LogDebug("CALLED: GetReports({Filter})", System.Text.Json.JsonSerializer.Serialize(filter));
+            var reports = await _stolenBikeService.GetReportsAsync(filter);
+            _logger.LogDebug("Reports count: {Count}", reports?.Items?.Count() ?? 0);
+            _logger.LogDebug("Reports First/Default: {Result}", System.Text.Json.JsonSerializer.Serialize(reports?.Items?.FirstOrDefault()));
             return Ok(new { Success = true, Data = reports });
         }
         catch (CustomException ex)
@@ -104,7 +105,9 @@ public class StolenBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: CreateReport()");
+            _logger.LogDebug("DTO: {Dto}", System.Text.Json.JsonSerializer.Serialize(dto));
             var created = await _stolenBikeService.CreateReportAsync(dto);
+            _logger.LogDebug("RESULT: {Report}", System.Text.Json.JsonSerializer.Serialize(created));
             return Ok(new { Success = true, Data = created });
         }
         catch (CustomException ex)
