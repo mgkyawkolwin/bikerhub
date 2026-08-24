@@ -1,0 +1,501 @@
+@page "/directories/list"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using System.Linq
+@using Microsoft.AspNetCore.Components.Authorization
+@using BikerHub.Api.Dtos
+@using BikerHub.Api.Services
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDirectoryService DirectoryService
+@inject IDialogService DialogService
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+@inject ILogger<List> Logger
+
+<PageTitle>Directories</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Directories</h2>
+        <button type="button" class="btn btn-primary" @onclick="OpenNewDirectoryDialog">New Directory</button>
+    </div>
+
+    <FluentCard>
+        <FluentDataGrid @ref="_directoryGrid"
+                        TGridItem="DirectoryDto"
+                        ItemsProvider="LoadPageAsync"
+                        ItemKey="@(directory => directory.Id)"
+                        Pagination="_paginationState"
+                        ShowHover="true"
+                        DisplayMode="DataGridDisplayMode.Table"
+                        GridTemplateColumns="220px 2fr 1fr 1fr 160px">
+            <TemplateColumn Title="#">
+                <ChildContent Context="directory">
+                    <div class="d-flex align-items-center gap-2">
+                        <span>@($"{directory.Id.ToString()[..4]}...{directory.Id.ToString()[^4..]}")</span>
+                        <FluentIcon Icon="Icons.Regular.Size20.Copy" OnClick="() => CopyIdToClipboard(directory.Id)" />
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+            <PropertyColumn Title="Name" Property="@(directory => directory.Name)" />
+            <PropertyColumn Title="Business Type" Property="@(directory => directory.BusinessType)" />
+            <PropertyColumn Title="City" Property="@(directory => directory.City)" />
+            <TemplateColumn Title="Actions">
+                <ChildContent Context="directory">
+                    <div class="d-flex gap-2">
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_editIcon" OnClick="() => OpenEditDirectoryDialog(directory)">
+                            <span class="visually-hidden">Edit</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_deleteIcon" OnClick="() => ConfirmDeleteDirectoryAsync(directory)">
+                            <span class="visually-hidden">Delete</span>
+                        </FluentButton>
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+        </FluentDataGrid>
+
+        <div class="mt-3">
+            <FluentPaginator State="_paginationState" />
+        </div>
+    </FluentCard>
+
+    <FluentDialog @bind-Hidden="_isNewDirectoryDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Create new directory">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Create new directory</h4>
+
+            <EditForm Model="_newDirectory" OnValidSubmit="CreateDirectoryAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <FluentTextField @bind-Value="_newDirectory.Name" Placeholder="Directory name" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Business Type</label>
+                    <FluentTextField @bind-Value="_newDirectory.BusinessType" Placeholder="Business type" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Address</label>
+                    <FluentTextField @bind-Value="_newDirectory.Address" Placeholder="Address" Style="width: 100%;" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">City</label>
+                        <FluentTextField @bind-Value="_newDirectory.City" Placeholder="City" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">State</label>
+                        <FluentTextField @bind-Value="_newDirectory.State" Placeholder="State" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Country</label>
+                        <FluentTextField @bind-Value="_newDirectory.Country" Placeholder="Country" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Postal Code</label>
+                        <FluentTextField @bind-Value="_newDirectory.PostalCode" Placeholder="Postal code" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Phone</label>
+                        <FluentTextField @bind-Value="_newDirectory.Phone" Placeholder="Phone" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Email</label>
+                        <FluentTextField @bind-Value="_newDirectory.Email" Placeholder="Email" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Google Map URL</label>
+                    <FluentTextField @bind-Value="_newDirectory.GoogleMapUrl" Placeholder="Google Map URL" Style="width: 100%;" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Logo URL</label>
+                        <FluentTextField @bind-Value="_newDirectory.LogoUrl" Placeholder="Logo URL" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Cover Image URL</label>
+                        <FluentTextField @bind-Value="_newDirectory.CoverImageUrl" Placeholder="Cover image URL" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseNewDirectoryDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Create Directory")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+
+    <FluentDialog @bind-Hidden="_isEditDirectoryDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Edit directory">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Edit directory</h4>
+
+            <EditForm Model="_editDirectory" OnValidSubmit="UpdateDirectoryAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <FluentTextField @bind-Value="_editDirectory.Name" Placeholder="Directory name" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Business Type</label>
+                    <FluentTextField @bind-Value="_editDirectory.BusinessType" Placeholder="Business type" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Address</label>
+                    <FluentTextField @bind-Value="_editDirectory.Address" Placeholder="Address" Style="width: 100%;" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">City</label>
+                        <FluentTextField @bind-Value="_editDirectory.City" Placeholder="City" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">State</label>
+                        <FluentTextField @bind-Value="_editDirectory.State" Placeholder="State" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Country</label>
+                        <FluentTextField @bind-Value="_editDirectory.Country" Placeholder="Country" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Postal Code</label>
+                        <FluentTextField @bind-Value="_editDirectory.PostalCode" Placeholder="Postal code" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Phone</label>
+                        <FluentTextField @bind-Value="_editDirectory.Phone" Placeholder="Phone" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Email</label>
+                        <FluentTextField @bind-Value="_editDirectory.Email" Placeholder="Email" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Google Map URL</label>
+                    <FluentTextField @bind-Value="_editDirectory.GoogleMapUrl" Placeholder="Google Map URL" Style="width: 100%;" />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Logo URL</label>
+                        <FluentTextField @bind-Value="_editDirectory.LogoUrl" Placeholder="Logo URL" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Cover Image URL</label>
+                        <FluentTextField @bind-Value="_editDirectory.CoverImageUrl" Placeholder="Cover image URL" Style="width: 100%;" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditDirectoryDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private Guid _currentUserId = Guid.Empty;
+    private List<DirectoryDto> _directories = new();
+    private FluentDataGrid<DirectoryDto>? _directoryGrid;
+    private readonly PaginationState _paginationState = new() { ItemsPerPage = 10 };
+    private bool _isNewDirectoryDialogHidden = true;
+    private bool _isEditDirectoryDialogHidden = true;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private DirectoryModel _newDirectory = new();
+    private DirectoryModel _editDirectory = new();
+    private Guid _editingDirectoryId;
+    private readonly Icon _editIcon = new Icon("Edit", IconVariant.Regular, IconSize.Size16, "Edit");
+    private readonly Icon _deleteIcon = new Icon("Delete", IconVariant.Regular, IconSize.Size16, "Delete");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        var claimValue = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(claimValue, out _currentUserId))
+        {
+            Logger.LogWarning("Could not resolve current user ID from claims.");
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        _isCheckingAuth = false;
+    }
+
+    private async ValueTask<GridItemsProviderResult<DirectoryDto>> LoadPageAsync(GridItemsProviderRequest<DirectoryDto> request)
+    {
+        try
+        {
+            var pageSize = request.Count ?? _paginationState.ItemsPerPage;
+            var page = (request.StartIndex / pageSize) + 1;
+
+            var filterDto = new GetDirectoriesFilterDto
+            {
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await DirectoryService.GetDirectoriesAsync(filterDto, _currentUserId);
+            _directories = result.Items.ToList();
+            return GridItemsProviderResult.From(_directories, result.Total);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load directories.");
+            return GridItemsProviderResult.From(Array.Empty<DirectoryDto>(), 0);
+        }
+    }
+
+    private void OpenNewDirectoryDialog()
+    {
+        _formErrorMessage = null;
+        _newDirectory = new DirectoryModel();
+        _isNewDirectoryDialogHidden = false;
+    }
+
+    private void CloseNewDirectoryDialog()
+    {
+        _isNewDirectoryDialogHidden = true;
+    }
+
+    private void OpenEditDirectoryDialog(DirectoryDto directory)
+    {
+        _formErrorMessage = null;
+        _editingDirectoryId = directory.Id;
+        _editDirectory = new DirectoryModel
+        {
+            Name = directory.Name,
+            BusinessType = directory.BusinessType,
+            Address = directory.Address,
+            City = directory.City,
+            State = directory.State,
+            Country = directory.Country,
+            PostalCode = directory.PostalCode,
+            Phone = directory.Phone,
+            Email = directory.Email,
+            GoogleMapUrl = directory.GoogleMapUrl,
+            LogoUrl = directory.LogoUrl,
+            CoverImageUrl = directory.CoverImageUrl
+        };
+        _isEditDirectoryDialogHidden = false;
+    }
+
+    private void CloseEditDirectoryDialog()
+    {
+        _isEditDirectoryDialogHidden = true;
+    }
+
+    private async Task ConfirmDeleteDirectoryAsync(DirectoryDto directory)
+    {
+        await DialogService.ShowConfirmationAsync(
+            this,
+            async dialogResult =>
+            {
+                if (dialogResult.Cancelled)
+                {
+                    return;
+                }
+
+                _isSubmitting = true;
+                try
+                {
+                    await DirectoryService.DeleteDirectoryAsync(directory.Id, _currentUserId);
+                    if (_directoryGrid is not null)
+                    {
+                        await _directoryGrid.RefreshDataAsync(false);
+                    }
+                    ToastService.ShowSuccess("Directory deleted successfully.", 2000, "Deleted");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to delete directory.");
+                    ToastService.ShowError("Failed to delete directory.", 2000, "Error");
+                }
+                finally
+                {
+                    _isSubmitting = false;
+                }
+            },
+            $"Are you sure you want to delete directory '{directory.Name}'?",
+            "Delete",
+            "Cancel",
+            "Confirm delete");
+    }
+
+    private async Task CreateDirectoryAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateDirectoryDto
+            {
+                Name = _newDirectory.Name,
+                BusinessType = _newDirectory.BusinessType,
+                Address = _newDirectory.Address,
+                City = _newDirectory.City,
+                State = _newDirectory.State,
+                Country = _newDirectory.Country,
+                PostalCode = _newDirectory.PostalCode,
+                Phone = _newDirectory.Phone,
+                Email = _newDirectory.Email,
+                GoogleMapUrl = _newDirectory.GoogleMapUrl,
+                LogoUrl = _newDirectory.LogoUrl,
+                CoverImageUrl = _newDirectory.CoverImageUrl
+            };
+
+            await DirectoryService.CreateDirectoryAsync(dto, _currentUserId);
+            if (_directoryGrid is not null)
+            {
+                await _directoryGrid.RefreshDataAsync(false);
+            }
+
+            _isNewDirectoryDialogHidden = true;
+            ToastService.ShowSuccess("New directory has been created.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create new directory.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task UpdateDirectoryAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateDirectoryDto
+            {
+                Name = _editDirectory.Name,
+                BusinessType = _editDirectory.BusinessType,
+                Address = _editDirectory.Address,
+                City = _editDirectory.City,
+                State = _editDirectory.State,
+                Country = _editDirectory.Country,
+                PostalCode = _editDirectory.PostalCode,
+                Phone = _editDirectory.Phone,
+                Email = _editDirectory.Email,
+                GoogleMapUrl = _editDirectory.GoogleMapUrl,
+                LogoUrl = _editDirectory.LogoUrl,
+                CoverImageUrl = _editDirectory.CoverImageUrl
+            };
+
+            await DirectoryService.UpdateDirectoryAsync(_editingDirectoryId, dto, _currentUserId);
+            if (_directoryGrid is not null)
+            {
+                await _directoryGrid.RefreshDataAsync(false);
+            }
+
+            _isEditDirectoryDialogHidden = true;
+            ToastService.ShowSuccess("Directory updated successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update directory.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task CopyIdToClipboard(Guid id)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", id.ToString());
+        ToastService.ShowSuccess("Directory ID copied to clipboard.", 1500, "Copied");
+    }
+
+    private sealed class DirectoryModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string Name { get; set; } = string.Empty;
+
+        public string? BusinessType { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? Country { get; set; }
+        public string? PostalCode { get; set; }
+        public string? Phone { get; set; }
+
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string? Email { get; set; }
+
+        public string? GoogleMapUrl { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? CoverImageUrl { get; set; }
+    }
+}

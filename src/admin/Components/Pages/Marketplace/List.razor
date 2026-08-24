@@ -1,0 +1,449 @@
+@page "/marketplace/list"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using System.Linq
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using BikerHub.Api.Dtos
+@using BikerHub.Api.Services
+
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IMarketplaceService MarketplaceService
+@inject IDialogService DialogService
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+@inject ILogger<List> Logger
+
+<PageTitle>Marketplace</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Marketplace</h2>
+            <p class="text-muted mb-0">Browse and manage bike listings.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @onclick="ResetFilters">Reset</button>
+            <button type="button" class="btn btn-primary" @onclick="OpenNewListingDialog">New Listing</button>
+        </div>
+    </div>
+
+    <FluentCard>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Make</label>
+                <FluentTextField @bind-Value="_filterMake" Placeholder="Make" Style="width: 100%;" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Model</label>
+                <FluentTextField @bind-Value="_filterModel" Placeholder="Model" Style="width: 100%;" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Type</label>
+                <FluentTextField @bind-Value="_filterType" Placeholder="Type" Style="width: 100%;" />
+            </div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">City</label>
+                <FluentTextField @bind-Value="_filterCity" Placeholder="City" Style="width: 100%;" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Country</label>
+                <FluentTextField @bind-Value="_filterCountry" Placeholder="Country" Style="width: 100%;" />
+            </div>
+            <div class="col-md-4">
+                <div class="row g-2">
+                    <div class="col">
+                        <label class="form-label">Year</label>
+                        <FluentTextField @bind-Value="_filterModelYear" Placeholder="Year" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Price range</label>
+                        <div class="d-flex gap-2">
+                            <FluentTextField @bind-Value="_filterPriceMinString" Placeholder="Min" Style="width: 100%;" />
+                            <FluentTextField @bind-Value="_filterPriceMaxString" Placeholder="Max" Style="width: 100%;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-primary" @onclick="RefreshListingsAsync">Search</button>
+        </div>
+
+        <FluentDataGrid @ref="_marketplaceGrid" TGridItem="BikeListingDto" ItemsProvider="LoadPageAsync" ItemKey="@(item => item.Id)" Pagination="_paginationState" ShowHover="true" DisplayMode="DataGridDisplayMode.Table" GridTemplateColumns="220px 1.5fr 1.5fr 1fr 1fr 1fr 1fr 100px 100px 100px 100px 100px">
+            <TemplateColumn Title="#">
+                <ChildContent Context="item">
+                    <div class="d-flex align-items-center gap-2">
+                        <span>@($"{item.Id.ToString()[..4]}...{item.Id.ToString()[^4..]}")</span>
+                        <FluentIcon Icon="Icons.Regular.Size20.Copy" OnClick="() => CopyIdToClipboard(item.Id)" />
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+            <PropertyColumn Title="Make" Property="@(item => item.Make)" />
+            <PropertyColumn Title="Model" Property="@(item => item.Model)" />
+            <PropertyColumn Title="Year" Property="@(item => item.Year)" />
+            <PropertyColumn Title="Price" Property="@(item => item.Price)" />
+            <PropertyColumn Title="Type" Property="@(item => item.Type)" />
+            <TemplateColumn Title="Seller">
+                <ChildContent Context="item">
+                    <div>
+                        <div>@item.SellerName</div>
+                        <div class="text-muted">@item.SellerCity, @item.SellerCountry</div>
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+            <TemplateColumn Title="Rating">
+                <ChildContent Context="item">
+                    <span>@item.Rating.ToString("0.0") (@item.RatingCount)</span>
+                </ChildContent>
+            </TemplateColumn>
+            <PropertyColumn Title="Fav" Property="@(item => item.FavoritesCount)" />
+            <PropertyColumn Title="Likes" Property="@(item => item.LikeCount)" />
+            <PropertyColumn Title="Views" Property="@(item => item.ViewCount)" />
+            <TemplateColumn Title="Actions">
+                <ChildContent Context="item">
+                    <div class="d-flex gap-2">
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_viewIcon" OnClick="() => OpenViewListingDialog(item)">
+                            <span class="visually-hidden">View</span>
+                        </FluentButton>
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+        </FluentDataGrid>
+
+        <div class="mt-3">
+            <FluentPaginator State="_paginationState" />
+        </div>
+    </FluentCard>
+
+    <FluentDialog @bind-Hidden="_isNewListingDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Create new marketplace listing">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Create new listing</h4>
+            <EditForm Model="_newListing" OnValidSubmit="CreateListingAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Make</label>
+                    <FluentTextField @bind-Value="_newListing.Make" Placeholder="Make" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Model</label>
+                    <FluentTextField @bind-Value="_newListing.Model" Placeholder="Model" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Edition</label>
+                    <FluentTextField @bind-Value="_newListing.Edition" Placeholder="Edition" Style="width: 100%;" />
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">Year</label>
+                        <FluentTextField @bind-Value="_newListing.YearString" Placeholder="Year" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Price</label>
+                        <FluentTextField @bind-Value="_newListing.PriceString" Placeholder="Price" Style="width: 100%;" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">CC</label>
+                    <FluentTextField @bind-Value="_newListing.Cc" Placeholder="Engine displacement" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <FluentTextField @bind-Value="_newListing.Type" Placeholder="Type" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mileage</label>
+                    <FluentTextField @bind-Value="_newListing.Mileage" Placeholder="Mileage" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">VIN</label>
+                    <FluentTextField @bind-Value="_newListing.Vin" Placeholder="VIN" Style="width: 100%;" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Seller phone</label>
+                    <FluentTextField @bind-Value="_newListing.SellerPhone" Placeholder="Phone" Style="width: 100%;" />
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col">
+                        <label class="form-label">City</label>
+                        <FluentTextField @bind-Value="_newListing.SellerCity" Placeholder="City" Style="width: 100%;" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Country</label>
+                        <FluentTextField @bind-Value="_newListing.SellerCountry" Placeholder="Country" Style="width: 100%;" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <FluentTextArea @bind-Value="_newListing.Description" Placeholder="Description" Style="width: 100%; min-height: 120px;" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseNewListingDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Create Listing")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+
+    <FluentDialog @bind-Hidden="_isViewListingDialogHidden" Modal="true" TrapFocus="true" AriaLabel="View marketplace listing">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Listing details</h4>
+            @if (_viewListing is not null)
+            {
+                <div class="mb-3">
+                    <strong>@_viewListing.Make @_viewListing.Model (@_viewListing.Year)</strong>
+                </div>
+                <div class="mb-3">Type: @_viewListing.Type</div>
+                <div class="mb-3">Price: @_viewListing.Price</div>
+                <div class="mb-3">Seller: @_viewListing.SellerName (@_viewListing.SellerCity, @_viewListing.SellerCountry)</div>
+                <div class="mb-3">Rating: @_viewListing.Rating.ToString("0.0") (@_viewListing.RatingCount)</div>
+                <div class="mb-3">Likes: @_viewListing.LikeCount</div>
+                <div class="mb-3">Favorites: @_viewListing.FavoritesCount</div>
+                <div class="mb-3">Views: @_viewListing.ViewCount</div>
+                <div class="mb-3">VIN: @_viewListing.Vin</div>
+                <div class="mb-3">Mileage: @_viewListing.Mileage</div>
+                <div class="mb-3">CC: @_viewListing.Cc</div>
+                <div class="mb-3">Edition: @_viewListing.Edition</div>
+                <div class="mb-3">Description: @_viewListing.Description</div>
+                @if (_viewListing.Medias?.Any() == true)
+                {
+                    <div class="mb-3">
+                        <strong>Media</strong>
+                        <div class="row g-2 mt-2">
+                            @foreach (var media in _viewListing.Medias)
+                            {
+                                <div class="col-auto">
+                                    <a href="@media.Url" target="_blank">@media.ObjectName</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary" @onclick="CloseViewListingDialog">Close</button>
+            </div>
+        </div>
+    </FluentDialog>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private List<BikeListingDto> _marketplaceItems = new();
+    private FluentDataGrid<BikeListingDto>? _marketplaceGrid;
+    private readonly PaginationState _paginationState = new() { ItemsPerPage = 10 };
+    private bool _isNewListingDialogHidden = true;
+    private bool _isViewListingDialogHidden = true;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private BikeListingFilterDto _filter = new();
+    private string? _filterMake;
+    private string? _filterModel;
+    private string? _filterType;
+    private string? _filterCity;
+    private string? _filterCountry;
+    private string? _filterModelYear;
+    private string? _filterPriceMinString;
+    private string? _filterPriceMaxString;
+    private ListingModel _newListing = new();
+    private BikeListingDto? _viewListing;
+    private readonly Icon _viewIcon = new Icon("Eye", IconVariant.Regular, IconSize.Size16, "View");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        await RefreshListingsAsync();
+        _isCheckingAuth = false;
+    }
+
+    private async ValueTask<GridItemsProviderResult<BikeListingDto>> LoadPageAsync(GridItemsProviderRequest<BikeListingDto> request)
+    {
+        try
+        {
+            var pageSize = request.Count ?? _paginationState.ItemsPerPage;
+            var page = (request.StartIndex / pageSize) + 1;
+            var filter = BuildFilter(page, pageSize);
+            var result = await MarketplaceService.GetListingsAsync(filter);
+            _marketplaceItems = result.Items.ToList();
+            return GridItemsProviderResult.From(_marketplaceItems, result.Total);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load marketplace listings.");
+            return GridItemsProviderResult.From(Array.Empty<BikeListingDto>(), 0);
+        }
+    }
+
+    private BikeListingFilterDto BuildFilter(int page, int pageSize)
+    {
+        return new BikeListingFilterDto
+        {
+            Page = page,
+            PageSize = pageSize,
+            Make = _filterMake,
+            Model = _filterModel,
+            Type = _filterType,
+            City = _filterCity,
+            Country = _filterCountry,
+            ModelYear = _filterModelYear,
+            PriceMin = ParseDecimal(_filterPriceMinString),
+            PriceMax = ParseDecimal(_filterPriceMaxString)
+        };
+    }
+
+    private decimal? ParseDecimal(string? value)
+    {
+        if (decimal.TryParse(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private async Task RefreshListingsAsync()
+    {
+        if (_marketplaceGrid is not null)
+        {
+            await _marketplaceGrid.RefreshDataAsync(false);
+        }
+    }
+
+    private void ResetFilters()
+    {
+        _filterMake = null;
+        _filterModel = null;
+        _filterType = null;
+        _filterCity = null;
+        _filterCountry = null;
+        _filterModelYear = null;
+        _filterPriceMinString = null;
+        _filterPriceMaxString = null;
+    }
+
+    private void OpenNewListingDialog()
+    {
+        _formErrorMessage = null;
+        _newListing = new ListingModel();
+        _isNewListingDialogHidden = false;
+    }
+
+    private void CloseNewListingDialog()
+    {
+        _isNewListingDialogHidden = true;
+    }
+
+    private void OpenViewListingDialog(BikeListingDto listing)
+    {
+        _viewListing = listing;
+        _isViewListingDialogHidden = false;
+    }
+
+    private void CloseViewListingDialog()
+    {
+        _isViewListingDialogHidden = true;
+    }
+
+    private async Task CreateListingAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateBikeListingDto(
+                _newListing.Make ?? string.Empty,
+                _newListing.Model ?? string.Empty,
+                _newListing.Edition ?? string.Empty,
+                int.TryParse(_newListing.YearString, out var year) ? year : 0,
+                decimal.TryParse(_newListing.PriceString, out var price) ? price : 0m,
+                _newListing.Cc ?? string.Empty,
+                _newListing.Type ?? string.Empty,
+                _newListing.Mileage ?? string.Empty,
+                _newListing.Vin,
+                _newListing.Description,
+                _newListing.SellerPhone,
+                _newListing.SellerCity ?? string.Empty,
+                _newListing.SellerCountry ?? string.Empty);
+
+            await MarketplaceService.CreateListingAsync(dto);
+            await RefreshListingsAsync();
+            _isNewListingDialogHidden = true;
+            ToastService.ShowSuccess("Marketplace listing created successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create marketplace listing.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task CopyIdToClipboard(Guid id)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", id.ToString());
+        ToastService.ShowSuccess("Listing ID copied to clipboard.", 1500, "Copied");
+    }
+
+    private sealed class ListingModel
+    {
+        [Required(ErrorMessage = "Make is required")]
+        public string? Make { get; set; }
+
+        [Required(ErrorMessage = "Model is required")]
+        public string? Model { get; set; }
+
+        public string? Edition { get; set; }
+        public string? YearString { get; set; }
+        public string? PriceString { get; set; }
+        public string? Cc { get; set; }
+        [Required(ErrorMessage = "Type is required")]
+        public string? Type { get; set; }
+        public string? Mileage { get; set; }
+        public string? Vin { get; set; }
+        public string? Description { get; set; }
+        public string? SellerPhone { get; set; }
+        [Required(ErrorMessage = "Seller city is required")]
+        public string? SellerCity { get; set; }
+        [Required(ErrorMessage = "Seller country is required")]
+        public string? SellerCountry { get; set; }
+    }
+}

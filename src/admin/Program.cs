@@ -1,8 +1,8 @@
 using BikerHub.Admin.Components;
-using BikerHub.Data;
-using BikerHub.Entities;
-using BikerHub.Models;
-using BikerHub.Services;
+using BikerHub.Api.Data;
+using BikerHub.Api.Entities;
+using BikerHub.Api.Models;
+using BikerHub.Api.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -42,10 +42,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
+builder.Services.AddScoped<ILookUpService, LookUpService>();
+builder.Services.AddScoped<IDirectoryService, DirectoryService>();
+builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 builder.Services.AddScoped<IStorageService, MinioStorageService>();
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddHttpClient();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

@@ -1,0 +1,324 @@
+@page "/directories/businesstypes"
+@page "/businesstypes/list"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using System.Linq
+@using Microsoft.AspNetCore.Components.Authorization
+@using BikerHub.Api.Dtos
+@using BikerHub.Api.Services
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILookUpService LookUpService
+@inject IDialogService DialogService
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+@inject ILogger<List> Logger
+
+<PageTitle>Business Types</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Business Types</h2>
+        <button type="button" class="btn btn-primary" @onclick="OpenNewBusinessTypeDialog">New Business Type</button>
+    </div>
+
+    <FluentCard>
+        <FluentDataGrid @ref="_businessTypesGrid" TGridItem="LookUpDto"
+                        ItemsProvider="LoadBusinessTypeItemsAsync"
+                        ItemKey="@(item => item.Id)"
+                        ShowHover="true"
+                        DisplayMode="DataGridDisplayMode.Table"
+                        GridTemplateColumns="220px 2fr 160px">
+            <PropertyColumn Title="Code" Property="@(item => item.Code)" />
+            <PropertyColumn Title="Name" Property="@(item => item.Value)" />
+            <TemplateColumn Title="Actions">
+                <ChildContent Context="item">
+                    <div class="d-flex gap-2">
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_editIcon" OnClick="() => OpenEditBusinessTypeDialog(item)">
+                            <span class="visually-hidden">Edit</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_deleteIcon" OnClick="() => ConfirmDeleteBusinessTypeAsync(item)">
+                            <span class="visually-hidden">Delete</span>
+                        </FluentButton>
+                        <FluentIcon Icon="Icons.Regular.Size20.Copy" OnClick="() => CopyIdToClipboard(item.Id)" />
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+        </FluentDataGrid>
+    </FluentCard>
+
+    <FluentDialog @bind-Hidden="_isNewBusinessTypeDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Create new business type">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Create new business type</h4>
+
+            <EditForm Model="_newBusinessType" OnValidSubmit="CreateBusinessTypeAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <FluentTextField @bind-Value="_newBusinessType.Value" Placeholder="Business type name" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Code</label>
+                    <FluentTextField @bind-Value="_newBusinessType.Code" Placeholder="Optional code" Style="width: 100%;" />
+                    <small class="form-text text-muted">Optional. Defaults to the uppercase name if empty.</small>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseNewBusinessTypeDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Create Business Type")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+
+    <FluentDialog @bind-Hidden="_isEditBusinessTypeDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Edit business type">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Edit business type</h4>
+
+            <EditForm Model="_editBusinessType" OnValidSubmit="UpdateBusinessTypeAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <FluentTextField @bind-Value="_editBusinessType.Value" Placeholder="Business type name" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Code</label>
+                    <FluentTextField @bind-Value="_editBusinessType.Code" Placeholder="Optional code" Style="width: 100%;" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditBusinessTypeDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private List<LookUpDto> _businessTypes = new();
+    private FluentDataGrid<LookUpDto>? _businessTypesGrid;
+    private bool _isNewBusinessTypeDialogHidden = true;
+    private bool _isEditBusinessTypeDialogHidden = true;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private BusinessTypeModel _newBusinessType = new();
+    private BusinessTypeModel _editBusinessType = new();
+    private Guid _editingBusinessTypeId;
+    private readonly Icon _editIcon = new Icon("Edit", IconVariant.Regular, IconSize.Size16, "Edit");
+    private readonly Icon _deleteIcon = new Icon("Delete", IconVariant.Regular, IconSize.Size16, "Delete");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        await LoadBusinessTypesAsync();
+        _isCheckingAuth = false;
+    }
+
+    private async Task LoadBusinessTypesAsync()
+    {
+        try
+        {
+            var items = await LookUpService.GetLookUpsByCategoryAsync("BUSINESS TYPE");
+            _businessTypes = items.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load business types.");
+            _businessTypes = new List<LookUpDto>();
+        }
+    }
+
+    private async ValueTask<GridItemsProviderResult<LookUpDto>> LoadBusinessTypeItemsAsync(GridItemsProviderRequest<LookUpDto> request)
+    {
+        try
+        {
+            var items = await LookUpService.GetLookUpsByCategoryAsync("BUSINESS TYPE");
+            var list = items.ToList();
+            return GridItemsProviderResult.From(list, list.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load business type rows.");
+            return GridItemsProviderResult.From(Array.Empty<LookUpDto>(), 0);
+        }
+    }
+
+    private void OpenNewBusinessTypeDialog()
+    {
+        _formErrorMessage = null;
+        _newBusinessType = new BusinessTypeModel();
+        _isNewBusinessTypeDialogHidden = false;
+    }
+
+    private void CloseNewBusinessTypeDialog()
+    {
+        _isNewBusinessTypeDialogHidden = true;
+    }
+
+    private void OpenEditBusinessTypeDialog(LookUpDto item)
+    {
+        _formErrorMessage = null;
+        _editingBusinessTypeId = item.Id;
+        _editBusinessType = new BusinessTypeModel
+        {
+            Code = item.Code,
+            Value = item.Value
+        };
+        _isEditBusinessTypeDialogHidden = false;
+    }
+
+    private void CloseEditBusinessTypeDialog()
+    {
+        _isEditBusinessTypeDialogHidden = true;
+    }
+
+    private async Task ConfirmDeleteBusinessTypeAsync(LookUpDto item)
+    {
+        await DialogService.ShowConfirmationAsync(
+            this,
+            async dialogResult =>
+            {
+                if (dialogResult.Cancelled)
+                {
+                    return;
+                }
+
+                _isSubmitting = true;
+                try
+                {
+                    await LookUpService.DeleteLookUpAsync(item.Id);
+                    await LoadBusinessTypesAsync();
+                    ToastService.ShowSuccess("Business type deleted successfully.", 2000, "Deleted");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to delete business type.");
+                    ToastService.ShowError("Failed to delete business type.", 2000, "Error");
+                }
+                finally
+                {
+                    _isSubmitting = false;
+                }
+            },
+            $"Are you sure you want to delete '{item.Value}'?",
+            "Delete",
+            "Cancel",
+            "Confirm delete");
+    }
+
+    private async Task CreateBusinessTypeAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new LookUpDto
+            {
+                Category = "BUSINESS TYPE",
+                Code = string.IsNullOrWhiteSpace(_newBusinessType.Code) ? _newBusinessType.Value?.ToUpperInvariant() ?? string.Empty : _newBusinessType.Code,
+                Value = _newBusinessType.Value?.Trim()
+            };
+
+            await LookUpService.CreateLookUpAsync(dto);
+            await LoadBusinessTypesAsync();
+            _isNewBusinessTypeDialogHidden = true;
+            ToastService.ShowSuccess("Business type created successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create business type.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task UpdateBusinessTypeAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new LookUpDto
+            {
+                Category = "BUSINESS TYPE",
+                Code = string.IsNullOrWhiteSpace(_editBusinessType.Code) ? _editBusinessType.Value?.ToUpperInvariant() ?? string.Empty : _editBusinessType.Code,
+                Value = _editBusinessType.Value?.Trim()
+            };
+
+            await LookUpService.UpdateLookUpAsync(_editingBusinessTypeId, dto);
+            await LoadBusinessTypesAsync();
+            _isEditBusinessTypeDialogHidden = true;
+            ToastService.ShowSuccess("Business type updated successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update business type.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task CopyIdToClipboard(Guid id)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", id.ToString());
+        ToastService.ShowSuccess("ID copied to clipboard.", 1500, "Copied");
+    }
+
+    private sealed class BusinessTypeModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string? Value { get; set; }
+
+        public string? Code { get; set; }
+    }
+}
