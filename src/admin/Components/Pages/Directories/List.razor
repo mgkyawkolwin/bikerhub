@@ -299,7 +299,7 @@
                 PageSize = pageSize
             };
 
-            var result = await DirectoryService.GetDirectoriesAsync(filterDto, _currentUserId);
+            var result = await DirectoryService.GetDirectoriesAsync(filterDto);
             _directories = result.Items.ToList();
             return GridItemsProviderResult.From(_directories, result.Total);
         }
@@ -363,7 +363,7 @@
                 _isSubmitting = true;
                 try
                 {
-                    await DirectoryService.DeleteDirectoryAsync(directory.Id, _currentUserId);
+                    await DirectoryService.DeleteDirectoryAsync(directory.Id);
                     if (_directoryGrid is not null)
                     {
                         await _directoryGrid.RefreshDataAsync(false);
@@ -409,7 +409,7 @@
                 CoverImageUrl = _newDirectory.CoverImageUrl
             };
 
-            await DirectoryService.CreateDirectoryAsync(dto, _currentUserId);
+            await DirectoryService.CreateDirectoryAsync(dto);
             if (_directoryGrid is not null)
             {
                 await _directoryGrid.RefreshDataAsync(false);
@@ -452,7 +452,7 @@
                 CoverImageUrl = _editDirectory.CoverImageUrl
             };
 
-            await DirectoryService.UpdateDirectoryAsync(_editingDirectoryId, dto, _currentUserId);
+            await DirectoryService.UpdateDirectoryAsync(_editingDirectoryId, dto);
             if (_directoryGrid is not null)
             {
                 await _directoryGrid.RefreshDataAsync(false);

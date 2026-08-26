@@ -119,7 +119,7 @@ public class RidesController : BaseController
                 return BadRequest(new { Success = false, Message = "A media file is required." });
             }
 
-            var ride = await _rideService.UploadRideMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var ride = await _rideService.UploadRideMediaAsync(id, file);
             return Ok(new { Success = true, Data = ride });
         }
         catch (CustomException ex)
@@ -141,7 +141,7 @@ public class RidesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: DeleteRideMedia({RideId}, {MediaId})", id, mediaId);
-            await _rideService.DeleteRideMediaAsync(id, mediaId, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            await _rideService.DeleteRideMediaAsync(id, mediaId);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)

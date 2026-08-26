@@ -81,7 +81,7 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: CreateGarageBike({GarageBike})", JsonSerializer.Serialize(garageBike));
-            var createdGarageBike = await _garageBikeService.CreateGarageBikeAsync(garageBike, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var createdGarageBike = await _garageBikeService.CreateGarageBikeAsync(garageBike);
             return Ok(new { Success = true, Data = createdGarageBike });
         }
         catch (CustomException ex)
@@ -103,7 +103,7 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: UpdateGarageBike({GarageBikeId})", id);
-            var garageBike = await _garageBikeService.UpdateGarageBikeAsync(id, updatedGarageBike, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var garageBike = await _garageBikeService.UpdateGarageBikeAsync(id, updatedGarageBike);
             if (garageBike is null)
             {
                 return NotFound(new { Success = false, Message = "Garage bike not found." });
@@ -135,7 +135,7 @@ public class GarageBikesController : BaseController
                 return BadRequest(new { Success = false, Message = "A media file is required." });
             }
 
-            var garageBike = await _garageBikeService.UploadGarageBikeMediaAsync(id, file, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var garageBike = await _garageBikeService.UploadGarageBikeMediaAsync(id, file);
             return Ok(new { Success = true, Data = garageBike });
         }
         catch (CustomException ex)
@@ -157,7 +157,7 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: DeleteGarageBike({GarageBikeId})", id);
-            var garageBike = await _garageBikeService.DeleteGarageBikeAsync(id, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            var garageBike = await _garageBikeService.DeleteGarageBikeAsync(id);
             if (garageBike is null)
             {
                 return NotFound(new { Success = false, Message = "Garage bike not found." });
@@ -184,7 +184,7 @@ public class GarageBikesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: DeleteGarageBikeMedia({GarageBikeId}, {MediaId})", id, mediaId);
-            await _garageBikeService.DeleteGarageBikeMediaAsync(id, mediaId, GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user."));
+            await _garageBikeService.DeleteGarageBikeMediaAsync(id, mediaId);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)

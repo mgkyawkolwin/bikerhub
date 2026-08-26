@@ -18,14 +18,14 @@ public enum ChallengePeriod
 
 public interface IChallengeService
 {
-    Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period, Guid? currentUserId = null);
-    Task<IEnumerable<ChallengeDto>> GetAllAsync(Guid? currentUserId = null);
-    Task<ChallengeDto?> GetChallengeByIdAsync(Guid id, Guid? currentUserId = null);
+    Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period);
+    Task<IEnumerable<ChallengeDto>> GetAllAsync();
+    Task<ChallengeDto?> GetChallengeByIdAsync(Guid id);
     Task<ChallengeDto> CreateAsync(CreateChallengeDto dto, IFormFile? coverPhoto = null);
     Task<ChallengeDto?> UpdateAsync(Guid id, UpdateChallengeDto dto, IFormFile? coverPhoto = null);
     Task<bool> DeleteAsync(Guid id);
-    Task<bool> JoinChallengeAsync(Guid challengeId, Guid userId);
-    Task<bool> LeaveChallengeAsync(Guid challengeId, Guid userId);
+    Task<bool> JoinChallengeAsync(Guid challengeId);
+    Task<bool> LeaveChallengeAsync(Guid challengeId);
 }
 
 public class ChallengeService : IChallengeService
@@ -34,16 +34,18 @@ public class ChallengeService : IChallengeService
     private readonly IStorageService? _storageService;
     private readonly MinioSettings? _minioSettings;
     private readonly ILogger<ChallengeService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public ChallengeService(AppDbContext dbContext, IStorageService? storageService, IOptions<MinioSettings>? minioOptions = null, ILogger<ChallengeService>? logger = null)
+    public ChallengeService(AppDbContext dbContext, IStorageService? storageService, IOptions<MinioSettings>? minioOptions = null, ILogger<ChallengeService>? logger = null, ICurrentUserService currentUserService = null!)
     {
         _dbContext = dbContext;
         _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
         _minioSettings = minioOptions?.Value ?? throw new ArgumentNullException(nameof(minioOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
     }
 
-    public async Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period, Guid? currentUserId = null)
+    public async Task<IEnumerable<ChallengeDto>> GetChallengesByPeriodAsync(ChallengePeriod period)
     {
         await _dbContext.Database.EnsureCreatedAsync();
         var challenges = await _dbContext.Challenges
@@ -57,12 +59,12 @@ public class ChallengeService : IChallengeService
         return await Task.WhenAll(filteredChallenges.Select(async challenge =>
         {
             var profilePhotoUrls = await GetProfilePhotoUrlsAsync(challenge.Participants.Select(participant => participant.UserId));
-            return MapChallenge(challenge, currentUserId, profilePhotoUrls);
+            return MapChallenge(challenge, Guid.Parse(_currentUserService.UserId!), profilePhotoUrls);
         }))
         .ContinueWith(task => (IEnumerable<ChallengeDto>)task.Result, TaskScheduler.Default);
     }
 
-    public async Task<ChallengeDto?> GetChallengeByIdAsync(Guid id, Guid? currentUserId = null)
+    public async Task<ChallengeDto?> GetChallengeByIdAsync(Guid id)
     {
         await _dbContext.Database.EnsureCreatedAsync();
         var challenge = await _dbContext.Challenges
@@ -77,10 +79,10 @@ public class ChallengeService : IChallengeService
         }
 
         var profilePhotoUrls = await GetProfilePhotoUrlsAsync(challenge.Participants.Select(participant => participant.UserId));
-        return MapChallenge(challenge, currentUserId, profilePhotoUrls);
+        return MapChallenge(challenge, Guid.Parse(_currentUserService.UserId!), profilePhotoUrls);
     }
 
-    public async Task<IEnumerable<ChallengeDto>> GetAllAsync(Guid? currentUserId = null)
+    public async Task<IEnumerable<ChallengeDto>> GetAllAsync()
     {
         await _dbContext.Database.EnsureCreatedAsync();
         var challenges = await _dbContext.Challenges
@@ -91,7 +93,7 @@ public class ChallengeService : IChallengeService
             .ToListAsync();
 
         var profilePhotoUrls = await GetProfilePhotoUrlsAsync(challenges.SelectMany(challenge => challenge.Participants).Select(participant => participant.UserId));
-        return challenges.Select(challenge => MapChallenge(challenge, currentUserId, profilePhotoUrls));
+        return challenges.Select(challenge => MapChallenge(challenge, Guid.Parse(_currentUserService.UserId!), profilePhotoUrls));
     }
 
     public async Task<ChallengeDto> CreateAsync(CreateChallengeDto dto, IFormFile? coverPhoto = null)
@@ -122,7 +124,7 @@ public class ChallengeService : IChallengeService
         _dbContext.Challenges.Add(challenge);
         await _dbContext.SaveChangesAsync();
         _logger.LogTrace("New challenge saved successfully with ID: {ChallengeId}", challenge.Id);
-        return MapChallenge(challenge);
+        return MapChallenge(challenge, Guid.Parse(_currentUserService.UserId!), new Dictionary<Guid, string>());
     }
 
     public async Task<ChallengeDto?> UpdateAsync(Guid id, UpdateChallengeDto dto, IFormFile? coverPhoto = null)
@@ -180,7 +182,7 @@ public class ChallengeService : IChallengeService
         challenge.UpdatedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        return MapChallenge(challenge);
+        return MapChallenge(challenge, Guid.Parse(_currentUserService.UserId!), new Dictionary<Guid, string>());
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -207,7 +209,7 @@ public class ChallengeService : IChallengeService
         return true;
     }
 
-    public async Task<bool> JoinChallengeAsync(Guid challengeId, Guid userId)
+    public async Task<bool> JoinChallengeAsync(Guid challengeId)
     {
         await _dbContext.Database.EnsureCreatedAsync();
         var challenge = await _dbContext.Challenges
@@ -219,7 +221,7 @@ public class ChallengeService : IChallengeService
         }
 
         var existingParticipant = await _dbContext.Set<ChallengeParticipantEntity>()
-            .FirstOrDefaultAsync(participant => participant.ChallengeId == challengeId && participant.UserId == userId);
+            .FirstOrDefaultAsync(participant => participant.ChallengeId == challengeId && participant.UserId == Guid.Parse(_currentUserService.UserId!));
 
         if (existingParticipant is not null)
         {
@@ -229,7 +231,7 @@ public class ChallengeService : IChallengeService
         _dbContext.Set<ChallengeParticipantEntity>().Add(new ChallengeParticipantEntity
         {
             ChallengeId = challengeId,
-            UserId = userId,
+            UserId = Guid.Parse(_currentUserService.UserId!),
             DistanceInKm = 0,
         });
 
@@ -238,7 +240,7 @@ public class ChallengeService : IChallengeService
         return true;
     }
 
-    public async Task<bool> LeaveChallengeAsync(Guid challengeId, Guid userId)
+    public async Task<bool> LeaveChallengeAsync(Guid challengeId)
     {
         await _dbContext.Database.EnsureCreatedAsync();
         var challenge = await _dbContext.Challenges
@@ -250,7 +252,7 @@ public class ChallengeService : IChallengeService
         }
 
         var participant = await _dbContext.Set<ChallengeParticipantEntity>()
-            .FirstOrDefaultAsync(entry => entry.ChallengeId == challengeId && entry.UserId == userId);
+            .FirstOrDefaultAsync(entry => entry.ChallengeId == challengeId && entry.UserId == Guid.Parse(_currentUserService.UserId!));
 
         if (participant is null)
         {

@@ -13,31 +13,33 @@ namespace BikerHub.Api.Services;
 
 public interface IDirectoryService
 {
-    Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto, Guid currentUserId);
-    Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id, Guid currentUserId);
-    Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto, Guid currentUserId);
-    Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto, Guid currentUserId);
-    Task DeleteDirectoryAsync(Guid directoryId, Guid currentUserId);
+    Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto);
+    Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id);
+    Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto);
+    Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto);
+    Task DeleteDirectoryAsync(Guid directoryId);
     Task<DirectoryDto> UploadDirectoryLogoAsync(Guid directoryId, IFormFile file);
     Task<DirectoryDto> UploadDirectoryCoverImageAsync(Guid directoryId, IFormFile file);
-    Task ToggleFavoriteAsync(Guid entityId, Guid currentUserId);
-    Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, Guid currentUserId, int rating);
+    Task ToggleFavoriteAsync(Guid entityId);
+    Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, int rating);
 }
 
 public class DirectoryService : IDirectoryService
 {
     private readonly AppDbContext _dbContext;
     private readonly ILogger<DirectoryService> _logger;
-    private readonly IStorageService? _storageService;
+    private readonly IStorageService _storageService;
+    private readonly ICurrentUserService _currentUserService;
 
-    public DirectoryService(AppDbContext dbContext, ILogger<DirectoryService> logger, IStorageService? storageService = null)
+    public DirectoryService(AppDbContext dbContext, ILogger<DirectoryService> logger, IStorageService storageService, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto, Guid currentUserId)
+    public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto)
     {
         _logger.LogInformation("CALLED GetDirectoriesAsync()");
         _logger.LogDebug(
@@ -103,10 +105,10 @@ public class DirectoryService : IDirectoryService
 
                 // Populated directly into DTO without needing [NotMapped] on Entity
                 IsFavorited = _dbContext.Favorites
-                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId),
+                    .Any(f => f.EntityId == d.Id && f.UserId == Guid.Parse(_currentUserService.UserId!)),
 
                 MyRating = _dbContext.Ratings
-                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId)
+                    .Where(r => r.EntityId == d.Id && r.UserId == Guid.Parse(_currentUserService.UserId!))
                     .Select(r => (int?)r.Rating)
                     .FirstOrDefault()
             })
@@ -124,7 +126,7 @@ public class DirectoryService : IDirectoryService
         );
     }
 
-    public async Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id, Guid currentUserId)
+    public async Task<DirectoryDto?> GetDirectoryByIdAsync(Guid id)
     {
         _logger.LogInformation("CALLED GetDirectoryByIdAsync()");
         _logger.LogDebug("GetDirectoryByIdAsync called with id {Id}", id);
@@ -153,10 +155,10 @@ public class DirectoryService : IDirectoryService
 
                 // Populated directly into DTO without needing [NotMapped] on Entity
                 IsFavorited = _dbContext.Favorites
-                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId),
+                    .Any(f => f.EntityId == d.Id && f.UserId == Guid.Parse(_currentUserService.UserId!)),
 
                 MyRating = _dbContext.Ratings
-                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId)
+                    .Where(r => r.EntityId == d.Id && r.UserId == Guid.Parse(_currentUserService.UserId!))
                     .Select(r => (int?)r.Rating)
                     .FirstOrDefault()
             })
@@ -171,7 +173,7 @@ public class DirectoryService : IDirectoryService
         return directory;
     }
 
-    public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto, Guid currentUserId)
+    public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto)
     {
         _logger.LogInformation("CALLED CreateDirectoryAsync()");
         _logger.LogDebug("CreateDirectoryAsync called with dto {@Dto}", dto);
@@ -192,7 +194,7 @@ public class DirectoryService : IDirectoryService
             CoverImageUrl = dto.CoverImageUrl,
             GoogleMapUrl = dto.GoogleMapUrl,
             BusinessType = dto.BusinessType,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
         };
 
         _dbContext.Directories.Add(entity);
@@ -207,9 +209,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.BusinessType!.ToUpperInvariant(),
                 Value = dto.BusinessType,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newBusinessType);
         }
@@ -224,9 +226,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.City!.ToUpperInvariant(),
                 Value = dto.City,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newCity);
         }
@@ -240,9 +242,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.State!.ToUpperInvariant(),
                 Value = dto.State,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newStateDivision);
         }
@@ -257,9 +259,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.Country!.ToUpperInvariant(),
                 Value = dto.Country,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newCountry);
         }
@@ -271,7 +273,7 @@ public class DirectoryService : IDirectoryService
         return MapDirectory(entity);
     }
 
-    public async Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto, Guid currentUserId)
+    public async Task<DirectoryDto> UpdateDirectoryAsync(Guid directoryId, CreateDirectoryDto dto)
     {
         _logger.LogInformation("CALLED UpdateDirectoryAsync()");
         _logger.LogDebug("UpdateDirectoryAsync called with directoryId {DirectoryId} and dto {@Dto}", directoryId, dto);
@@ -285,9 +287,9 @@ public class DirectoryService : IDirectoryService
             throw new CustomException("Directory entry not found.");
         }
 
-        if (directory.CreatedById != currentUserId)
+        if (directory.CreatedById != Guid.Parse(_currentUserService.UserId!))
         {
-            _logger.LogWarning("Not authorized to update directory entry {DirectoryId} by user {CurrentUserId}", directoryId, currentUserId);
+            _logger.LogWarning("Not authorized to update directory entry {DirectoryId} by user {CurrentUserId}", directoryId, _currentUserService.UserId);
             throw new CustomException("Not authorized to update this directory entry.");
         }
 
@@ -312,7 +314,7 @@ public class DirectoryService : IDirectoryService
             directory.CoverImageUrl = dto.CoverImageUrl;
         }
 
-        directory.UpdatedById = currentUserId;
+        directory.UpdatedById = Guid.Parse(_currentUserService.UserId!);
         directory.UpdatedAtUtc = DateTime.UtcNow;
 
         _dbContext.Directories.Update(directory);
@@ -327,9 +329,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.BusinessType!.ToUpperInvariant(),
                 Value = dto.BusinessType,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newBusinessType);
         }
@@ -344,9 +346,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.City!.ToUpperInvariant(),
                 Value = dto.City,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newCity);
         }
@@ -360,9 +362,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.State!.ToUpperInvariant(),
                 Value = dto.State,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newStateDivision);
         }
@@ -377,9 +379,9 @@ public class DirectoryService : IDirectoryService
                 Code = dto.Country!.ToUpperInvariant(),
                 Value = dto.Country,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newCountry);
         }
@@ -389,10 +391,10 @@ public class DirectoryService : IDirectoryService
         return MapDirectory(directory);
     }
 
-    public async Task DeleteDirectoryAsync(Guid directoryId, Guid currentUserId)
+    public async Task DeleteDirectoryAsync(Guid directoryId)
     {
         _logger.LogInformation("CALLED DeleteDirectoryAsync()");
-        _logger.LogDebug("DeleteDirectoryAsync called with directoryId {DirectoryId} and currentUserId {CurrentUserId}", directoryId, currentUserId);
+        _logger.LogDebug("DeleteDirectoryAsync called with directoryId {DirectoryId} and currentUserId {CurrentUserId}", directoryId, _currentUserService.UserId);
 
         var directory = await _dbContext.Directories.FindAsync(directoryId);
         if (directory is null)
@@ -401,9 +403,9 @@ public class DirectoryService : IDirectoryService
             throw new CustomException("Directory entry not found.");
         }
 
-        if (directory.CreatedById != currentUserId)
+        if (directory.CreatedById != Guid.Parse(_currentUserService.UserId!))
         {
-            _logger.LogWarning("Not authorized to delete directory entry {DirectoryId} by user {CurrentUserId}", directoryId, currentUserId);
+            _logger.LogWarning("Not authorized to delete directory entry {DirectoryId} by user {CurrentUserId}", directoryId, _currentUserService.UserId);
             throw new CustomException("Not authorized to delete this directory entry.");
         }
 
@@ -411,10 +413,10 @@ public class DirectoryService : IDirectoryService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task ToggleFavoriteAsync(Guid entityId, Guid currentUserId)
+    public async Task ToggleFavoriteAsync(Guid entityId)
     {
         _logger.LogInformation("CALLED ToggleFavoriteAsync()");
-        _logger.LogDebug("ToggleFavoriteAsync called with entityId {EntityId} and currentUserId {CurrentUserId}", entityId, currentUserId);
+        _logger.LogDebug("ToggleFavoriteAsync called with entityId {EntityId} and currentUserId {CurrentUserId}", entityId, _currentUserService.UserId);
 
         var directory = await _dbContext.Directories.FindAsync(entityId);
         if (directory is null)
@@ -424,7 +426,7 @@ public class DirectoryService : IDirectoryService
         }
 
         var favorite = await _dbContext.Favorites
-            .FirstOrDefaultAsync(f => f.EntityId == entityId && f.UserId == currentUserId);
+            .FirstOrDefaultAsync(f => f.EntityId == entityId && f.UserId == Guid.Parse(_currentUserService.UserId!));
 
         if (favorite is null)
         {
@@ -432,11 +434,11 @@ public class DirectoryService : IDirectoryService
             {
                 Id = Guid.NewGuid(),
                 EntityId = entityId,
-                UserId = currentUserId,
+                UserId = Guid.Parse(_currentUserService.UserId!),
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
 
             _dbContext.Favorites.Add(favorite);
@@ -449,16 +451,16 @@ public class DirectoryService : IDirectoryService
         }
 
         directory.UpdatedAtUtc = DateTime.UtcNow;
-        directory.UpdatedById = currentUserId;
+        directory.UpdatedById = Guid.Parse(_currentUserService.UserId!);
 
         _dbContext.Directories.Update(directory);
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, Guid currentUserId, int rating)
+    public async Task<DirectoryDto?> SubmitRatingAsync(Guid entityId, int rating)
     {
         _logger.LogInformation("CALLED SubmitRatingAsync()");
-        _logger.LogDebug("SubmitRatingAsync called with entityId {EntityId}, rating {Rating} and currentUserId {CurrentUserId}", entityId, rating, currentUserId);
+        _logger.LogDebug("SubmitRatingAsync called with entityId {EntityId}, rating {Rating} and currentUserId {CurrentUserId}", entityId, rating, _currentUserService.UserId);
 
         var directory = await _dbContext.Directories.FindAsync(entityId);
         if (directory is null)
@@ -468,7 +470,7 @@ public class DirectoryService : IDirectoryService
         }
 
         var existingRating = await _dbContext.Ratings
-            .FirstOrDefaultAsync(r => r.EntityId == entityId && r.UserId == currentUserId);
+            .FirstOrDefaultAsync(r => r.EntityId == entityId && r.UserId == Guid.Parse(_currentUserService.UserId!));
 
         if (existingRating is null)
         {
@@ -476,12 +478,12 @@ public class DirectoryService : IDirectoryService
             {
                 Id = Guid.NewGuid(),
                 EntityId = entityId,
-                UserId = currentUserId,
+                UserId = Guid.Parse(_currentUserService.UserId!),
                 Rating = rating,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.Ratings.Add(existingRating);
             var ratingCount = (directory.RatingCount ?? 0) + 1;
@@ -496,7 +498,7 @@ public class DirectoryService : IDirectoryService
             totalRating = totalRating - existingRating.Rating + rating;
             existingRating.Rating = rating;
             existingRating.UpdatedAtUtc = DateTime.UtcNow;
-            existingRating.UpdatedById = currentUserId;
+            existingRating.UpdatedById = Guid.Parse(_currentUserService.UserId!);
             _dbContext.Ratings.Update(existingRating);
             directory.Rating = directory.RatingCount.HasValue && directory.RatingCount.Value > 0
                 ? totalRating / directory.RatingCount.Value
@@ -504,7 +506,7 @@ public class DirectoryService : IDirectoryService
         }
 
         directory.UpdatedAtUtc = DateTime.UtcNow;
-        directory.UpdatedById = currentUserId;
+        directory.UpdatedById = Guid.Parse(_currentUserService.UserId!);
 
         _dbContext.Directories.Update(directory);
         await _dbContext.SaveChangesAsync();

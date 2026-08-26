@@ -1,9 +1,14 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, type Href, useRouter } from 'expo-router';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
+import { container, MessageServiceToken } from '@/services';
+import type { MessageService } from '@/services';
+import SnackBar from '@/components/snackbar';
+import Message from '@/models/message';
 
 function useSections() {
   const { t } = useI18n();
@@ -64,6 +69,37 @@ export default function HomeScreen() {
   const { colors } = useThemeContext();
   const router = useRouter();
   const sections = useSections();
+  const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+
+  const loadUnreadMessages = useCallback(async () => {
+    try {
+      const response = await messageService.hasUnreadMessages();
+      if (!response.ok) {
+        SnackBar.Error(`${response.status} - ${response.statusText} : Invalid server response. Please try again.`);
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed to load unread status. Please try again.');
+        return;
+      }
+
+      const hasUnread = responseJson.data?.hasUnread === true;
+      setHasUnreadMessages(hasUnread);
+    } catch {
+      // ignore polling failures silently
+    }
+  }, [messageService]);
+
+  useEffect(() => {
+    void loadUnreadMessages();
+    const interval = setInterval(() => {
+      void loadUnreadMessages();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [loadUnreadMessages]);
 
   return (
     <View style={[$.root, { backgroundColor: colors.background }]}>
@@ -80,14 +116,14 @@ export default function HomeScreen() {
             <Text style={[$.logo, { color: colors.text, marginLeft: 10 }]}>BIKERHUB</Text>
           </View>
           <View style={$.headerSide}>
-            <TouchableOpacity hitSlop={12} onPress={() => router.push('/search')}>
+            <TouchableOpacity hitSlop={12} onPress={() => {}}>
               <MaterialIcons name="search" size={22} color={colors.text} />
             </TouchableOpacity>
             <Link href="/message/messages" asChild>
               <TouchableOpacity hitSlop={12}>
                 <View>
                   <MaterialIcons name="notifications-none" size={22} color={colors.text} />
-                  <View style={$.bellDot} />
+                  {hasUnreadMessages ? <View style={$.bellDot} /> : null}
                 </View>
               </TouchableOpacity>
             </Link>

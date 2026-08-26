@@ -18,10 +18,14 @@ public interface IRouteService
 public class RouteService : IRouteService
 {
     private readonly AppDbContext _dbContext;
+    private readonly ILogger<RouteService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public RouteService(AppDbContext dbContext)
+    public RouteService(AppDbContext dbContext, ILogger<RouteService> logger, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _logger = logger;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PaginatedResultDto<RouteDto>> GetRoutesAsync(int page, int pageSize)
@@ -49,9 +53,11 @@ public class RouteService : IRouteService
             Description = dto.Description,
             Distance = dto.Distance,
             Duration = dto.Duration,
-            CreatedById = dto.CreatedById,
             OsrmResponseJson = dto.OsrmResponseJson,
             CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!),
         };
 
         _dbContext.Routes.Add(entity);
@@ -73,7 +79,8 @@ public class RouteService : IRouteService
         entity.Description = dto.Description;
         entity.Distance = dto.Distance;
         entity.Duration = dto.Duration;
-        entity.CreatedById = dto.CreatedById;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.UpdatedById = Guid.Parse(_currentUserService.UserId!);
         entity.OsrmResponseJson = dto.OsrmResponseJson;
 
         await _dbContext.SaveChangesAsync();

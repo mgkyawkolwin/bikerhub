@@ -14,7 +14,7 @@ public interface IStolenBikeService
     Task<StolenBikeReportDto> CreateReportAsync(StolenBikeReportDto dto);
     Task<PaginatedResultDto<StolenBikeReportDto>> GetReportsAsync(StolenBikeReportFilterDto filter);
     Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id);
-    Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId);
+    Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file);
 }
 
 public class StolenBikeService : IStolenBikeService
@@ -113,7 +113,7 @@ public class StolenBikeService : IStolenBikeService
         return report?.ResolveMediaUrls(_storageService);
     }
 
-    public async Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file, Guid currentUserId)
+    public async Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file)
     {
         var report = await _dbContext.StolenBikeReports.FindAsync(reportId);
         if (report is null)
@@ -127,9 +127,9 @@ public class StolenBikeService : IStolenBikeService
             ContentType = file.ContentType ?? "application/octet-stream",
             Size = file.Length,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
             UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedById = currentUserId
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
         _dbContext.Medias.Add(media);
         await _dbContext.SaveChangesAsync();

@@ -29,7 +29,7 @@ public class ChatController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetChatHeads(page={Page}, pageSize={PageSize})", page, pageSize);
-            var result = await _chatService.GetChatHeadsAsync(page, pageSize, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
+            var result = await _chatService.GetChatHeadsAsync(page, pageSize);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -50,7 +50,7 @@ public class ChatController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetChatMessages(friendId={FriendId})", friendId);
-            var result = await _chatService.GetChatMessagesAsync(friendId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
+            var result = await _chatService.GetChatMessagesAsync(friendId);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -71,7 +71,7 @@ public class ChatController : BaseController
         try
         {
             _logger.LogDebug("CALLED: SendChatMessage(dto={Dto})", JsonSerializer.Serialize(dto));
-            var message = await _chatService.SendChatMessageAsync(GetCurrentUserId() ?? throw new CustomException("Invalid session user."), dto);
+            var message = await _chatService.SendChatMessageAsync(dto);
             return Ok(new { Success = true, Data = message });
         }
         catch (CustomException ex)
@@ -92,7 +92,7 @@ public class ChatController : BaseController
         try
         {
             _logger.LogDebug("CALLED: MarkMessageAsRead(messageId={MessageId})", messageId);
-            await _chatService.MarkChatMessageAsReadAsync(messageId, GetCurrentUserId() ?? throw new CustomException("Invalid session user."));
+            await _chatService.MarkChatMessageAsReadAsync(messageId);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)

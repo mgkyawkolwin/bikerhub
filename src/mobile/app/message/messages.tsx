@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n';
 import { container, MessageServiceToken } from '@/services';
 import type { MessageService } from '@/services';
 import Message from '@/models/message';
+import SnackBar from '@/components/snackbar';
 
 
 export default function MessagesScreen() {
@@ -23,6 +24,7 @@ export default function MessagesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
 
   const loadMessages = useCallback(
     async (nextPage: number, replace = false) => {
@@ -35,7 +37,17 @@ export default function MessagesScreen() {
       }
 
       try {
-        const pageData = await messageService.getMessages(nextPage, pageSize);
+        const response = await messageService.getMessages(nextPage, pageSize);
+        if (!response.ok) {
+          SnackBar.Error(`${response.status} - ${response.statusText} : Invalid server resposne. Please try again.`);
+          return;
+        }
+        const responseJson = await response.json();
+        if (!responseJson.success) {
+          SnackBar.Error(responseJson.message || 'Failed to load messages. Please try again.');
+          return;
+        }
+        const pageData = responseJson.data;
         setItems((prev) => (replace || nextPage === 1 ? pageData.items : [...prev, ...pageData.items]));
         setPage(pageData.page);
         setTotalPages(pageData.totalPages);
@@ -60,7 +72,36 @@ export default function MessagesScreen() {
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity
+            onPress={async () => {
+              setMarkingAllRead(true);
+              try {
+                const response = await messageService.markAllMessagesAsRead();
+                if (!response.ok) {
+                  SnackBar.Error(`${response.status} - ${response.statusText}. Failed to mark all messages as read.`);
+                  return;
+                }
+                const json = await response.json();
+                if (!json.success) {
+                  SnackBar.Error(json.message || 'Failed to mark all messages as read.');
+                  return;
+                }
+                SnackBar.Success('All messages marked as read.');
+                void loadMessages(1, true);
+              } catch (error) {
+                SnackBar.Error('Unable to mark all messages as read. Please try again.');
+              } finally {
+                setMarkingAllRead(false);
+              }
+            }}
+            hitSlop={14}
+            disabled={markingAllRead}
+            style={[styles.markAllButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Text style={[styles.markAllText, { color: colors.text }]}>
+              {markingAllRead ? 'Marking...' : 'Mark All Read'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -145,6 +186,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
+  },
+  markAllButton: {
+    minWidth: 110,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 10,
+  },
+  markAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   list: {
     paddingHorizontal: 16,

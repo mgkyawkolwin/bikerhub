@@ -20,11 +20,15 @@ public class UserService : IUserService
 {
     private readonly AppDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
+    private readonly ILogger<UserService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public UserService(AppDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
+    public UserService(AppDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, ILogger<UserService> logger, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _logger = logger;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PaginatedResultDto<UserDto>> GetUsersAsync(int page, int pageSize, string? search = null)

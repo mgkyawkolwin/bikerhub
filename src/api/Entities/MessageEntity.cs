@@ -11,4 +11,5 @@ public class Message : BaseEntity<Guid>
     public DateTime DateTimeUTC { get; set; } = DateTime.UtcNow;
     public bool Read { get; set; }
     public Guid UserId { get; set; }
+    public Guid? ParentMessageId { get; set; }
 }

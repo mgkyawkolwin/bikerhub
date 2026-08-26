@@ -33,7 +33,7 @@ public class DirectoriesController : BaseController
             _logger.LogDebug("CALLED: GetDirectories(filterDto={@FilterDto})", JsonSerializer.Serialize(filterDto));
 
             filterDto = filterDto ?? new GetDirectoriesFilterDto();
-            var result = await _directoryService.GetDirectoriesAsync(filterDto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated."));
+            var result = await _directoryService.GetDirectoriesAsync(filterDto);
             return Ok(new { Success = true, Data = result });
         }
         catch (CustomException ex)
@@ -55,7 +55,7 @@ public class DirectoriesController : BaseController
         {
             _logger.LogDebug("CALLED: GetDirectoryById({Id})", id);
 
-            var directory = await _directoryService.GetDirectoryByIdAsync(id, GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated."));
+            var directory = await _directoryService.GetDirectoryByIdAsync(id);
             if (directory is null)
             {
                 _logger.LogWarning("Directory entry not found for id {Id}", id);
@@ -83,7 +83,7 @@ public class DirectoriesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: CreateDirectory(CreateDirectoryDto: {@Dto})", dto);
-            var directory = await _directoryService.CreateDirectoryAsync(dto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated."));
+            var directory = await _directoryService.CreateDirectoryAsync(dto);
             return Ok(new { Success = true, Data = directory });
         }
         catch (CustomException ex)
@@ -115,7 +115,7 @@ public class DirectoriesController : BaseController
             {
                 return BadRequest(new { Success = false, Message = "Request body cannot be null." });
             }
-            var directory = await _directoryService.UpdateDirectoryAsync(id, dto, GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated."));
+            var directory = await _directoryService.UpdateDirectoryAsync(id, dto);
             return Ok(new { Success = true, Data = directory });
         }
         catch (CustomException ex)
@@ -137,7 +137,7 @@ public class DirectoriesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: DeleteDirectory(id={Id})", id);
-            await _directoryService.DeleteDirectoryAsync(id, GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated."));
+            await _directoryService.DeleteDirectoryAsync(id);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -160,7 +160,7 @@ public class DirectoriesController : BaseController
         {
             _logger.LogDebug("CALLED: ToggleFavorite(entityId={EntityId})", id);
             var currentUserId = GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated.");
-            await _directoryService.ToggleFavoriteAsync(id, currentUserId);
+            await _directoryService.ToggleFavoriteAsync(id);
             return Ok(new { Success = true });
         }
         catch (CustomException ex)
@@ -182,8 +182,7 @@ public class DirectoriesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: Rate(entityId={EntityId}, rating={Rating})", id, dto.Rating);
-            var currentUserId = GetCurrentUserId() ?? throw new UnauthorizedAccessException("User is not authenticated.");
-            var directory = await _directoryService.SubmitRatingAsync(id, currentUserId, dto.Rating);
+            var directory = await _directoryService.SubmitRatingAsync(id, dto.Rating);
             if (directory is null)
             {
                 return NotFound(new { Success = false, Message = "Directory entry not found." });

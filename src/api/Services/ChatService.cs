@@ -8,38 +8,42 @@ namespace BikerHub.Api.Services;
 
 public interface IChatService
 {
-    Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, Guid currentUserId);
-    Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId, Guid currentUserId);
-    Task<ChatMessageDto> SendChatMessageAsync(Guid currentUserId, SendChatMessageDto dto);
-    Task MarkChatMessageAsReadAsync(int messageId, Guid currentUserId);
+    Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize);
+    Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId);
+    Task<ChatMessageDto> SendChatMessageAsync(SendChatMessageDto dto);
+    Task MarkChatMessageAsReadAsync(int messageId);
 }
 
 public class ChatService : IChatService
 {
     private readonly AppDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ILogger<ChatService> _logger;
 
-    public ChatService(AppDbContext dbContext)
+    public ChatService(AppDbContext dbContext, ICurrentUserService currentUserService, ILogger<ChatService> logger)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
+        _logger = logger;
     }
 
-    public async Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize, Guid currentUserId)
+    public async Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize)
     {
         var query = _dbContext.ChatMessages
-            .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId);
+            .Where(m => m.SenderId == Guid.Parse(_currentUserService.UserId!) || m.ReceiverId == Guid.Parse(_currentUserService.UserId!));
 
         var grouped = await query.ToListAsync();
         var heads = grouped
-            .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
+            .GroupBy(m => m.SenderId == Guid.Parse(_currentUserService.UserId!) ? m.ReceiverId : m.SenderId)
             .Select(g =>
             {
                 var latest = g.OrderByDescending(m => m.SentAt).First();
-                var unreadCount = g.Count(m => m.ReceiverId == currentUserId && !m.Read);
+                var unreadCount = g.Count(m => m.ReceiverId == Guid.Parse(_currentUserService.UserId!) && !m.Read);
                 return new ChatHeadDto(
                     latest.Id,
                     g.Key,
-                    latest.SenderId == currentUserId ? latest.ReceiverName : latest.SenderName,
-                    latest.SenderId == currentUserId ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
+                    latest.SenderId == Guid.Parse(_currentUserService.UserId!) ? latest.ReceiverName : latest.SenderName,
+                    latest.SenderId == Guid.Parse(_currentUserService.UserId!) ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
                     latest.TextMessage,
                     latest.SentAt,
                     unreadCount
@@ -54,10 +58,10 @@ public class ChatService : IChatService
         return new PaginatedResultDto<ChatHeadDto>(paged, page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
-    public async Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId, Guid currentUserId)
+    public async Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId)
     {
         var messages = await _dbContext.ChatMessages
-            .Where(m => (m.SenderId == currentUserId && m.ReceiverId == friendId) || (m.SenderId == friendId && m.ReceiverId == currentUserId))
+            .Where(m => (m.SenderId == Guid.Parse(_currentUserService.UserId!) && m.ReceiverId == friendId) || (m.SenderId == friendId && m.ReceiverId == Guid.Parse(_currentUserService.UserId!)))
             .OrderBy(m => m.SentAt)
             .ToListAsync();
 
@@ -65,14 +69,14 @@ public class ChatService : IChatService
         return new PaginatedResultDto<ChatMessageDto>(items, 1, items.Count, items.Count, 1);
     }
 
-    public async Task<ChatMessageDto> SendChatMessageAsync(Guid currentUserId, SendChatMessageDto dto)
+    public async Task<ChatMessageDto> SendChatMessageAsync(SendChatMessageDto dto)
     {
         DtoValidationHelper.ValidateGuid(dto.ReceiverId, "ReceiverId");
         DtoValidationHelper.ValidateRequiredString(dto.TextMessage, "TextMessage");
 
         var message = new ChatMessage
         {
-            SenderId = currentUserId,
+            SenderId = Guid.Parse(_currentUserService.UserId!),
             ReceiverId = dto.ReceiverId,
             TextMessage = dto.TextMessage,
             SentAt = DateTime.UtcNow,
@@ -86,10 +90,10 @@ public class ChatService : IChatService
         return MapMessage(message);
     }
 
-    public async Task MarkChatMessageAsReadAsync(int messageId, Guid currentUserId)
+    public async Task MarkChatMessageAsReadAsync(int messageId)
     {
         var message = await _dbContext.ChatMessages.FindAsync(messageId);
-        if (message == null || message.ReceiverId != currentUserId)
+        if (message == null || message.ReceiverId != Guid.Parse(_currentUserService.UserId!))
         {
             return;
         }

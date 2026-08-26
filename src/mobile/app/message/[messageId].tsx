@@ -17,6 +17,7 @@ export default function MessageDetailScreen() {
   const { colors } = useThemeContext();
   const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
   const [message, setMessage] = useState<Message | null>(null);
+  const [markingUnread, setMarkingUnread] = useState(false);
 
   const messageId = typeof params.messageId === 'string' ? params.messageId : '';
 
@@ -24,7 +25,17 @@ export default function MessageDetailScreen() {
     if (!messageId) return;
     let active = true;
     const loadMessage = async () => {
-      const detail = await messageService.getMessageById(messageId);
+      const response = await messageService.getMessageById(messageId);
+      if (!response.ok) {
+        console.error(`Failed to fetch message: ${response.status} - ${response.statusText}`);
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        console.error(`Failed to fetch message: ${responseJson.message}`);
+        return;
+      }
+      const detail = responseJson.data as Message;
       if (active && detail) {
         setMessage(detail);
         void messageService.markMessageAsRead(messageId);
@@ -36,6 +47,28 @@ export default function MessageDetailScreen() {
     };
   }, [messageId, messageService]);
 
+  const handleMarkUnread = async () => {
+    if (!messageId) return;
+    setMarkingUnread(true);
+    try {
+      const response = await messageService.markMessageAsUnread(messageId);
+      if (!response.ok) {
+        console.error(`Failed to mark message as unread: ${response.status} - ${response.statusText}`);
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        console.error(`Failed to mark message as unread: ${responseJson.message}`);
+        return;
+      }
+      setMessage((prev) => (prev ? { ...prev, read: false } : prev));
+    } catch (error) {
+      console.error('Unable to mark message as unread.', error);
+    } finally {
+      setMarkingUnread(false);
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { borderBottomColor: colors.border }]}> 
@@ -44,7 +77,14 @@ export default function MessageDetailScreen() {
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Message</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity
+            onPress={handleMarkUnread}
+            hitSlop={14}
+            disabled={markingUnread}
+            style={[styles.markUnreadButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Text style={[styles.markUnreadText, { color: colors.text }]}> {markingUnread ? 'Marking...' : 'Mark Unread'} </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -53,19 +93,11 @@ export default function MessageDetailScreen() {
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
             <View style={styles.cardHeader}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>{message.title}</Text>
-              <Text style={[styles.cardTime, { color: colors.secondaryText }]}>
+              <Text style={[styles.cardTime, { color: colors.secondaryText }]}> 
                 {message.dateTimeUTC ? new Date(message.dateTimeUTC).toLocaleString() : ''}
               </Text>
             </View>
             <Text style={[styles.cardBody, { color: colors.text }]}>{message.body}</Text>
-            <View style={styles.messageStatus}>
-              <MaterialIcons
-                name={message.read ? 'visibility' : 'arrow-forward'}
-                size={18}
-                color={colors.accent}
-              />
-              <Text style={[styles.statusText, { color: colors.secondaryText }]}> {message.read ? 'Read' : 'Unread'}</Text>
-            </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -78,7 +110,10 @@ export default function MessageDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { 
+    flex: 1,
+    padding: 16,
+   },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -104,53 +139,59 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
+  markUnreadButton: {
+    minWidth: 100,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  markUnreadText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    padding: 16,
   },
   card: {
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 18,
     padding: 16,
-    gap: 12,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
+    marginBottom: 12,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    flex: 1,
+    marginBottom: 4,
   },
   cardTime: {
-    fontSize: 11,
-  },
-  cardSender: {
-    fontSize: 13,
+    fontSize: 12,
   },
   cardBody: {
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   messageStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
+    gap: 4,
   },
   statusText: {
     fontSize: 12,
-    textTransform: 'capitalize',
   },
   emptyState: {
-    marginTop: 40,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

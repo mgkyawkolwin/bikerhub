@@ -1,0 +1,311 @@
+@page "/messages/list"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using System.Linq
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using BikerHub.Api.Dtos
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject BikerHub.Api.Services.IMessageService MessageService
+@inject IDialogService DialogService
+@inject IToastService ToastService
+@inject IJSRuntime JSRuntime
+@inject ILogger<List> Logger
+
+<PageTitle>Messages</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Broadcast Messages</h2>
+        <button type="button" class="btn btn-primary" @onclick="OpenNewMessageDialog">New Broadcast Message</button>
+    </div>
+
+    <FluentCard>
+        <FluentDataGrid @ref="_messageGrid" TGridItem="MessageDto" ItemsProvider="LoadPageAsync" ItemKey="@(item => item.Id)" Pagination="_paginationState" ShowHover="true" DisplayMode="DataGridDisplayMode.Table" GridTemplateColumns="220px 3fr 2fr 160px">
+            <PropertyColumn Title="Title" Property="@(item => item.Title)" />
+            <PropertyColumn Title="Body" Property="@(item => item.Body)" />
+            <TemplateColumn Title="Date">
+                <ChildContent Context="item">
+                    @item.CreatedAtUTC?.ToString("yyyy-MM-dd HH:mm")
+                </ChildContent>
+            </TemplateColumn>
+            <TemplateColumn Title="Actions">
+                <ChildContent Context="item">
+                    <div class="d-flex gap-2">
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_editIcon" OnClick="() => OpenEditMessageDialog(item)">
+                            <span class="visually-hidden">Edit</span>
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Stealth" IconStart="@_deleteIcon" OnClick="() => ConfirmDeleteMessageAsync(item)">
+                            <span class="visually-hidden">Delete</span>
+                        </FluentButton>
+                        <FluentIcon Icon="Icons.Regular.Size20.Copy" OnClick="() => CopyIdToClipboard(item.Id)" />
+                    </div>
+                </ChildContent>
+            </TemplateColumn>
+        </FluentDataGrid>
+
+        <div class="mt-3">
+            <FluentPaginator State="_paginationState" />
+        </div>
+    </FluentCard>
+
+    <FluentDialog @bind-Hidden="_isNewMessageDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Create new broadcast message">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Create broadcast message</h4>
+            <EditForm Model="_messageModel" OnValidSubmit="CreateMessageAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <FluentTextField @bind-Value="_messageModel.Title" Placeholder="Message title" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Body</label>
+                    <FluentTextArea @bind-Value="_messageModel.Body" Placeholder="Message body" Style="width: 100%; min-height: 120px;" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseNewMessageDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Create Message")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+
+    <FluentDialog @bind-Hidden="_isEditMessageDialogHidden" Modal="true" TrapFocus="true" AriaLabel="Edit broadcast message">
+        <div class="p-4" style="min-width: 520px;">
+            <h4>Edit broadcast message</h4>
+            <EditForm Model="_messageModel" OnValidSubmit="UpdateMessageAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <FluentTextField @bind-Value="_messageModel.Title" Placeholder="Message title" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Body</label>
+                    <FluentTextArea @bind-Value="_messageModel.Body" Placeholder="Message body" Style="width: 100%; min-height: 120px;" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+                {
+                    <div class="alert alert-danger">@_formErrorMessage</div>
+                }
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditMessageDialog">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </FluentDialog>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private FluentDataGrid<MessageDto>? _messageGrid;
+    private readonly PaginationState _paginationState = new() { ItemsPerPage = 10 };
+    private bool _isNewMessageDialogHidden = true;
+    private bool _isEditMessageDialogHidden = true;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private MessageModel _messageModel = new();
+    private Guid _editingMessageId;
+    private readonly Icon _editIcon = new Icon("Edit", IconVariant.Regular, IconSize.Size16, "Edit");
+    private readonly Icon _deleteIcon = new Icon("Delete", IconVariant.Regular, IconSize.Size16, "Delete");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        _isCheckingAuth = false;
+    }
+
+    private async ValueTask<GridItemsProviderResult<MessageDto>> LoadPageAsync(GridItemsProviderRequest<MessageDto> request)
+    {
+        try
+        {
+            var pageSize = request.Count ?? _paginationState.ItemsPerPage;
+            var page = (request.StartIndex / pageSize) + 1;
+            var result = await MessageService.GetBroadcastMessagesAsync(page, pageSize);
+            return GridItemsProviderResult.From(result.Items.ToList(), result.Total);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load broadcast messages.");
+            return GridItemsProviderResult.From(Array.Empty<MessageDto>(), 0);
+        }
+    }
+
+    private void OpenNewMessageDialog()
+    {
+        _formErrorMessage = null;
+        _messageModel = new MessageModel();
+        _isNewMessageDialogHidden = false;
+    }
+
+    private void CloseNewMessageDialog()
+    {
+        _isNewMessageDialogHidden = true;
+    }
+
+    private void OpenEditMessageDialog(MessageDto message)
+    {
+        _formErrorMessage = null;
+        _editingMessageId = message.Id;
+        _messageModel = new MessageModel
+        {
+            Title = message.Title,
+            Body = message.Body
+        };
+        _isEditMessageDialogHidden = false;
+    }
+
+    private void CloseEditMessageDialog()
+    {
+        _isEditMessageDialogHidden = true;
+    }
+
+    private async Task ConfirmDeleteMessageAsync(MessageDto message)
+    {
+        await DialogService.ShowConfirmationAsync(
+            this,
+            async dialogResult =>
+            {
+                if (dialogResult.Cancelled)
+                {
+                    return;
+                }
+
+                _isSubmitting = true;
+                try
+                {
+                    await MessageService.DeleteBroadcastMessageAsync(message.Id);
+                    await RefreshGridAsync();
+                    ToastService.ShowSuccess("Broadcast message deleted successfully.", 2000, "Deleted");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to delete broadcast message.");
+                    ToastService.ShowError("Failed to delete broadcast message.", 2000, "Error");
+                }
+                finally
+                {
+                    _isSubmitting = false;
+                }
+            },
+            $"Are you sure you want to delete '{message.Title}'?",
+            "Delete",
+            "Cancel",
+            "Confirm delete");
+    }
+
+    private async Task CreateMessageAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateMessageDto(_messageModel.Title ?? string.Empty, _messageModel.Body);
+            await MessageService.CreateBroadcastMessageAsync(dto);
+            await RefreshGridAsync();
+            _isNewMessageDialogHidden = true;
+            ToastService.ShowSuccess("Broadcast message created successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create broadcast message.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task UpdateMessageAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateMessageDto(_messageModel.Title ?? string.Empty, _messageModel.Body);
+            await MessageService.UpdateBroadcastMessageAsync(_editingMessageId, dto);
+            await RefreshGridAsync();
+            _isEditMessageDialogHidden = true;
+            ToastService.ShowSuccess("Broadcast message updated successfully.", 2000, "Success");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update broadcast message.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task RefreshGridAsync()
+    {
+        if (_messageGrid is not null)
+        {
+            await _messageGrid.RefreshDataAsync(false);
+        }
+    }
+
+    private async Task CopyIdToClipboard(Guid id)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", id.ToString());
+        ToastService.ShowSuccess("Message ID copied to clipboard.", 1500, "Copied");
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userId = ClaimsPrincipal.Current?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(userId, out var parsed) ? parsed : Guid.Empty;
+    }
+
+    private sealed class MessageModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        public string? Title { get; set; }
+
+        public string? Body { get; set; }
+    }
+}

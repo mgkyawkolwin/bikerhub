@@ -272,7 +272,7 @@
     {
         try
         {
-            _challenges = (await ChallengeService.GetAllAsync(null)).ToList();
+            _challenges = (await ChallengeService.GetAllAsync()).ToList();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -287,7 +287,7 @@ LoadChallengesProviderAsync(GridItemsProviderRequest<ChallengeDto> request)
     {
         try
         {
-            var challenges = (await ChallengeService.GetAllAsync(null)).ToList();
+            var challenges = (await ChallengeService.GetAllAsync()).ToList();
             return GridItemsProviderResult.From(challenges, challenges.Count);
         }
         catch (Exception ex)

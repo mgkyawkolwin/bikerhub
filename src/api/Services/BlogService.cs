@@ -16,10 +16,14 @@ public interface IBlogService
 public class BlogService : IBlogService
 {
     private readonly AppDbContext _dbContext;
+    private readonly ILogger<BlogService> _logger;
+    private readonly ICurrentUserService _currentUserService;
 
-    public BlogService(AppDbContext dbContext)
+    public BlogService(AppDbContext dbContext, ILogger<BlogService> logger, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _logger = logger;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PaginatedResultDto<BlogDto>> GetBlogsAsync(int page, int pageSize)
@@ -55,6 +59,9 @@ public class BlogService : IBlogService
             ImageUrl = dto.ImageUrl,
             Author = dto.Author,
             CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
 
         _dbContext.Blogs.Add(blog);

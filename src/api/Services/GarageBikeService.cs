@@ -14,22 +14,26 @@ public interface IGarageBikeService
 {
     Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId);
     Task<GarageBikeDto?> GetGarageBikeByIdAsync(Guid id);
-    Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId);
-    Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId);
-    Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id, Guid currentUserId);
-    Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId);
-    Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId, Guid currentUserId);
+    Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike);
+    Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike);
+    Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id);
+    Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file);
+    Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId);
 }
 
 public class GarageBikeService : IGarageBikeService
 {
     private readonly AppDbContext _dbContext;
     private readonly IStorageService _storageService;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ILogger<GarageBikeService> _logger;
 
-    public GarageBikeService(AppDbContext dbContext, IStorageService storageService)
+    public GarageBikeService(AppDbContext dbContext, IStorageService storageService, ICurrentUserService currentUserService, ILogger<GarageBikeService> logger)
     {
         _dbContext = dbContext;
         _storageService = storageService;
+        _currentUserService = currentUserService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<GarageBikeDto>> GetGarageBikesAsync(Guid userId)
@@ -59,7 +63,7 @@ public class GarageBikeService : IGarageBikeService
         return MapToDto(garageBike, medias);
     }
 
-    public async Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike, Guid currentUserId)
+    public async Task<GarageBikeDto> CreateGarageBikeAsync(GarageBikeDto garageBike)
     {
         var garageBikeEntity = new GarageBikeEntity
         {
@@ -72,13 +76,13 @@ public class GarageBikeService : IGarageBikeService
             Km = garageBike.Km,
             Vin = garageBike.Vin,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
             UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedById = currentUserId
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
         _dbContext.GarageBikes.Add(garageBikeEntity);
 
-        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == currentUserId) ?? throw new CustomException("Social profile not found for the current user.");
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == Guid.Parse(_currentUserService.UserId!)) ?? throw new CustomException("Social profile not found for the current user.");
         socialProfile.GarageCount += 1;
 
         // save make and model to lookup table if they don't exist
@@ -92,9 +96,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Make.ToUpperInvariant(),
                 Value = garageBike.Make,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newMake);
         }
@@ -108,9 +112,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Model.ToUpperInvariant(),
                 Value = garageBike.Model,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newModel);
         }
@@ -124,9 +128,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Type.ToUpperInvariant(),
                 Value = garageBike.Type,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newType);
         }
@@ -136,7 +140,7 @@ public class GarageBikeService : IGarageBikeService
         return MapToDto(garageBikeEntity);
     }
 
-    public async Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike, Guid currentUserId)
+    public async Task<GarageBikeDto?> UpdateGarageBikeAsync(Guid id, GarageBikeDto updatedGarageBike)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == id);
         if (garageBike is null)
@@ -163,9 +167,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Make.ToUpperInvariant(),
                 Value = garageBike.Make,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newMake);
         }
@@ -179,9 +183,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Model.ToUpperInvariant(),
                 Value = garageBike.Model,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newModel);
         }
@@ -195,9 +199,9 @@ public class GarageBikeService : IGarageBikeService
                 Code = garageBike.Type.ToUpperInvariant(),
                 Value = garageBike.Type,
                 CreatedAtUtc = DateTime.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = Guid.Parse(_currentUserService.UserId!),
                 UpdatedAtUtc = DateTime.UtcNow,
-                UpdatedById = currentUserId
+                UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newType);
         }
@@ -206,7 +210,7 @@ public class GarageBikeService : IGarageBikeService
         return MapToDto(garageBike);
     }
 
-    public async Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id, Guid currentUserId)
+    public async Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == id);
         if (garageBike is null)
@@ -214,13 +218,13 @@ public class GarageBikeService : IGarageBikeService
             return null;
         }
         _dbContext.GarageBikes.Remove(garageBike);
-        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == currentUserId) ?? throw new CustomException("Social profile not found for the current user.");
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == Guid.Parse(_currentUserService.UserId!)) ?? throw new CustomException("Social profile not found for the current user.");
         socialProfile.GarageCount -= 1;
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBike);
     }
 
-    public async Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file, Guid currentUserId)
+    public async Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file)
     {
         var garageBike = await _dbContext.GarageBikes.FindAsync(garageBikeId) ?? throw new CustomException("Garage bike not found.");
         var objectName = await _storageService.UploadFileAsync(file);
@@ -232,16 +236,16 @@ public class GarageBikeService : IGarageBikeService
             ContentType = file.ContentType,
             Size = file.Length,
             CreatedAtUtc = DateTime.UtcNow,
-            CreatedById = currentUserId,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
             UpdatedAtUtc = DateTime.UtcNow,
-            UpdatedById = currentUserId
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
         };
         _dbContext.Medias.Add(media);
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBike);
     }
 
-    public async Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId, Guid currentUserId)
+    public async Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId)
     {
         var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == garageBikeId);
         if (garageBike is null)
@@ -249,7 +253,7 @@ public class GarageBikeService : IGarageBikeService
             throw new CustomException("Garage bike not found.");
         }
 
-        if (garageBike.CreatedById != currentUserId)
+        if (garageBike.CreatedById != Guid.Parse(_currentUserService.UserId!))
         {
             throw new CustomException("Not authorized to delete this media.");
         }

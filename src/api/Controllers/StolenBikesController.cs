@@ -83,7 +83,7 @@ public class StolenBikesController : BaseController
             }
 
             var currentUserId = GetCurrentUserId() ?? throw new UnauthorizedAccessException("Invalid session user.");
-            var report = await _stolenBikeService.UploadReportMediaAsync(id, file, currentUserId);
+            var report = await _stolenBikeService.UploadReportMediaAsync(id, file);
             return Ok(new { Success = true, Data = report });
         }
         catch (CustomException ex)

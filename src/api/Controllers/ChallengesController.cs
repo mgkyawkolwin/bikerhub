@@ -29,8 +29,7 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetPastChallenges()");
-            var currentUserId = GetCurrentUserId();
-            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Past, currentUserId);
+            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Past);
             return Ok(new { Success = true, Data = challenges });
         }
         catch (CustomException ex)
@@ -51,8 +50,7 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetCurrentChallenges()");
-            var currentUserId = GetCurrentUserId();
-            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Current, currentUserId);
+            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Current);
             return Ok(new { Success = true, Data = challenges });
         }
         catch (CustomException ex)
@@ -73,8 +71,7 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetFutureChallenges()");
-            var currentUserId = GetCurrentUserId();
-            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Future, currentUserId);
+            var challenges = await _challengeService.GetChallengesByPeriodAsync(ChallengePeriod.Future);
             return Ok(new { Success = true, Data = challenges });
         }
         catch (CustomException ex)
@@ -95,9 +92,7 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: GetChallengeById(id={Id})", id);
-            var currentUserId = GetCurrentUserId();
-            _logger.LogTrace("Current user id: {CurrentUserId}", currentUserId);
-            var challenge = await _challengeService.GetChallengeByIdAsync(id, currentUserId);
+            var challenge = await _challengeService.GetChallengeByIdAsync(id);
             _logger.LogTrace("Challenge returned for id {Id}: {Challenge}", id, challenge is null ? "null" : System.Text.Json.JsonSerializer.Serialize(challenge));
             if (challenge is null)
             {
@@ -201,18 +196,12 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: JoinChallenge(challengeId={ChallengeId})", challengeId);
-            var currentUserId = GetCurrentUserId();
-            if (currentUserId is null)
-            {
-                return Unauthorized(new { Success = false, Message = "User is not authenticated." });
-            }
-
             if (challengeId == Guid.Empty)
             {
                 return BadRequest(new { Success = false, Message = "A valid challenge id is required." });
             }
 
-            var joined = await _challengeService.JoinChallengeAsync(challengeId, currentUserId.Value);
+            var joined = await _challengeService.JoinChallengeAsync(challengeId);
             if (!joined)
             {
                 return NotFound(new { Success = false, Message = "Challenge not found." });
@@ -239,18 +228,12 @@ public class ChallengesController : BaseController
         try
         {
             _logger.LogDebug("CALLED: LeaveChallenge(challengeId={ChallengeId})", challengeId);
-            var currentUserId = GetCurrentUserId();
-            if (currentUserId is null)
-            {
-                return Unauthorized(new { Success = false, Message = "User is not authenticated." });
-            }
-
             if (challengeId == Guid.Empty)
             {
                 return BadRequest(new { Success = false, Message = "A valid challenge id is required." });
             }
 
-            var left = await _challengeService.LeaveChallengeAsync(challengeId, currentUserId.Value);
+            var left = await _challengeService.LeaveChallengeAsync(challengeId);
             if (!left)
             {
                 return NotFound(new { Success = false, Message = "Challenge not found." });
