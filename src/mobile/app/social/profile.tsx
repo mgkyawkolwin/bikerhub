@@ -845,7 +845,11 @@ export default function SocialProfileScreen() {
                           {profile.isFollowing ? 'Unfollow' : 'Follow'}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.messageButton, { backgroundColor: colors.accent }]} activeOpacity={0.85}>
+                      <TouchableOpacity
+                        style={[styles.messageButton, { backgroundColor: colors.accent }]}
+                        activeOpacity={0.85}
+                        onPress={() => userId && router.push({ pathname: '/chat/chat', params: { friendId: userId } })}
+                      >
                         <Text style={[styles.messageButtonText, { color: colors.text }]}>Message</Text>
                       </TouchableOpacity>
                     </View>

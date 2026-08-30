@@ -1,13 +1,33 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Text, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as ImagePicker from 'expo-image-picker';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
 import type { ChatService } from '@/services';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import ChatMessage from '@/models/chatMesage';
+import type SocialProfile from '@/models/socialProfile';
+import { SocialServiceClient, SocialServiceToken } from '@/services/socialService';
+import SnackBar from '@/components/snackbar';
+
+function ChatVideoPlayer({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri);
+
+  return (
+    <VideoView
+      style={styles.messageVideo}
+      player={player}
+      nativeControls
+      contentFit="contain"
+      allowsPictureInPicture
+    />
+  );
+}
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -15,31 +35,46 @@ export default function ChatScreen() {
   const params = useLocalSearchParams();
   const { t } = useI18n();
   const { colors } = useThemeContext();
+  const { authUser } = useAuthContext();
   const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
+  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [friendProfile, setFriendProfile] = useState<SocialProfile | null>(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const friendId = typeof params.friendId === 'string' ? params.friendId : '';
+  const currentUserId = authUser?.id ?? '';
 
   useEffect(() => {
     if (!friendId) {
       setMessages([]);
+      setFriendProfile(null);
       return;
     }
 
     let active = true;
     const loadMessages = async () => {
       setLoading(true);
-      const paginatedData = await chatService.getChatMessages(friendId);
-      if (active) {
-        setMessages(paginatedData.items);
+      try {
+        const paginatedData = await chatService.getChatMessages(friendId);
+        if (active) {
+          setMessages(paginatedData.items);
+        }
+
+        if (currentUserId) {
+          await Promise.all(
+            paginatedData.items
+              .filter((message) => message.receiverId === currentUserId && !message.read && message.id)
+              .map((message) => chatService.markChatMessageAsRead(message.id!)),
+          );
+        }
+      } catch (error) {
+        SnackBar.Error(error instanceof Error ? error.message : 'Unable to load messages.');
+      } finally {
+        setLoading(false);
       }
-      if (friendId) {
-        await chatService.markChatMessageAsRead(friendId);
-      }
-      setLoading(false);
     };
 
     void loadMessages();
@@ -47,36 +82,118 @@ export default function ChatScreen() {
     return () => {
       active = false;
     };
-  }, [friendId, chatService]);
+  }, [friendId, chatService, currentUserId]);
+
+  useEffect(() => {
+    if (!friendId) {
+      setFriendProfile(null);
+      return;
+    }
+
+    let active = true;
+    const loadFriendProfile = async () => {
+      try {
+        const response = await socialService.getProfileById(friendId);
+        if (!active || !response.ok) return;
+
+        const result = await response.json();
+        if (!result.success) return;
+
+        setFriendProfile(result.data ?? null);
+      } catch (error) {
+        console.error('Failed to load friend profile:', error);
+      }
+    };
+
+    void loadFriendProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [friendId, socialService]);
 
   const handleSend = async () => {
     if (!friendId) return;
     const text = draft.trim();
     if (!text) return;
 
-    const message = await chatService.sendChatMessage(friendId, text);
-    setMessages((prev) => [...prev, message]);
-    setDraft('');
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    try {
+      const message = await chatService.sendChatMessage(friendId, text);
+      setMessages((prev) => [...prev, message]);
+      setDraft('');
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    } catch (error) {
+      console.error('Failed to send chat message:', error);
+    }
+  };
+
+  const handlePickMedia = async () => {
+    if (!friendId) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      SnackBar.Error('Gallery access is required to send media.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsMultipleSelection: false,
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+
+    const fileName = asset.fileName ?? `chat-media-${Date.now()}`;
+    const fileType = asset.type ? `${asset.type}/${asset.uri.split('.').pop()}` : 'application/octet-stream';
+
+    try {
+      const message = await chatService.sendChatMediaMessage(friendId, {
+        uri: asset.uri,
+        name: fileName,
+        type: fileType,
+      });
+      setMessages((prev) => [...prev, message]);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    } catch (error) {
+      console.error('Failed to send media chat message:', error);
+    }
   };
 
   return (
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 70}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}> 
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
-          <Text style={[styles.chatTitle, { color: colors.text }]} numberOfLines={1}>{friendId}</Text>
-          <Text style={[styles.chatSubtitle, { color: colors.secondaryText }]}>Online</Text>
+          <View style={styles.profileHeader}>
+            {friendProfile?.profilePhotoUrl ? (
+              <Image source={{ uri: friendProfile.profilePhotoUrl }} style={styles.profileImage} />
+            ) : (
+              <View style={[styles.profileIcon, { backgroundColor: colors.accent }]}> 
+                <MaterialIcons name="person" size={20} color="#FFFFFF" />
+              </View>
+            )}
+            <View style={styles.profileTitle}>
+              <Text style={[styles.chatTitle, { color: colors.text }]} numberOfLines={1}>
+                {friendProfile?.displayName ?? friendId}
+                {friendProfile?.userName ? ` (@${friendProfile.userName})` : ''}
+              </Text>
+              {!friendProfile ? (
+                <Text style={[styles.chatSubtitle, { color: colors.secondaryText }]} numberOfLines={1}>
+                  Online
+                </Text>
+              ) : null}
+            </View>
+          </View>
         </View>
-        <TouchableOpacity hitSlop={14} style={styles.callButton}>
-          <MaterialIcons name="call" size={20} color={colors.text} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -88,7 +205,6 @@ export default function ChatScreen() {
           <ActivityIndicator style={styles.loading} size="small" color={colors.text} />
         ) : (
           messages.map((message) => {
-            const currentUserId = '00000000-0000-0000-0000-000000000000';
             const isMine = message.senderId === currentUserId;
             const displayTime = message.messageDateTimeUTC
               ? new Date(message.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -100,8 +216,32 @@ export default function ChatScreen() {
               : undefined;
             return (
               <View key={message.id} style={[styles.messageRow, isMine ? styles.messageRowRight : styles.messageRowLeft]}>
-                <View style={[styles.messageBubble, { backgroundColor: isMine ? colors.accent : colors.card, alignSelf: isMine ? 'flex-end' : 'flex-start' }]}> 
-                  <Text style={[styles.messageText, { color: '#FFFFFF' }]}>{message.textMessage}</Text>
+                <View style={[styles.messageBubble, { backgroundColor: isMine ? colors.card : colors.card, alignSelf: isMine ? 'flex-end' : 'flex-start' }]}> 
+                  {message.medias?.length ? (
+                    message.medias[0].url ? (
+                      message.medias[0].contentType?.startsWith('video/') ? (
+                        <ChatVideoPlayer uri={message.medias[0].url ?? ''} />
+                      ) : (
+                        <Image
+                          source={{ uri: message.medias[0].url ?? '' }}
+                          style={styles.messageImage}
+                          resizeMode="contain"
+                          onError={({ nativeEvent }) => {
+                            console.warn('Chat media image load failed', message.medias?.[0]?.url, nativeEvent);
+                          }}
+                        />
+                      )
+                    ) : (
+                      <View style={styles.messageMediaFallback}>
+                        <Text style={[styles.messageMediaFallbackText, { color: '#FFFFFF' }]}>Unable to load media</Text>
+                      </View>
+                    )
+                  ) : null}
+                  {message.textMessage ? (
+                    <Text style={[styles.messageText, { color: '#FFFFFF', marginTop: message.medias?.length ? 10 : 0 }]}>
+                      {message.textMessage}
+                    </Text>
+                  ) : null}
                   <View style={styles.messageFooter}>
                     <Text style={[styles.messageTime, { color: isMine ? 'rgba(255,255,255,0.8)' : colors.secondaryText }]}>{displayTime}</Text>
                     <View style={styles.messageIcons}>
@@ -122,17 +262,8 @@ export default function ChatScreen() {
       </ScrollView>
 
       <View style={[styles.inputBar, { borderTopColor: colors.border, backgroundColor: colors.card }]}> 
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity style={styles.iconButton} onPress={handlePickMedia}>
           <MaterialIcons name="image" size={22} color={colors.accent} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="videocam" size={22} color={colors.accent} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="attach-file" size={22} color={colors.accent} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="keyboard-voice" size={22} color={colors.accent} />
         </TouchableOpacity>
         <TextInput
           style={[styles.textInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
@@ -165,6 +296,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 12,
   },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  profileImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+  },
+  profileIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileTitle: {
+    flex: 1,
+  },
   chatTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -172,10 +323,6 @@ const styles = StyleSheet.create({
   chatSubtitle: {
     fontSize: 12,
     marginTop: 2,
-  },
-  callButton: {
-    padding: 10,
-    borderRadius: 18,
   },
   messages: {
     paddingHorizontal: 16,
@@ -195,7 +342,7 @@ const styles = StyleSheet.create({
   messageBubble: {
     borderRadius: 18,
     padding: 14,
-    minWidth: 90,
+    minWidth: 120,
     maxWidth: '85%',
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -205,6 +352,48 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  messageImage: {
+    width: 300,
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: '#00000010',
+  },
+  messageVideo: {
+    width: 300,
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+    height: 220,
+    borderRadius: 14,
+    backgroundColor: '#00000010',
+  },
+  messageVideoPlaceholder: {
+    width: '100%',
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  messageMediaFallback: {
+    width: '100%',
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  messageMediaFallbackText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  videoPlaceholderText: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '600',
   },
   messageFooter: {
     flexDirection: 'row',
@@ -227,7 +416,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    marginBottom: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   loading: {

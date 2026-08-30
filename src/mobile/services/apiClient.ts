@@ -8,9 +8,9 @@ export const API_BASE_URL = DEFAULT_API_BASE_URL;
 const AUTH_USER_STORAGE_KEY = 'auth_user';
 
 export type ApiResponse<T> = {
-  Success: boolean;
-  Data?: T;
-  Message?: string;
+  success: boolean;
+  data?: T;
+  message?: string;
 };
 
 export async function fetchJson(path: string, options: RequestInit = {}): Promise<Response> {

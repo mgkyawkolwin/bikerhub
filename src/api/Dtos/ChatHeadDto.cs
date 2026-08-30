@@ -6,6 +6,7 @@ public sealed record ChatHeadDto(
     string? FriendName,
     string? FriendProfilePictureUrl,
     string? TextMessage,
+    string? LatestMediaContentType,
     DateTime MessageDateTimeUTC,
     int UnreadCount
 );

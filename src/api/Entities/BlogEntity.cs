@@ -1,21 +1,18 @@
 using System.ComponentModel.DataAnnotations;
+using BikerHub.Api.Dtos;
 
 namespace BikerHub.Api.Entities;
 
-public class Blog : BaseEntity<Guid>
+public class BlogEntity : BaseEntity<Guid>
 {
     [Required]
     [MaxLength(200)]
-    public string Title { get; set; } = string.Empty;
-
-    [MaxLength(500)]
-    public string? Summary { get; set; }
-
-    public string? Content { get; set; }
-
+    public required string Title { get; set; }
+    [Required]
+    public required string Content { get; set; }
+    [Required]
     [MaxLength(512)]
-    public string? ImageUrl { get; set; }
-
-    [MaxLength(100)]
-    public string? Author { get; set; }
+    public required string CoverImageUrl { get; set; }
+    public BlogPostType PostType { get; set; } = BlogPostType.General;
+    public MediaEntity[]? Media { get; set; }
 }

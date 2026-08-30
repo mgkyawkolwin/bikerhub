@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Text
+  Text,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,7 +17,8 @@ import { useI18n } from '@/i18n';
 import { container, ChatServiceToken } from '@/services';
 import type { ChatService } from '@/services';
 import ChatHead from '@/models/chatHead';
-import { useAuthContext } from '@/hooks/use-auth-context';
+
+type ChatHeadWithLatestMedia = ChatHead & { latestMediaContentType?: string };
 
 
 export default function ChatsScreen() {
@@ -25,15 +27,13 @@ export default function ChatsScreen() {
   const { colors } = useThemeContext();
   const { t } = useI18n();
   const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
-  const [threads, setThreads] = useState<ChatHead[]>([]);
+  const [threads, setThreads] = useState<ChatHeadWithLatestMedia[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const { getAuthUser } = useAuthContext();
-  const authUser = getAuthUser();
 
   const loadThreads = useCallback(
     async (nextPage: number, replace = false) => {
@@ -71,9 +71,10 @@ export default function ChatsScreen() {
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>{t.Title.chats ?? 'Chats'}</Text>
-          <TouchableOpacity onPress={() => {}} hitSlop={14} style={styles.iconButton}>
+          <View></View>
+          {/* <TouchableOpacity onPress={() => {}} hitSlop={14} style={styles.iconButton}>
             <MaterialIcons name="search" size={20} color={colors.text} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
       <FlatList
@@ -108,31 +109,47 @@ export default function ChatsScreen() {
           }
           return null;
         }}
-        renderItem={({ item: chat }) => (
-          <TouchableOpacity
-            style={[styles.chatItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-            activeOpacity={0.75}
-            onPress={() => router.push(`/chat/chat?friendId=${chat.friendId}`)}
-          >
-            <View style={[styles.avatar, { backgroundColor: colors.accent }]}> 
-              <Text style={styles.avatarText}>{chat.friendName?.charAt(0)}</Text>
-            </View>
-            <View style={styles.chatInfo}>
-              <View style={styles.chatHeader}>
-                <Text style={[styles.chatName, { color: colors.text }]}>{chat.friendName}</Text>
-                <Text style={[styles.chatTime, { color: colors.secondaryText }]}>{new Date(chat.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        renderItem={({ item: chat }) => {
+          const previewText = chat.latestMediaContentType?.startsWith('video/')
+            ? 'Send a video'
+            : chat.latestMediaContentType?.startsWith('image/')
+            ? 'Send an image'
+            : chat.textMessage
+            ? chat.textMessage.length > 50
+              ? `${chat.textMessage.slice(0, 50)}...`
+              : chat.textMessage
+            : '';
+
+          return (
+            <TouchableOpacity
+              style={[styles.chatItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.75}
+              onPress={() => router.push({ pathname: '/chat/chat', params: { friendId: chat.friendId } })}
+            >
+              {chat.friendProfilePictureUrl ? (
+                <Image source={{ uri: chat.friendProfilePictureUrl }} style={styles.avatarImage} />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: colors.accent }]}> 
+                  <Text style={styles.avatarText}>{chat.friendName?.charAt(0)}</Text>
+                </View>
+              )}
+              <View style={styles.chatInfo}>
+                <View style={styles.chatHeader}>
+                  <Text style={[styles.chatName, { color: colors.text }]}>{chat.friendName}</Text>
+                  <Text style={[styles.chatTime, { color: colors.secondaryText }]}>{new Date(chat.messageDateTimeUTC).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                </View>
+                <View style={styles.chatRow}>
+                  <Text style={[styles.chatPreview, { color: colors.secondaryText }]} numberOfLines={1}>{previewText}</Text>
+                  {chat.unreadCount ? (
+                    <View style={[styles.unreadBadge, { backgroundColor: colors.accent }]}> 
+                      <Text style={styles.unreadText}>{chat.unreadCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
-              <View style={styles.chatRow}>
-                <Text style={[styles.chatPreview, { color: colors.secondaryText }]} numberOfLines={1}>{chat.textMessage}</Text>
-                {chat.unreadCount ? (
-                  <View style={[styles.unreadBadge, { backgroundColor: colors.accent }]}> 
-                    <Text style={styles.unreadText}>{chat.unreadCount}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );
@@ -179,7 +196,6 @@ const styles = StyleSheet.create({
   },
   chatItem: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -204,7 +220,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   chatInfo: {
     flex: 1,
@@ -231,6 +246,12 @@ const styles = StyleSheet.create({
   chatPreview: {
     flex: 1,
     fontSize: 13,
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
   },
   unreadBadge: {
     minWidth: 20,

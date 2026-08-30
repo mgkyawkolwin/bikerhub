@@ -2,5 +2,6 @@ namespace BikerHub.Api.Dtos;
 
 public sealed record SendChatMessageDto(
     Guid ReceiverId,
-    string TextMessage
+    ChatMessageType MessageType,
+    string? TextMessage = null
 );

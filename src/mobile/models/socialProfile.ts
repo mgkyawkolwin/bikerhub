@@ -2,6 +2,7 @@ export type SocialPlatform = 'facebook' | 'instagram' | 'youtube' | 'telegram' |
 
 export default interface SocialProfile {
   id: string;
+  userId: string;
   userName: string;
   displayName: string;
   coverPhotoUrl?: string;

@@ -42,8 +42,8 @@ public class BlogsController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetBlogById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetBlogById(Guid id)
     {
         try
         {
@@ -70,7 +70,7 @@ public class BlogsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateBlog(CreateBlogDto dto)
+    public async Task<IActionResult> CreateBlog([FromBody] CreateBlogDto dto)
     {
         try
         {
@@ -86,6 +86,65 @@ public class BlogsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error occurred in CreateBlog");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateBlog([FromRoute] Guid id, [FromBody] UpdateBlogDto dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: UpdateBlog(id={Id}, dto={Dto})", id, JsonSerializer.Serialize(dto));
+            if (dto is null)
+            {
+                return BadRequest(new { Success = false, Message = "Request body cannot be null." });
+            }
+
+            var blog = await _blogService.UpdateBlogAsync(id, dto);
+            if (blog is null)
+            {
+                return NotFound(new { Success = false, Message = "Blog not found." });
+            }
+
+            return Ok(new { Success = true, Data = blog });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in UpdateBlog");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteBlog([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteBlog(id={Id})", id);
+            var deleted = await _blogService.DeleteBlogAsync(id);
+            if (!deleted)
+            {
+                return NotFound(new { Success = false, Message = "Blog not found." });
+            }
+
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in DeleteBlog");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

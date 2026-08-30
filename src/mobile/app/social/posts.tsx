@@ -6,7 +6,8 @@ import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
-import { container } from '@/services';
+import { container, MessageServiceToken, ChatServiceToken } from '@/services';
+import type { MessageService, ChatService } from '@/services';
 import { SocialServiceToken } from '@/services/socialService';
 import type { SocialServiceClient } from '@/services/socialService';
 import type Post from '@/models/post';
@@ -21,9 +22,13 @@ export default function SocialPostsScreen() {
   const ins = useSafeAreaInsets();
   const { colors } = useThemeContext();
   const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
+  const messageService = useMemo(() => container.resolve<MessageService>(MessageServiceToken), []);
+  const chatService = useMemo(() => container.resolve<ChatService>(ChatServiceToken), []);
   const { getAuthUser } = useAuthContext();
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [hasUnreadChats, setHasUnreadChats] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -101,6 +106,33 @@ export default function SocialPostsScreen() {
       commentsScrollRef.current?.scrollToEnd({ animated: true });
     }
   }, [comments, selectedPostId]);
+
+  const loadUnreadStatus = useCallback(async () => {
+    try {
+      const response = await messageService.hasUnreadMessages();
+      if (response.ok) {
+        const result = await response.json();
+        setHasUnreadMessages(result?.data?.hasUnread === true);
+      }
+    } catch {
+      // ignore unread message errors
+    }
+
+    try {
+      const chatHeads = await chatService.getChatHeads(1, 10);
+      setHasUnreadChats(chatHeads.items.some((chat) => chat.unreadCount > 0));
+    } catch {
+      // ignore unread chat errors
+    }
+  }, [messageService, chatService]);
+
+  useEffect(() => {
+    void loadUnreadStatus();
+    const interval = setInterval(() => {
+      void loadUnreadStatus();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [loadUnreadStatus]);
 
   const openComments = async (postId: string) => {
     setSelectedPostId(postId);
@@ -299,11 +331,14 @@ export default function SocialPostsScreen() {
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/message/messages')}>
               <View>
                 <MaterialIcons name="notifications-none" size={22} color={colors.text} />
-                <View style={styles.bellDot} />
+                {hasUnreadMessages ? <View style={styles.bellDot} /> : null}
               </View>
             </TouchableOpacity>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/chat/chats')}>
-              <MaterialIcons name="chat-bubble-outline" size={22} color={colors.text} />
+              <View>
+                <MaterialIcons name="chat-bubble-outline" size={22} color={colors.text} />
+                {hasUnreadChats ? <View style={styles.bellDot} /> : null}
+              </View>
             </TouchableOpacity>
             <TouchableOpacity hitSlop={12} onPress={() => router.push('/profile')}>
               <MaterialIcons name="person-outline" size={22} color={colors.text} />

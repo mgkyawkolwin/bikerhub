@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
 using BikerHub.Api.Entities;
 using BikerHub.Api.Exceptions;
+using BikerHub.Api.Extensions;
 
 namespace BikerHub.Api.Services;
 
@@ -11,7 +13,8 @@ public interface IChatService
     Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize);
     Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId);
     Task<ChatMessageDto> SendChatMessageAsync(SendChatMessageDto dto);
-    Task MarkChatMessageAsReadAsync(int messageId);
+    Task<ChatMessageDto> SendChatMediaMessageAsync(Guid receiverId, IFormFile file);
+    Task MarkChatMessageAsReadAsync(Guid messageId);
 }
 
 public class ChatService : IChatService
@@ -19,33 +22,41 @@ public class ChatService : IChatService
     private readonly AppDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<ChatService> _logger;
+    private readonly IStorageService _storageService;
 
-    public ChatService(AppDbContext dbContext, ICurrentUserService currentUserService, ILogger<ChatService> logger)
+    public ChatService(AppDbContext dbContext, ICurrentUserService currentUserService, ILogger<ChatService> logger, IStorageService storageService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _logger = logger;
+        _storageService = storageService;
     }
 
     public async Task<PaginatedResultDto<ChatHeadDto>> GetChatHeadsAsync(int page, int pageSize)
     {
-        var query = _dbContext.ChatMessages
-            .Where(m => m.SenderId == Guid.Parse(_currentUserService.UserId!) || m.ReceiverId == Guid.Parse(_currentUserService.UserId!));
+        _logger.LogTrace("CALLED: GetChatHeadsAsync(page={Page}, pageSize={PageSize})", page, pageSize);
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
 
-        var grouped = await query.ToListAsync();
-        var heads = grouped
-            .GroupBy(m => m.SenderId == Guid.Parse(_currentUserService.UserId!) ? m.ReceiverId : m.SenderId)
+        var messages = await _dbContext.ChatMessages
+            .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId)
+            .OrderByDescending(m => m.CreatedAtUtc)
+            .ProjectToDto(_dbContext)
+            .ToListAsync();
+
+        var heads = messages
+            .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
             .Select(g =>
             {
-                var latest = g.OrderByDescending(m => m.SentAt).First();
-                var unreadCount = g.Count(m => m.ReceiverId == Guid.Parse(_currentUserService.UserId!) && !m.Read);
+                var latest = g.First();
+                var unreadCount = g.Count(m => m.ReceiverId == currentUserId && !m.Read);
                 return new ChatHeadDto(
                     latest.Id,
                     g.Key,
-                    latest.SenderId == Guid.Parse(_currentUserService.UserId!) ? latest.ReceiverName : latest.SenderName,
-                    latest.SenderId == Guid.Parse(_currentUserService.UserId!) ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
+                    latest.SenderId == currentUserId ? latest.ReceiverName : latest.SenderName,
+                    latest.SenderId == currentUserId ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
                     latest.TextMessage,
-                    latest.SentAt,
+                    latest.Medias?.FirstOrDefault()?.ContentType,
+                    latest.MessageDateTimeUTC,
                     unreadCount
                 );
             })
@@ -60,18 +71,23 @@ public class ChatService : IChatService
 
     public async Task<PaginatedResultDto<ChatMessageDto>> GetChatMessagesAsync(Guid friendId)
     {
-        var messages = await _dbContext.ChatMessages
+        var items = await _dbContext.ChatMessages
             .Where(m => (m.SenderId == Guid.Parse(_currentUserService.UserId!) && m.ReceiverId == friendId) || (m.SenderId == friendId && m.ReceiverId == Guid.Parse(_currentUserService.UserId!)))
-            .OrderBy(m => m.SentAt)
+            .OrderBy(m => m.CreatedAtUtc)
+            .ProjectToDto(_dbContext)
             .ToListAsync();
 
-        var items = messages.Select(MapMessage).ToList();
-        return new PaginatedResultDto<ChatMessageDto>(items, 1, items.Count, items.Count, 1);
+        return new PaginatedResultDto<ChatMessageDto>(items.ResolveMediaUrls(_storageService).ToList(), 1, items.Count, items.Count, 1);
     }
 
     public async Task<ChatMessageDto> SendChatMessageAsync(SendChatMessageDto dto)
     {
         DtoValidationHelper.ValidateGuid(dto.ReceiverId, "ReceiverId");
+        if (dto.MessageType != ChatMessageType.Text)
+        {
+            throw new CustomException("Invalid message type for text endpoint.");
+        }
+
         DtoValidationHelper.ValidateRequiredString(dto.TextMessage, "TextMessage");
 
         var message = new ChatMessage
@@ -79,7 +95,11 @@ public class ChatService : IChatService
             SenderId = Guid.Parse(_currentUserService.UserId!),
             ReceiverId = dto.ReceiverId,
             TextMessage = dto.TextMessage,
-            SentAt = DateTime.UtcNow,
+            MessageType = ChatMessageType.Text,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!),
             Sent = true,
             Delivered = true,
             Read = false
@@ -87,10 +107,55 @@ public class ChatService : IChatService
 
         _dbContext.ChatMessages.Add(message);
         await _dbContext.SaveChangesAsync();
-        return MapMessage(message);
+        return message.ToDto(_dbContext, _storageService);
     }
 
-    public async Task MarkChatMessageAsReadAsync(int messageId)
+    public async Task<ChatMessageDto> SendChatMediaMessageAsync(Guid receiverId, IFormFile file)
+    {
+        DtoValidationHelper.ValidateGuid(receiverId, "ReceiverId");
+        if (file is null || file.Length == 0)
+        {
+            throw new CustomException("A media file is required.");
+        }
+
+        if (!file.ContentType?.StartsWith("image/") == true && !file.ContentType?.StartsWith("video/") == true)
+        {
+            throw new CustomException("Only image and video media are supported.");
+        }
+
+        var message = new ChatMessage
+        {
+            SenderId = Guid.Parse(_currentUserService.UserId!),
+            ReceiverId = receiverId,
+            MessageType = ChatMessageType.Media,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!),
+            Sent = true,
+            Delivered = true,
+            Read = false
+        };
+
+        _dbContext.ChatMessages.Add(message);
+        await _dbContext.SaveChangesAsync();
+
+        var objectName = await _storageService.UploadFileAsync(file);
+        var media = new MediaEntity
+        {
+            OwnerId = message.Id,
+            ObjectName = objectName,
+            ContentType = file.ContentType ?? "application/octet-stream",
+            Size = file.Length
+        };
+
+        _dbContext.Medias.Add(media);
+        await _dbContext.SaveChangesAsync();
+
+        return message.ToDto(_dbContext, _storageService);
+    }
+
+    public async Task MarkChatMessageAsReadAsync(Guid messageId)
     {
         var message = await _dbContext.ChatMessages.FindAsync(messageId);
         if (message == null || message.ReceiverId != Guid.Parse(_currentUserService.UserId!))
@@ -103,21 +168,4 @@ public class ChatService : IChatService
         await _dbContext.SaveChangesAsync();
     }
 
-    private static ChatMessageDto MapMessage(ChatMessage message)
-    {
-        return new ChatMessageDto(
-            message.Id,
-            message.SenderId,
-            message.SenderName,
-            message.SenderProfilePictureUrl,
-            message.ReceiverId,
-            message.ReceiverName,
-            message.ReceiverProfilePictureUrl,
-            message.TextMessage,
-            message.SentAt,
-            message.Sent,
-            message.Delivered,
-            message.Read
-        );
-    }
 }

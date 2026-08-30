@@ -48,6 +48,8 @@ builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 builder.Services.AddScoped<BikerHub.Api.Services.IMessageService, BikerHub.Api.Services.MessageService>();
 builder.Services.AddScoped<IStorageService, MinioStorageService>();
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
+builder.Services.AddScoped<IBlogService, BlogService>();
+builder.Services.AddScoped<Radzen.DialogService, Radzen.DialogService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();

@@ -63,10 +63,12 @@ export default function SearchScreen() {
   }, [query, profileService]);
 
   const renderProfileItem = ({ item }: { item: SocialProfile }) => {
+    const targetUserId = item.userId ?? item.id;
+
     return (
       <TouchableOpacity
         style={[styles.resultItem, { borderColor: colors.border, backgroundColor: colors.card }]}
-        onPress={() => router.push({ pathname: '/social/profile', params: { userId: item.id } })}
+        onPress={() => router.push({ pathname: '/social/profile', params: { userId: targetUserId } })}
       >
         <View style={[styles.avatar, { backgroundColor: colors.border }]}> 
           <Text style={[styles.avatarText, { color: colors.text }]}> {item.displayName?.[0] ?? item.userName?.[0] ?? '?'} </Text>

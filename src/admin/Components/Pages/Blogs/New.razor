@@ -1,0 +1,157 @@
+@page "/blogs/new"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Authorization
+@using Radzen
+@using Radzen.Blazor
+@using BikerHub.Api.Dtos
+@using BikerHub.Api.Services
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IBlogService BlogService
+@inject IToastService ToastService
+@inject ILogger<New> Logger
+
+<PageTitle>New Blog</PageTitle>
+
+@if (_isCheckingAuth)
+{
+    <div class="p-4">Checking authentication...</div>
+    return;
+}
+
+@if (!_isAuthenticated)
+{
+    return;
+}
+
+<div class="p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">New Blog</h2>
+            <p class="text-muted mb-0">Create a new blog post for the site.</p>
+        </div>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Back to list</button>
+    </div>
+
+    <FluentCard>
+        <EditForm FormName="newBlogForm" Model="_model" OnValidSubmit="CreateBlogAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Title</label>
+                <FluentTextField @bind-Value="_model.Title" Placeholder="Blog title" Style="width: 100%;" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Content</label>
+                <RadzenHtmlEditor @bind-Value="_model.Content" Style="height: 320px;">
+                    <RadzenHtmlEditorUndo />
+                    <RadzenHtmlEditorRedo />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorBold />
+                    <RadzenHtmlEditorItalic />
+                    <RadzenHtmlEditorUnderline />
+                    <RadzenHtmlEditorStrikeThrough />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorColor />
+                    <RadzenHtmlEditorBackground />
+                    <RadzenHtmlEditorSeparator />
+                    <RadzenHtmlEditorLink />
+                    <RadzenHtmlEditorUnlink />
+                </RadzenHtmlEditor>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Cover Image URL</label>
+                <FluentTextField @bind-Value="_model.CoverImageUrl" Placeholder="Cover image URL" Style="width: 100%;" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Post Type</label>
+                <FluentTextField @bind-Value="_model.PostType" Placeholder="Post type" Style="width: 100%;" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_formErrorMessage))
+            {
+                <div class="alert alert-danger">@_formErrorMessage</div>
+            }
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary" @onclick="GoBack">Cancel</button>
+                <button type="submit" class="btn btn-primary" disabled="_isSubmitting">
+                    @(_isSubmitting ? "Saving..." : "Create Blog")
+                </button>
+            </div>
+        </EditForm>
+    </FluentCard>
+</div>
+
+@code {
+    private bool _isCheckingAuth = true;
+    private bool _isAuthenticated;
+    private bool _isSubmitting;
+    private string? _formErrorMessage;
+    private BlogModel _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
+        {
+            Navigation.NavigateTo("/auth/signin", replace: true);
+            return;
+        }
+
+        _isCheckingAuth = false;
+    }
+
+    private async Task CreateBlogAsync()
+    {
+        _formErrorMessage = null;
+        _isSubmitting = true;
+
+        try
+        {
+            var dto = new CreateBlogDto(
+                _model.Title,
+                _model.Content ?? string.Empty,
+                _model.CoverImageUrl ?? string.Empty,
+                Enum.TryParse<BlogPostType>(_model.PostType, true, out var postType) ? postType : BlogPostType.General);
+
+            await BlogService.CreateBlogAsync(dto);
+            ToastService.ShowSuccess("Blog created successfully.", 2000, "Success");
+            Navigation.NavigateTo("/blogs/list");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create new blog.");
+            _formErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/blogs/list");
+    }
+
+    private sealed class BlogModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        public string Title { get; set; } = string.Empty;
+
+        public string? Content { get; set; }
+
+        [Required(ErrorMessage = "Cover image URL is required")]
+        public string? CoverImageUrl { get; set; }
+
+        public string PostType { get; set; } = BlogPostType.General.ToString();
+    }
+}

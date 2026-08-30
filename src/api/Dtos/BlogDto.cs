@@ -2,13 +2,13 @@ namespace BikerHub.Api.Dtos;
 
 public sealed record BlogDto(
     Guid Id,
-    string? Title = null,
-    string? Summary = null,
-    string? Content = null,
-    string? ImageUrl = null,
-    string? Author = null,
+    string Title,
+    string Content,
+    string CoverImageUrl,
+    BlogPostType PostType,
+    IEnumerable<MediaDto>? Media = null,
     DateTime? CreatedAtUTC = null,
-    int? CreatedById = null,
+    Guid? CreatedById = null,
     DateTime? UpdatedAtUTC = null,
-    int? UpdatedById = null
+    Guid? UpdatedById = null
 );

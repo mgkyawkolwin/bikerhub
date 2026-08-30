@@ -11,7 +11,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<UserEntity> Users => Set<UserEntity>();
-    public DbSet<Blog> Blogs => Set<Blog>();
+    public DbSet<BlogEntity> Blogs => Set<BlogEntity>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<ChallengeParticipantEntity> ChallengeParticipants => Set<ChallengeParticipantEntity>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();

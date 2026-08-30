@@ -9,6 +9,8 @@ public sealed record ChatMessageDto(
     string? ReceiverName,
     string? ReceiverProfilePictureUrl,
     string? TextMessage,
+    ChatMessageType MessageType,
+    IEnumerable<MediaDto>? Medias,
     DateTime MessageDateTimeUTC,
     bool Sent,
     bool Delivered,

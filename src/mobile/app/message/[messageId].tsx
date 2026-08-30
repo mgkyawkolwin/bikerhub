@@ -62,6 +62,7 @@ export default function MessageDetailScreen() {
         return;
       }
       setMessage((prev) => (prev ? { ...prev, read: false } : prev));
+      router.back();
     } catch (error) {
       console.error('Unable to mark message as unread.', error);
     } finally {
@@ -112,7 +113,6 @@ export default function MessageDetailScreen() {
 const styles = StyleSheet.create({
   root: { 
     flex: 1,
-    padding: 16,
    },
   header: {
     paddingHorizontal: 16,

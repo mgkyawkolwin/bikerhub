@@ -1,3 +1,5 @@
+import { Media } from './media';
+
 export default class ChatMessage {
     id?: string;
     senderId?: string;
@@ -7,6 +9,8 @@ export default class ChatMessage {
     receiverName?: string;
     receiverProfilePictureUrl?: string;
     textMessage?: string;
+    messageType?: 'Text' | 'Media';
+    medias?: Media[];
     messageDateTimeUTC?: string;
     sent?: boolean = false;
     delivered?: boolean = false;
