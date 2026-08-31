@@ -11,7 +11,7 @@ public sealed record ChatMessageDto(
     string? TextMessage,
     ChatMessageType MessageType,
     IEnumerable<MediaDto>? Medias,
-    DateTime MessageDateTimeUTC,
+    DateTime MessageDateTimeUtc,
     bool Sent,
     bool Delivered,
     bool Read

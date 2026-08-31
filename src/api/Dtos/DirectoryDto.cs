@@ -21,7 +21,7 @@ public sealed record DirectoryDto
     public double? Rating { get; set; }
     public int? RatingCount { get; set; }
     public double? MyRating { get; set; }
-    public DateTime? CreatedAtUTC { get; set; }
-    public DateTime? UpdatedAtUTC { get; set; }
+    public DateTime? CreatedAtUtc { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
     public Guid? UpdatedById { get; set; }
 }

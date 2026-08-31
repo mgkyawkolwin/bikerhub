@@ -166,18 +166,25 @@ namespace BikerHub.Api.Migrations
                     b.ToTable("BikeListings");
                 });
 
-            modelBuilder.Entity("BikerHub.Api.Entities.Blog", b =>
+            modelBuilder.Entity("BikerHub.Api.Entities.BlogEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("Author")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<string>("CoverImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)");
@@ -185,17 +192,12 @@ namespace BikerHub.Api.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
+                    b.Property<Guid>("PostTypeId")
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("RowVersion")
                         .IsConcurrencyToken()
                         .HasColumnType("char(36)");
-
-                    b.Property<string>("Summary")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -713,6 +715,9 @@ namespace BikerHub.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("BlogEntityId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ContentType")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -744,6 +749,8 @@ namespace BikerHub.Api.Migrations
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BlogEntityId");
 
                     b.ToTable("Medias");
                 });
@@ -842,6 +849,100 @@ namespace BikerHub.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("News");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.PlanEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<decimal>("Distance")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<decimal>("Duration")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<decimal>("Elevation")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("LocationsJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<DateTime>("TripDateTimeUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Plans");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.PlanRiderEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("Confirmed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("PlanEntityId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanEntityId");
+
+                    b.ToTable("PlanRiderEntity");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.RatingEntity", b =>
@@ -1476,6 +1577,20 @@ namespace BikerHub.Api.Migrations
                     b.Navigation("ToUser");
                 });
 
+            modelBuilder.Entity("BikerHub.Api.Entities.MediaEntity", b =>
+                {
+                    b.HasOne("BikerHub.Api.Entities.BlogEntity", null)
+                        .WithMany("Media")
+                        .HasForeignKey("BlogEntityId");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.PlanRiderEntity", b =>
+                {
+                    b.HasOne("BikerHub.Api.Entities.PlanEntity", null)
+                        .WithMany("Riders")
+                        .HasForeignKey("PlanEntityId");
+                });
+
             modelBuilder.Entity("BikerHub.Api.Entities.SocialPostCommentEntity", b =>
                 {
                     b.HasOne("BikerHub.Api.Entities.SocialPostCommentEntity", "ParentComment")
@@ -1602,9 +1717,19 @@ namespace BikerHub.Api.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BikerHub.Api.Entities.BlogEntity", b =>
+                {
+                    b.Navigation("Media");
+                });
+
             modelBuilder.Entity("BikerHub.Api.Entities.Challenge", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.PlanEntity", b =>
+                {
+                    b.Navigation("Riders");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.SocialPostCommentEntity", b =>

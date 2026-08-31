@@ -31,7 +31,7 @@ public sealed record RideDto(
     Guid? CreatedById = null,
     IEnumerable<RideLocationDto>? Locations = null,
     IEnumerable<MediaDto>? Medias = null,
-    DateTime? CreatedAtUTC = null,
-    DateTime? UpdatedAtUTC = null,
+    DateTime? CreatedAtUtc = null,
+    DateTime? UpdatedAtUtc = null,
     Guid? UpdatedById = null
 );

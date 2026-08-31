@@ -184,13 +184,14 @@ const RoutePlanner: React.FC = () => {
             osrmResponseJson: osrmJson,
             distance: osrmData?.routes?.[0]?.distance,
             duration: osrmData?.routes?.[0]?.duration,
+            elevation: osrmData?.routes?.[0]?.legs?.reduce((sum: number, leg: any) => sum + (leg?.annotation?.max_elevation ?? 0) - (leg?.annotation?.min_elevation ?? 0), 0) ?? prev.elevation,
           }));
         }
         drawOnMap(osrmJson, normalizedWaypoints);
       }
     } else {
       // Clear route if less than 2 waypoints
-      setRoute(prev => ({ ...prev, osrmResponseJson: '', distance: undefined, duration: undefined }));
+      setRoute(prev => ({ ...prev, osrmResponseJson: '', distance: undefined, duration: undefined, elevation: undefined }));
     }
   }, [normalizeWaypoints, calculateRouteFromWaypoints, parseOsrmResponse, drawOnMap]);
 

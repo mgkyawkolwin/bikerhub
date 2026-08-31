@@ -6,8 +6,8 @@ public sealed record FriendRequestDto
     public Guid FromProfileId { get; set; }
     public Guid ToProfileId { get; set; }
     public string Status { get; set; } = string.Empty;
-    public DateTime CreatedAtUTC { get; set; }
-    public DateTime? RespondedAtUTC { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime? RespondedAtUtc { get; set; }
 }
 
 public sealed record SendFriendRequestDto
@@ -33,5 +33,5 @@ public sealed record PendingFriendRequestDto
     public string? FromProfilePictureUrl { get; set; }
     public string? FromCoverPhotoUrl { get; set; }
     public string? FromBio { get; set; }
-    public DateTime CreatedAtUTC { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
 }

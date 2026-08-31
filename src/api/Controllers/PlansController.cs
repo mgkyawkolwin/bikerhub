@@ -10,24 +10,24 @@ namespace BikerHub.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BlogsController : ControllerBase
+public class PlansController : ControllerBase
 {
-    private readonly IBlogService _blogService;
-    private readonly ILogger<BlogsController> _logger;
+    private readonly IPlanService _planService;
+    private readonly ILogger<PlansController> _logger;
 
-    public BlogsController(IBlogService blogService, ILogger<BlogsController> logger)
+    public PlansController(IPlanService planService, ILogger<PlansController> logger)
     {
-        _blogService = blogService;
+        _planService = planService;
         _logger = logger;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetBlogs([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetPlans([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         try
         {
-            _logger.LogDebug("CALLED: GetBlogs(page={Page}, pageSize={PageSize})", page, pageSize);
-            var result = await _blogService.GetBlogsAsync(page, pageSize);
+            _logger.LogDebug("CALLED: GetPlans(page={Page}, pageSize={PageSize})", page, pageSize);
+            var result = await _planService.GetPlansAsync(page, pageSize);
             _logger.LogDebug("Count: {Count}", result.Items.Count());
             _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(result.Items.FirstOrDefault()));
             return Ok(new { Success = true, Data = result });
@@ -39,25 +39,25 @@ public class BlogsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetBlogs");
+            _logger.LogError(ex, "Unexpected error occurred in GetPlans");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetBlogById(Guid id)
+    public async Task<IActionResult> GetPlanById(Guid id)
     {
         try
         {
-            _logger.LogDebug("CALLED: GetBlogById(id={Id})", id);
-            var blog = await _blogService.GetBlogByIdAsync(id);
-            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(blog));
-            if (blog is null)
+            _logger.LogDebug("CALLED: GetPlanById(id={Id})", id);
+            var plan = await _planService.GetPlanByIdAsync(id);
+            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(plan));
+            if (plan is null)
             {
-                return NotFound(new { Success = false, Message = "Blog not found." });
+                return NotFound(new { Success = false, Message = "Plan not found." });
             }
 
-            return Ok(new { Success = true, Data = blog });
+            return Ok(new { Success = true, Data = plan });
         }
         catch (CustomException ex)
         {
@@ -66,21 +66,21 @@ public class BlogsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in GetBlogById");
+            _logger.LogError(ex, "Unexpected error occurred in GetPlanById");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateBlog([FromBody] CreateBlogDto dto)
+    public async Task<IActionResult> CreatePlan([FromBody] CreatePlanDto dto)
     {
         try
         {
-            _logger.LogDebug("CALLED: CreateBlog(dto={Dto})", JsonSerializer.Serialize(dto));
-            var blog = await _blogService.CreateBlogAsync(dto);
-            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(blog));
-            return Ok(new { Success = true, Data = blog });
+            _logger.LogDebug("CALLED: CreatePlan(dto={Dto})", JsonSerializer.Serialize(dto));
+            var plan = await _planService.CreatePlanAsync(dto);
+            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(plan));
+            return Ok(new { Success = true, Data = plan });
         }
         catch (CustomException ex)
         {
@@ -89,31 +89,31 @@ public class BlogsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in CreateBlog");
+            _logger.LogError(ex, "Unexpected error occurred in CreatePlan");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
     [HttpPut("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateBlog([FromRoute] Guid id, [FromBody] UpdateBlogDto dto)
+    public async Task<IActionResult> UpdatePlan([FromRoute] Guid id, [FromBody] UpdatePlanDto dto)
     {
         try
         {
-            _logger.LogDebug("CALLED: UpdateBlog(id={Id}, dto={Dto})", id, JsonSerializer.Serialize(dto));
+            _logger.LogDebug("CALLED: UpdatePlan(id={Id}, dto={Dto})", id, JsonSerializer.Serialize(dto));
             if (dto is null)
             {
                 return BadRequest(new { Success = false, Message = "Request body cannot be null." });
             }
 
-            var blog = await _blogService.UpdateBlogAsync(id, dto);
-            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(blog));
-            if (blog is null)
+            var plan = await _planService.UpdatePlanAsync(id, dto);
+            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(plan));
+            if (plan is null)
             {
-                return NotFound(new { Success = false, Message = "Blog not found." });
+                return NotFound(new { Success = false, Message = "Plan not found." });
             }
 
-            return Ok(new { Success = true, Data = blog });
+            return Ok(new { Success = true, Data = plan });
         }
         catch (CustomException ex)
         {
@@ -122,22 +122,22 @@ public class BlogsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in UpdateBlog");
+            _logger.LogError(ex, "Unexpected error occurred in UpdatePlan");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteBlog([FromRoute] Guid id)
+    public async Task<IActionResult> DeletePlan([FromRoute] Guid id)
     {
         try
         {
-            _logger.LogDebug("CALLED: DeleteBlog(id={Id})", id);
-            var deleted = await _blogService.DeleteBlogAsync(id);
+            _logger.LogDebug("CALLED: DeletePlan(id={Id})", id);
+            var deleted = await _planService.DeletePlanAsync(id);
             if (!deleted)
             {
-                return NotFound(new { Success = false, Message = "Blog not found." });
+                return NotFound(new { Success = false, Message = "Plan not found." });
             }
 
             return Ok(new { Success = true });
@@ -149,7 +149,7 @@ public class BlogsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred in DeleteBlog");
+            _logger.LogError(ex, "Unexpected error occurred in DeletePlan");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

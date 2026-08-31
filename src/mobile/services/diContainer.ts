@@ -12,6 +12,7 @@ import { GarageBikeServiceClient, GarageBikeServiceToken } from './garageBikeSer
 import { MessageServiceClient, MessageServiceToken } from './messageService';
 import { NewsServiceClient, NewsServiceToken } from './newsService';
 import { RouteServiceClient, RouteServiceToken } from './routeService';
+import { PlanServiceClient, PlanServiceToken } from './planService';
 import { RideServiceClient, RideServiceToken } from './rideService';
 import { StolenBikeServiceClient, StolenBikeServiceToken } from './stolenBikeService';
 import { UserServiceClient, UserServiceToken } from './userService';
@@ -29,6 +30,7 @@ container.registerSingleton(GroupServiceToken, GroupServiceClient);
 container.registerSingleton(ChallengeServiceToken, ChallengeServiceClient);
 container.registerSingleton(DirectoryServiceToken, DirectoryServiceClient);
 container.registerSingleton(RouteServiceToken, RouteServiceClient);
+container.registerSingleton(PlanServiceToken, PlanServiceClient);
 container.registerSingleton(RideServiceToken, RideServiceClient);
 container.registerSingleton(ConfigServiceToken, ConfigServiceClient);
 container.registerSingleton(ChatServiceToken, ChatServiceClient);

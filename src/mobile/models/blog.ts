@@ -1,9 +1,10 @@
 export default class Blog {
   id?: string;
   title?: string;
-  summary?: string;
+  authorName?: string;
   content?: string;
-  imageUrl?: string;
-  author?: string;
-  dateTimeUTC?: string;
+  coverImageUrl?: string;
+  createdByName?: string;
+  createdAtUtc?: string;
+  postType?: string;
 }

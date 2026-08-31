@@ -17,6 +17,8 @@ export type { DirectoryService } from './directoryService';
 export { DirectoryServiceToken } from './directoryService';
 export type { RouteService } from './routeService';
 export { RouteServiceToken } from './routeService';
+export type { PlanService } from './planService';
+export { PlanServiceToken } from './planService';
 export type { RideService } from './rideService';
 export { RideServiceToken } from './rideService';
 export type { ConfigService } from './configService';

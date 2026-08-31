@@ -437,7 +437,7 @@ public class SocialService : ISocialService
                 PostId = comment.PostId,
                 ParentCommentId = comment.ParentCommentId,
                 Content = comment.Content,
-                CreatedAtUTC = comment.CreatedAtUtc,
+                CreatedAtUtc = comment.CreatedAtUtc,
                 CreatedById = comment.UserId,
                 CreatedByName = comment.User.UserName
             })
@@ -523,7 +523,7 @@ public class SocialService : ISocialService
             PostId = commentEntity.PostId,
             ParentCommentId = commentEntity.ParentCommentId,
             Content = commentEntity.Content,
-            CreatedAtUTC = commentEntity.CreatedAtUtc,
+            CreatedAtUtc = commentEntity.CreatedAtUtc,
             CreatedById = commentEntity.UserId,
             CreatedByName = commentEntity.User.UserName,
             Replies = new List<SocialPostCommentDto>()
@@ -609,7 +609,7 @@ public class SocialService : ISocialService
             CommentCount = post.CommentCount,
             ShareCount = post.ShareCount,
             IsLikedByCurrentUser = post.Likes?.Any(like => like.UserId == currentProfileId) == true,
-            CreatedAtUTC = post.CreatedAtUtc,
+            CreatedAtUtc = post.CreatedAtUtc,
             CreatedByUserId = post.UserId,
             CreatedByDisplayName = post.User?.DisplayName ?? string.Empty,
             CreatedByUserName = post.User?.UserName ?? string.Empty,
@@ -1479,7 +1479,7 @@ public class SocialService : ISocialService
             FromProfilePictureUrl = r.FromUser.ProfilePictureUrl,
             FromCoverPhotoUrl = "",
             FromBio = "",
-            CreatedAtUTC = r.CreatedAtUtc
+            CreatedAtUtc = r.CreatedAtUtc
         }).ToList();
 
         _logger.LogInformation("Retrieved {Count} pending friend requests for user {UserId}", result.Count, currentUserId);

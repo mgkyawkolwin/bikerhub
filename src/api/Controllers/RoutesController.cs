@@ -13,11 +13,13 @@ namespace BikerHub.Api.Controllers;
 public class RoutesController : BaseController
 {
     private readonly IRouteService _routeService;
+    private readonly IGoogleMapsService _googleMapsService;
     private readonly ILogger<RoutesController> _logger;
 
-    public RoutesController(IRouteService routeService, ILogger<RoutesController> logger) : base(logger)
+    public RoutesController(IRouteService routeService, IGoogleMapsService googleMapsService, ILogger<RoutesController> logger) : base(logger)
     {
         _routeService = routeService;
+        _googleMapsService = googleMapsService;
         _logger = logger;
     }
 
@@ -68,6 +70,61 @@ public class RoutesController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost("calculate")]
+    public async Task<IActionResult> CalculateRoute([FromBody] CalculateRouteDto? dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: CalculateRoute()");
+            if (dto is null)
+            {
+                _logger.LogWarning("CalculateRoute called with null body");
+                return BadRequest(new { Success = false, Message = "CalculateRouteDto cannot be null." });
+            }
+
+            var routeJson = await _routeService.CalculateRouteAsync(dto);
+            var routeData = JsonSerializer.Deserialize<object>(routeJson);
+            return Ok(new { Success = true, Data = routeData });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost("static-map-url")]
+    public IActionResult GetStaticMapUrl([FromBody] RouteStaticMapDto? dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: GetStaticMapUrl()");
+            if (dto is null)
+            {
+                _logger.LogWarning("GetStaticMapUrl called with null body");
+                return BadRequest(new { Success = false, Message = "RouteStaticMapDto cannot be null." });
+            }
+
+            var staticMapUrl = _googleMapsService.GetStaticMapUrl(dto);
+            return Ok(new { Success = true, Data = staticMapUrl });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in GetStaticMapUrl.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
         }
     }

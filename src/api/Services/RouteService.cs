@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
@@ -13,6 +15,7 @@ public interface IRouteService
     Task<RouteDto?> GetRouteByIdAsync(Guid id);
     Task<RouteDto> CreateRouteAsync(CreateRouteDto dto);
     Task<RouteDto> UpdateRouteAsync(Guid id, CreateRouteDto dto);
+    Task<string> CalculateRouteAsync(CalculateRouteDto dto);
 }
 
 public class RouteService : IRouteService
@@ -20,12 +23,14 @@ public class RouteService : IRouteService
     private readonly AppDbContext _dbContext;
     private readonly ILogger<RouteService> _logger;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public RouteService(AppDbContext dbContext, ILogger<RouteService> logger, ICurrentUserService currentUserService)
+    public RouteService(AppDbContext dbContext, ILogger<RouteService> logger, ICurrentUserService currentUserService, IHttpClientFactory httpClientFactory)
     {
         _dbContext = dbContext;
         _logger = logger;
         _currentUserService = currentUserService;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<PaginatedResultDto<RouteDto>> GetRoutesAsync(int page, int pageSize)
@@ -87,6 +92,40 @@ public class RouteService : IRouteService
         return MapRoute(entity);
     }
 
+    public async Task<string> CalculateRouteAsync(CalculateRouteDto dto)
+    {
+        if (dto.Waypoints is null)
+        {
+            throw new CustomException("Waypoints cannot be null.");
+        }
+
+        var waypoints = dto.Waypoints.ToList();
+        if (waypoints.Count < 2)
+        {
+            throw new CustomException("At least two waypoints are required to calculate a route.");
+        }
+
+        var coordinates = string.Join(';', waypoints.Select(wp => $"{wp.Longitude},{wp.Latitude}"));
+        var url = $"https://router.project-osrm.org/route/v1/driving/{coordinates}?overview=full&geometries=geojson";
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.UserAgent.ParseAdd("BikerHub/1.0 (+https://yourapp.example.com)");
+
+        using var response = await httpClient.SendAsync(request);
+        _logger.LogDebug("OSRM API response status: {StatusCode} {StatusMessage}", response.StatusCode, response.ReasonPhrase);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(content);
+        if (!json.RootElement.TryGetProperty("code", out var codeElement) || codeElement.GetString() != "Ok")
+        {
+            throw new CustomException("Unable to generate route from the provided waypoints.");
+        }
+
+        return content;
+    }
+
     private static RouteDto MapRoute(RouteEntity route)
     {
         return new RouteDto{
@@ -96,7 +135,7 @@ public class RouteService : IRouteService
             Duration = route.Duration,
             OsrmResponseJson = route.OsrmResponseJson,
             CreatedById = route.CreatedById,
-            CreatedAtUTC = route.CreatedAtUtc
+            CreatedAtUtc = route.CreatedAtUtc
         };
     }
 }

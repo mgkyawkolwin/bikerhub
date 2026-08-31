@@ -7,8 +7,8 @@ public sealed record NewsDto(
     string? Content = null,
     string? ImageUrl = null,
     string? Source = null,
-    DateTime? CreatedAtUTC = null,
+    DateTime? CreatedAtUtc = null,
     int? CreatedById = null,
-    DateTime? UpdatedAtUTC = null,
+    DateTime? UpdatedAtUtc = null,
     int? UpdatedById = null
 );

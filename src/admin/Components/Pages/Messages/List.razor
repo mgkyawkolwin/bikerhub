@@ -39,7 +39,7 @@
             <PropertyColumn Title="Body" Property="@(item => item.Body)" />
             <TemplateColumn Title="Date">
                 <ChildContent Context="item">
-                    @item.CreatedAtUTC?.ToString("yyyy-MM-dd HH:mm")
+                    @item.CreatedAtUtc?.ToString("yyyy-MM-dd HH:mm")
                 </ChildContent>
             </TemplateColumn>
             <TemplateColumn Title="Actions">

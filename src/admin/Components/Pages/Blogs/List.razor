@@ -66,7 +66,7 @@
             </TemplateColumn>
             <TemplateColumn Title="Created">
                 <ChildContent Context="blog">
-                    <span>@(blog.CreatedAtUTC?.ToString("yyyy-MM-dd") ?? "-")</span>
+                    <span>@(blog.CreatedAtUtc?.ToString("yyyy-MM-dd") ?? "-")</span>
                 </ChildContent>
             </TemplateColumn>
             <TemplateColumn Title="Actions">
@@ -110,6 +110,11 @@
                 <div class="mb-3">
                     <label class="form-label">Cover Image URL</label>
                     <FluentTextField @bind-Value="_editBlog.CoverImageUrl" Placeholder="Cover image URL" Style="width: 100%;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Author Name</label>
+                    <FluentTextField @bind-Value="_editBlog.AuthorName" Placeholder="Author name" Style="width: 100%;" />
                 </div>
 
                 <div class="mb-3">
@@ -191,7 +196,8 @@
                 Title = blog.Title,
                 Content = blog.Content,
                 CoverImageUrl = blog.CoverImageUrl,
-                PostType = blog.PostType.ToString()
+                AuthorName = blog.AuthorName,
+                PostType = blog.PostType
             };
             _isEditBlogDialogHidden = false;
         }
@@ -234,9 +240,10 @@
         {
             var dto = new UpdateBlogDto(
                 _editBlog.Title,
+                _editBlog.AuthorName,
                 _editBlog.Content,
                 _editBlog.CoverImageUrl,
-                Enum.TryParse<BlogPostType>(_editBlog.PostType, true, out var postType) ? postType : null);
+                _editBlog.PostType);
 
             var updatedBlog = await BlogService.UpdateBlogAsync(_editingBlogId, dto);
             if (updatedBlog is null)
@@ -279,6 +286,8 @@
 
         public string? CoverImageUrl { get; set; }
 
-        public string PostType { get; set; } = BlogPostType.General.ToString();
+        public string? AuthorName { get; set; }
+
+        public string PostType { get; set; } = "General";
     }
 }

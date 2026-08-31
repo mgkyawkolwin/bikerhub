@@ -346,22 +346,30 @@ export default function SocialPostsScreen() {
           </View>
         </View>
 
-        <View style={styles.infoRow}>
+        {/* <View style={styles.infoRow}>
           <Text style={[styles.welcome, { color: colors.text }]}>Welcome, {getAuthUser()?.displayName ?? 'Rider'}</Text>
           <View style={styles.weatherRow}>
             <MaterialIcons name="wb-sunny" size={14} color="#FFC107" />
             <Text style={styles.weatherText}>34°C · Yangon</Text>
           </View>
-        </View>
+        </View> */}
         {/* Tabs Row - Center Aligned */}
         <View style={styles.tabsRow}>
           <TouchableOpacity
             style={[styles.tabButton]}
             activeOpacity={0.85}
-            onPress={() => router.push('/group/explore')}
+            onPress={() => router.push('/plan/list')}
           >
-            <MaterialIcons name="groups" size={22} color={colors.secondaryText} />
-            <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Groups</Text>
+            <MaterialIcons name="map" size={22} color={colors.secondaryText} />
+            <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Plans</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton]}
+            activeOpacity={0.85}
+            onPress={() => router.push('/blog/list')}
+          >
+            <MaterialIcons name="newspaper" size={22} color={colors.secondaryText} />
+            <Text style={[styles.tabLabel, { color: colors.secondaryText }]}>Blogs</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton]}
@@ -473,7 +481,8 @@ const styles = StyleSheet.create({
   headerTop: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    justifyContent: 'space-between' 
+    justifyContent: 'space-between',
+    paddingBottom: 8
   },
   headerSide: { 
     flexDirection: 'row', 

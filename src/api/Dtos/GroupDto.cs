@@ -10,7 +10,7 @@ public sealed record GroupDto(
     bool IsPrivate = false,
     int MembersCount = 0,
     int? CreatedById = null,
-    DateTime? CreatedAtUTC = null,
-    DateTime? UpdatedAtUTC = null,
+    DateTime? CreatedAtUtc = null,
+    DateTime? UpdatedAtUtc = null,
     int? UpdatedById = null
 );

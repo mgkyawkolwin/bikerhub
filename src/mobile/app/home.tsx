@@ -47,7 +47,7 @@ function useSections() {
       title: t.Title.community,
       icon: 'groups',
       items: [
-        { label: t.Title.blogs, icon: 'forum', link: '/blog' },
+        { label: t.Title.blogs, icon: 'newspaper', link: '/blog/list' },
         { label: t.Title.forums, icon: 'forum', link: '/forum' },
         { label: t.Title.chats, icon: 'chat-bubble-outline', link: '/chat/chats' },
       ],

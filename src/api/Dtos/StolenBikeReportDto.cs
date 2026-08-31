@@ -19,7 +19,7 @@ public sealed record StolenBikeReportDto(
     Guid? ReportedById = null,
     string? ReportedByName = null,
     Guid? CreatedById = null,
-    DateTime? CreatedAtUTC = null,
-    DateTime? UpdatedAtUTC = null,
+    DateTime? CreatedAtUtc = null,
+    DateTime? UpdatedAtUtc = null,
     Guid? UpdatedById = null
 );

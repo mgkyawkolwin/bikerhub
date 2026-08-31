@@ -9,10 +9,14 @@ public class BlogEntity : BaseEntity<Guid>
     [MaxLength(200)]
     public required string Title { get; set; }
     [Required]
+    [MaxLength(20)]
+    public required string AuthorName { get; set; }
+    [Required]
     public required string Content { get; set; }
     [Required]
     [MaxLength(512)]
     public required string CoverImageUrl { get; set; }
-    public BlogPostType PostType { get; set; } = BlogPostType.General;
+    [Required]
+    public required Guid PostTypeId { get; set; }
     public MediaEntity[]? Media { get; set; }
 }

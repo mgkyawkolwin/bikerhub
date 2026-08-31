@@ -23,9 +23,12 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSetting
     ?? throw new InvalidOperationException("JwtSettings section is missing from configuration.");
 var googleAuthSettings = builder.Configuration.GetSection("GoogleAuth").Get<GoogleAuthSettings>()
     ?? throw new InvalidOperationException("GoogleAuth section is missing from configuration.");
+var googleMapsSettings = builder.Configuration.GetSection("GoogleMaps").Get<GoogleMapsSettings>()
+    ?? throw new InvalidOperationException("GoogleMaps section is missing from configuration.");
 
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddSingleton(googleAuthSettings);
+builder.Services.AddSingleton(googleMapsSettings);
 
 // Minio settings and storage service
 var minioSettings = builder.Configuration.GetSection("Minio").Get<MinioSettings>();
@@ -60,6 +63,8 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+builder.Services.AddHttpClient();
+
 builder.Services.AddControllersWithViews(options =>
 {
     // Add the global exception filter
@@ -79,6 +84,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.Parse("8.0.32-mysql")));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
+builder.Services.AddScoped<IPlanService, PlanService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
@@ -95,6 +101,7 @@ builder.Services.AddScoped<ISocialService, SocialService>();
 builder.Services.AddScoped<IStolenBikeService, StolenBikeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 

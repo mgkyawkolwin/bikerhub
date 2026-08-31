@@ -10,7 +10,6 @@ import { container } from '@/services';
 import { BlogServiceToken } from '@/services/blogService';
 import type { BlogService } from '@/services/blogService';
 import type Blog from '@/models/blog';
-import SnackBar from '@/components/snackbar';
 
 export default function BlogListScreen() {
   const insets = useSafeAreaInsets();
@@ -72,9 +71,9 @@ export default function BlogListScreen() {
   };
 
   const renderBlog = ({ item }: { item: Blog }) => {
-    const coverImage = item.coverImageUrl ?? item.imageUrl;
-    const createdBy = item.createdByName ?? item.author ?? 'Unknown';
-    const createdAt = item.createdAtUTC ? new Date(item.createdAtUTC).toLocaleDateString() : '';
+    const coverImage = item.coverImageUrl ?? item.coverImageUrl;
+    const createdBy = item.authorName ?? item.createdByName ?? 'Unknown';
+    const createdAt = item.createdAtUtc ? new Date(item.createdAtUtc).toLocaleDateString() : '';
     const badgeText = item.postType ? item.postType : 'Blog';
 
     return (
@@ -82,7 +81,7 @@ export default function BlogListScreen() {
         activeOpacity={0.85}
         onPress={() => {
           if (!item.id) return;
-          void router.push(`/blog/${item.id}` as any);
+          void router.push(`/blog/view?id=${item.id}` as any);
         }}
         style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
@@ -94,11 +93,7 @@ export default function BlogListScreen() {
         </View>
         <View style={styles.cardBody}>
           <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
-          {item.summary ? (
-            <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
-              {item.summary}
-            </Text>
-          ) : item.content ? (
+          {item.content ? (
             <Text style={[styles.cardSummary, { color: colors.secondaryText }]} numberOfLines={3}>
               {item.content.slice(0, 180)}{item.content.length > 180 ? '...' : ''}
             </Text>
@@ -128,7 +123,7 @@ export default function BlogListScreen() {
       </View>
       <FlatList
         data={blogs}
-        keyExtractor={(item) => item.id ?? `${item.title}-${item.createdAtUTC}`}
+        keyExtractor={(item) => item.id ?? `${item.title}-${item.createdAtUtc}`}
         renderItem={renderBlog}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
         onEndReached={handleEndReached}

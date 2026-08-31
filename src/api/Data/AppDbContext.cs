@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<News> News => Set<News>();
     public DbSet<BikerHub.Api.Entities.RouteEntity> Routes => Set<BikerHub.Api.Entities.RouteEntity>();
     public DbSet<RideEntity> Rides => Set<RideEntity>();
+    public DbSet<PlanEntity> Plans => Set<PlanEntity>();
     public DbSet<SocialPostEntity> Posts => Set<SocialPostEntity>();
     public DbSet<SocialProfileEntity> SocialProfiles => Set<SocialProfileEntity>();
     public DbSet<SocialPostLikeEntity> SocialPostLikes => Set<SocialPostLikeEntity>();

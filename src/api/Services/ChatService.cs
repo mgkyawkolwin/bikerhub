@@ -56,7 +56,7 @@ public class ChatService : IChatService
                     latest.SenderId == currentUserId ? latest.ReceiverProfilePictureUrl : latest.SenderProfilePictureUrl,
                     latest.TextMessage,
                     latest.Medias?.FirstOrDefault()?.ContentType,
-                    latest.MessageDateTimeUTC,
+                    latest.MessageDateTimeUtc,
                     unreadCount
                 );
             })

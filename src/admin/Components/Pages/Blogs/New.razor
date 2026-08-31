@@ -70,6 +70,11 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Author Name</label>
+                <FluentTextField @bind-Value="_model.AuthorName" Placeholder="Author name" Style="width: 100%;" />
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label">Post Type</label>
                 <FluentTextField @bind-Value="_model.PostType" Placeholder="Post type" Style="width: 100%;" />
             </div>
@@ -118,9 +123,10 @@
         {
             var dto = new CreateBlogDto(
                 _model.Title,
+                _model.AuthorName ?? string.Empty,
                 _model.Content ?? string.Empty,
                 _model.CoverImageUrl ?? string.Empty,
-                Enum.TryParse<BlogPostType>(_model.PostType, true, out var postType) ? postType : BlogPostType.General);
+                _model.PostType);
 
             await BlogService.CreateBlogAsync(dto);
             ToastService.ShowSuccess("Blog created successfully.", 2000, "Success");
@@ -152,6 +158,8 @@
         [Required(ErrorMessage = "Cover image URL is required")]
         public string? CoverImageUrl { get; set; }
 
-        public string PostType { get; set; } = BlogPostType.General.ToString();
+        public string? AuthorName { get; set; }
+
+        public string PostType { get; set; } = "General";
     }
 }

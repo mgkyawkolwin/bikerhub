@@ -10,8 +10,8 @@ public sealed record RouteDto{
     public decimal? Duration {get; set;}
     public string? Type {get; set;}
     public string? OsrmResponseJson {get; set;}
-    public DateTime CreatedAtUTC {get; set;}
+    public DateTime CreatedAtUtc {get; set;}
     public Guid CreatedById {get; set;}
-    public DateTime UpdatedAtUTC {get; set;}
+    public DateTime UpdatedAtUtc {get; set;}
     public Guid UpdatedById {get; set;}
 }
