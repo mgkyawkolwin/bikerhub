@@ -8,6 +8,7 @@ export interface PlanService {
   getPlanById(id: string): Promise<Response>;
   createPlan(plan: Plan): Promise<Response>;
   updatePlan(id: string, plan: Plan): Promise<Response>;
+  updatePlanAttendance(id: string, confirmed: boolean): Promise<Response>;
 }
 
 export class PlanServiceClient implements PlanService {
@@ -30,6 +31,13 @@ export class PlanServiceClient implements PlanService {
     return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(plan),
+    });
+  }
+
+  async updatePlanAttendance(id: string, confirmed: boolean): Promise<Response> {
+    return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}/attendance`, {
+      method: 'PATCH',
+      body: JSON.stringify({ confirmed }),
     });
   }
 }

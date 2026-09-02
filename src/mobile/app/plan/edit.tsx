@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import polyline from '@mapbox/polyline';
@@ -33,12 +33,20 @@ interface Waypoint {
   order: number;
 }
 
-export default function PlanCreateScreen() {
+export default function PlanEditScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { colors } = useThemeContext();
   const planService = useMemo(() => container.resolve<PlanService>(PlanServiceToken), []);
   const routeService = useMemo(() => container.resolve<RouteService>(RouteServiceToken), []);
+
+  const planId = useMemo(() => {
+    const value = Array.isArray(params.planId) ? params.planId[0] : params.planId;
+    if (value) return String(value);
+    const alt = Array.isArray(params.id) ? params.id[0] : params.id;
+    return alt ? String(alt) : null;
+  }, [params]);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,6 +56,7 @@ export default function PlanCreateScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'title' | 'description' | 'tripDate' | 'tripTime', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(Boolean(planId));
 
   const [routeModalVisible, setRouteModalVisible] = useState(false);
   const [routePoints, setRoutePoints] = useState<Waypoint[]>([]);
@@ -77,17 +86,19 @@ export default function PlanCreateScreen() {
     });
   };
 
-  const buildTripDateTime = (): Date | null => {
-    if (!tripDate || !tripTime) return null;
-    return new Date(
-      tripDate.getFullYear(),
-      tripDate.getMonth(),
-      tripDate.getDate(),
-      tripTime.getHours(),
-      tripTime.getMinutes(),
-      tripTime.getSeconds(),
-    );
-  };
+  const parseLocationsJson = useCallback((value: unknown) => {
+    if (!value) return { points: [] as Waypoint[], route: null as any };
+
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return { points: [], route: null };
+      }
+    }
+
+    return value as any;
+  }, []);
 
   const normalizeWaypoints = useCallback((waypoints: Waypoint[]) => {
     const ordered = [...waypoints].sort((a, b) => a.order - b.order);
@@ -101,6 +112,18 @@ export default function PlanCreateScreen() {
       return { ...point, order: index, type, title };
     });
   }, []);
+
+  const buildTripDateTime = (): Date | null => {
+    if (!tripDate || !tripTime) return null;
+    return new Date(
+      tripDate.getFullYear(),
+      tripDate.getMonth(),
+      tripDate.getDate(),
+      tripTime.getHours(),
+      tripTime.getMinutes(),
+      tripTime.getSeconds(),
+    );
+  };
 
   const calculateRouteFromWaypoints = useCallback(async (points: Waypoint[]) => {
     if (points.length < 2) return null;
@@ -265,7 +288,80 @@ export default function PlanCreateScreen() {
     return Object.keys(nextErrors).length === 0;
   };
 
+  const loadPlan = useCallback(async (id: string) => {
+    try {
+      setIsLoadingPlan(true);
+      const response = await planService.getPlanById(id);
+      const responseJson = await response.json().catch(() => null);
+      const success = responseJson?.success ?? responseJson?.Success;
+      const data = responseJson?.data ?? responseJson?.Data;
+
+      if (!response.ok || !success || !data) {
+        const message = responseJson?.message ?? responseJson?.Message ?? 'Unable to load plan.';
+        throw new Error(message);
+      }
+
+      const plan = data as any;
+      const parsedDate = plan.tripDateTimeUtc ? new Date(plan.tripDateTimeUtc) : null;
+      setTitle(plan.title ?? '');
+      setDescription(plan.description ?? '');
+      setTotalDistance(plan.distance ?? 0);
+      setTotalDuration(plan.duration ?? 0);
+      setTotalElevation(plan.elevation ?? 0);
+      setRouteImageUrl(plan.staticMapUrl ?? null);
+
+      if (parsedDate && !Number.isNaN(parsedDate.getTime())) {
+        setTripDate(new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate()));
+        setTripTime(new Date(2000, 0, 1, parsedDate.getHours(), parsedDate.getMinutes(), parsedDate.getSeconds()));
+      }
+
+      const locations = parseLocationsJson(plan.locationsJson);
+      const loadedPoints = Array.isArray(locations?.points) ? locations.points as Waypoint[] : [];
+      if (loadedPoints.length > 0) {
+        const normalizedPoints = normalizeWaypoints(loadedPoints);
+        setRoutePoints(normalizedPoints);
+        setRouteResponseJson(locations?.route ?? null);
+        if (locations?.route) {
+          const geoCoords = locations.route.routes?.[0]?.geometry?.coordinates?.map((coord: [number, number]) => ({
+            latitude: coord[1],
+            longitude: coord[0],
+          })) ?? [];
+          setMapRegion(
+            geoCoords.length > 0
+              ? {
+                  latitude: geoCoords[0].latitude,
+                  longitude: geoCoords[0].longitude,
+                  latitudeDelta: 0.2,
+                  longitudeDelta: 0.2,
+                }
+              : null,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load plan:', error);
+      Alert.alert('Load Plan', error instanceof Error ? error.message : 'Unable to load plan.');
+      router.back();
+    } finally {
+      setIsLoadingPlan(false);
+    }
+  }, [normalizeWaypoints, parseLocationsJson, planService, router]);
+
+  useEffect(() => {
+    if (!planId) {
+      setIsLoadingPlan(false);
+      return;
+    }
+
+    void loadPlan(planId);
+  }, [loadPlan, planId]);
+
   const handleSave = async () => {
+    if (!planId) {
+      Alert.alert('Update Plan', 'Plan id is missing.');
+      return;
+    }
+
     if (!validate()) {
       return;
     }
@@ -289,24 +385,42 @@ export default function PlanCreateScreen() {
         locationsJson: JSON.stringify({ points: routePoints, route: routeResponseJson }),
       };
 
-      const response = await planService.createPlan(requestBody as any);
+      const response = await planService.updatePlan(planId, requestBody as any);
       const responseJson = await response.json().catch(() => null);
       const success = responseJson?.success ?? responseJson?.Success;
       const data = responseJson?.data ?? responseJson?.Data;
 
       if (!response.ok || !success || !data) {
-        const message = responseJson?.message ?? responseJson?.Message ?? 'Unable to create plan.';
+        const message = responseJson?.message ?? responseJson?.Message ?? 'Unable to update plan.';
         throw new Error(message);
       }
 
       router.replace('/plan/list');
     } catch (error) {
-      console.error('Plan creation failed:', error);
-      Alert.alert('Create Plan', error instanceof Error ? error.message : 'Unable to create plan.');
+      console.error('Plan update failed:', error);
+      Alert.alert('Update Plan', error instanceof Error ? error.message : 'Unable to update plan.');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoadingPlan) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
+        <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+          <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
+            <MaterialIcons name="arrow-back" size={22} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Update Plan</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={[styles.loadingText, { color: colors.secondaryText }]}>Loading plan...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -314,7 +428,7 @@ export default function PlanCreateScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Plan</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Update Plan</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -463,7 +577,7 @@ export default function PlanCreateScreen() {
             <Text style={[styles.cancelLabel, { color: colors.text }]}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.accent }]} onPress={handleSave} activeOpacity={0.85} disabled={isSaving}>
-            {isSaving ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.saveLabel}>Save</Text>}
+            {isSaving ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.saveLabel}>Update</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -573,6 +687,16 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     gap: 16,
   },
+  loadingState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    paddingBottom: 80,
+  },
+  loadingText: {
+    fontSize: 15,
+  },
   sectionGroup: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 18,
@@ -590,12 +714,6 @@ const styles = StyleSheet.create({
   sectionBody: {
     padding: 16,
     gap: 16,
-  },
-  fieldGroup: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
   },
   fieldGroupInline: {
     gap: 8,
@@ -641,19 +759,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#E85D04',
     fontSize: 13,
-  },
-  routeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  routeLabel: {
-    fontSize: 16,
-    fontWeight: '700',
   },
   addRouteButton: {
     flexDirection: 'row',
@@ -746,7 +851,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalTitle: {
@@ -755,22 +861,25 @@ const styles = StyleSheet.create({
   },
   mapModalContent: {
     flex: 1,
-    padding: 16,
+    padding: 12,
+    gap: 12,
   },
   map: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
+    minHeight: 340,
     borderRadius: 16,
-    overflow: 'hidden',
   },
   modalActions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 12,
-    marginTop: 16,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   modalButtonText: {

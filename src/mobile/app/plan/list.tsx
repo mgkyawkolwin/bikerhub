@@ -81,7 +81,7 @@ export default function PlanListScreen() {
         style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
         onPress={() => {
           if (item.id) {
-            void router.push(`/ride/plan?id=${encodeURIComponent(item.id)}` as any);
+            void router.push({ pathname: '/plan/view', params: { id: item.id } });
           }
         }}
       >
@@ -121,6 +121,19 @@ export default function PlanListScreen() {
             <MaterialIcons name="help-outline" size={16} color={colors.text} />
             <Text style={[styles.countLabel, { color: colors.text }]}>{maybeCount} may be</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.editButton, { borderColor: colors.border }]}
+            onPress={(event) => {
+              event.stopPropagation();
+              if (item.id) {
+                void router.push({ pathname: '/plan/edit', params: { planId: item.id } });
+              }
+            }}
+            hitSlop={8}
+          >
+            <MaterialIcons name="edit" size={16} color={colors.text} />
+            <Text style={[styles.editButtonText, { color: colors.text }]}>Edit</Text>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -218,12 +231,26 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
     paddingHorizontal: 16,
     paddingBottom: 16,
+    paddingTop: 4,
+  },
+  editButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  editButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   countItem: {
     flexDirection: 'row',

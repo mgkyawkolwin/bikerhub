@@ -83,10 +83,6 @@ public class ChatService : IChatService
     public async Task<ChatMessageDto> SendChatMessageAsync(SendChatMessageDto dto)
     {
         DtoValidationHelper.ValidateGuid(dto.ReceiverId, "ReceiverId");
-        if (dto.MessageType != ChatMessageType.Text)
-        {
-            throw new CustomException("Invalid message type for text endpoint.");
-        }
 
         DtoValidationHelper.ValidateRequiredString(dto.TextMessage, "TextMessage");
 

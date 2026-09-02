@@ -13,6 +13,7 @@ public interface IPlanService
     Task<PlanDto?> GetPlanByIdAsync(Guid id);
     Task<PlanDto> CreatePlanAsync(CreatePlanDto dto);
     Task<PlanDto?> UpdatePlanAsync(Guid id, UpdatePlanDto dto);
+    Task<PlanDto?> SetPlanAttendanceAsync(Guid planId, bool confirmed);
     Task<bool> DeletePlanAsync(Guid id);
 }
 
@@ -146,6 +147,42 @@ public class PlanService : IPlanService
             .Where(x => x.Id == plan.Id)
             .ProjectToDto(_dbContext, _googleMapsService)
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<PlanDto?> SetPlanAttendanceAsync(Guid planId, bool confirmed)
+    {
+        var plan = await _dbContext.Plans.FirstOrDefaultAsync(x => x.Id == planId);
+        if (plan is null)
+        {
+            return null;
+        }
+
+        var userId = Guid.Parse(_currentUserService.UserId!);
+        var rider = await _dbContext.Set<PlanRiderEntity>()
+            .FirstOrDefaultAsync(x => x.PlanId == planId && x.UserId == userId);
+
+        if (rider is null)
+        {
+            _dbContext.Set<PlanRiderEntity>().Add(new PlanRiderEntity
+            {
+                PlanId = planId,
+                UserId = userId,
+                Confirmed = confirmed,
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = DateTime.UtcNow,
+                CreatedById = userId,
+                UpdatedById = userId,
+            });
+        }
+        else
+        {
+            rider.Confirmed = confirmed;
+            rider.UpdatedAtUtc = DateTime.UtcNow;
+            rider.UpdatedById = userId;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return await GetPlanByIdAsync(planId);
     }
 
     public async Task<bool> DeletePlanAsync(Guid id)

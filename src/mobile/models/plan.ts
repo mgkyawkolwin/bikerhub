@@ -1,3 +1,10 @@
+export type PlanRider = {
+  userId?: string;
+  displayName?: string;
+  profilePictureUrl?: string;
+  confirmed?: boolean;
+};
+
 export default class Plan {
   id?: string;
   title?: string;
@@ -9,6 +16,7 @@ export default class Plan {
   locationsJson?: string;
   staticMapUrl?: string;
   riderIds?: string[];
+  riders?: PlanRider[];
   confirmedCount?: number;
   maybeCount?: number;
   createdAtUTC?: string;

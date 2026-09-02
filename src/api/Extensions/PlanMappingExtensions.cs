@@ -30,6 +30,25 @@ public static class PlanMappingExtensions
                        .Where(r => r.PlanId == plan.Id)
                        .Select(r => r.UserId)
                        .ToList(),
+                   Riders = dbContext.Set<PlanRiderEntity>()
+                       .Where(r => r.PlanId == plan.Id)
+                       .Select(r => new PlanRiderDto
+                       {
+                           UserId = r.UserId,
+                           Confirmed = r.Confirmed,
+                           DisplayName = dbContext.Users
+                               .Where(u => u.Id == r.UserId)
+                               .Select(u => u.DisplayName)
+                               .FirstOrDefault() ?? "Rider",
+                           ProfilePictureUrl = dbContext.SocialProfiles
+                               .Where(s => s.UserId == r.UserId)
+                               .Select(s => s.ProfilePhotoUrl)
+                               .FirstOrDefault() ?? dbContext.Users
+                               .Where(u => u.Id == r.UserId)
+                               .Select(u => u.ProfilePictureUrl)
+                               .FirstOrDefault()
+                       })
+                       .ToList(),
                    ConfirmedCount = dbContext.Set<PlanRiderEntity>()
                        .Count(r => r.PlanId == plan.Id && r.Confirmed),
                    MaybeCount = dbContext.Set<PlanRiderEntity>()
