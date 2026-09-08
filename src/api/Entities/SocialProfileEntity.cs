@@ -19,7 +19,9 @@ public class SocialProfileEntity : BaseEntity<Guid>
     public string? Bio { get; set; }
     public int FollowersCount { get; set; }
     public int FollowingCount { get; set; }
+    public int ListingCount { get; set; }
     public int GarageCount { get; set; }
+    public int PlanCount { get; set; }
     public int RidesCount { get; set; }
     public string? GarageDistance { get; set; }
     public string? GarageDuration { get; set; }

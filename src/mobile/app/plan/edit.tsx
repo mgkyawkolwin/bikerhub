@@ -19,6 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import polyline from '@mapbox/polyline';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
+import SnackBar from '@/components/snackbar';
 import { PlanServiceToken } from '@/services/planService';
 import { RouteServiceToken } from '@/services/routeService';
 import type { PlanService } from '@/services/planService';
@@ -56,6 +57,7 @@ export default function PlanEditScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'title' | 'description' | 'tripDate' | 'tripTime', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoadingPlan, setIsLoadingPlan] = useState(Boolean(planId));
 
   const [routeModalVisible, setRouteModalVisible] = useState(false);
@@ -404,6 +406,42 @@ export default function PlanEditScreen() {
     }
   };
 
+  const handleDelete = useCallback(() => {
+    if (!planId) {
+      SnackBar.Error('Plan id is missing.');
+      return;
+    }
+
+    Alert.alert('Delete Plan', 'Are you sure you want to delete this plan?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setIsDeleting(true);
+          try {
+            const response = await planService.deletePlan(planId);
+            const responseJson = await response.json().catch(() => null);
+            const success = responseJson?.success ?? responseJson?.Success;
+
+            if (!response.ok || !success) {
+              const message = responseJson?.message ?? responseJson?.Message ?? 'Unable to delete plan.';
+              throw new Error(message);
+            }
+
+            SnackBar.Success('Plan deleted successfully.');
+            router.dismiss(2);
+          } catch (error) {
+            console.error('Plan delete failed:', error);
+            SnackBar.Error(error instanceof Error ? error.message : 'Unable to delete plan.');
+          } finally {
+            setIsDeleting(false);
+          }
+        },
+      },
+    ]);
+  }, [planId, planService, router]);
+
   if (isLoadingPlan) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -576,10 +614,19 @@ export default function PlanEditScreen() {
           <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.back()} activeOpacity={0.85}>
             <Text style={[styles.cancelLabel, { color: colors.text }]}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.accent }]} onPress={handleSave} activeOpacity={0.85} disabled={isSaving}>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.accent }]} onPress={handleSave} activeOpacity={0.85} disabled={isSaving || isDeleting}>
             {isSaving ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.saveLabel}>Update</Text>}
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={[styles.deleteButton, { backgroundColor: colors.card, borderColor: '#DC2626' }]}
+          onPress={handleDelete}
+          activeOpacity={0.85}
+          disabled={isSaving || isDeleting}
+        >
+          {isDeleting ? <ActivityIndicator color="#DC2626" /> : <Text style={styles.deleteLabel}>Delete</Text>}
+        </TouchableOpacity>
       </ScrollView>
 
       <Modal animationType="slide" transparent visible={routeModalVisible} onRequestClose={() => setRouteModalVisible(false)}>
@@ -831,6 +878,19 @@ const styles = StyleSheet.create({
   },
   saveLabel: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  deleteButton: {
+    marginTop: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteLabel: {
+    color: '#DC2626',
     fontSize: 16,
     fontWeight: '700',
   },

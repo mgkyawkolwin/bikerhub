@@ -37,6 +37,7 @@ export default function MarketplaceFilterScreen() {
   const paramType = getParamValue(params.type) as BikeType | undefined;
   const paramCity = getParamValue(params.city);
   const paramCountry = getParamValue(params.country);
+  const paramUserId = getParamValue(params.userId);
 
   const initialFilter: MarketplaceFilter = useMemo(
     () => ({
@@ -49,6 +50,7 @@ export default function MarketplaceFilterScreen() {
       type: paramType,
       city: paramCity,
       country: paramCountry,
+      userId: paramUserId || undefined,
     }),
     [
       paramMake,
@@ -172,6 +174,7 @@ export default function MarketplaceFilterScreen() {
       type: undefined,
       city: '',
       country: '',
+      userId: paramUserId || undefined,
     });
   }
 
@@ -189,6 +192,7 @@ export default function MarketplaceFilterScreen() {
         type: draftFilter.type || undefined,
         city: draftFilter.city || undefined,
         country: draftFilter.country || undefined,
+        userId: draftFilter.userId || undefined,
       },
     });
   }

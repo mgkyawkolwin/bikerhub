@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
 using BikerHub.Api.Entities;
+using BikerHub.Api.Extensions;
 using BikerHub.Api.Exceptions;
 
 namespace BikerHub.Api.Services;
@@ -14,6 +15,7 @@ public interface IUserService
     Task<UserDto> CreateAsync(CreateUserDto dto);
     Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
 }
 
 public class UserService : IUserService
@@ -47,15 +49,15 @@ public class UserService : IUserService
         query = query.OrderByDescending(x => x.CreatedAtUtc);
 
         var total = await query.CountAsync();
-        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ProjectToDto(_dbContext).ToListAsync();
 
-        return new PaginatedResultDto<UserDto>(items.Select(Map).ToList(), page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
+        return new PaginatedResultDto<UserDto>(items, page, pageSize, total, (int)Math.Max(1, Math.Ceiling(total / (double)pageSize)));
     }
 
     public async Task<UserDto?> GetByIdAsync(Guid id)
     {
         var entity = await _dbContext.Users.FindAsync(id);
-        return entity is null ? null : Map(entity);
+        return entity is null ? null : entity.ToDto();
     }
 
     public async Task<UserDto> CreateAsync(CreateUserDto dto)
@@ -70,6 +72,7 @@ public class UserService : IUserService
             UserName = dto.UserName.Trim(),
             DisplayName = dto.DisplayName.Trim(),
             Email = dto.Email.Trim(),
+            Phone = dto.Phone?.Trim(),
             Address = dto.Address?.Trim(),
             City = dto.City?.Trim(),
             ProfilePictureUrl = dto.ProfilePictureUrl?.Trim(),
@@ -82,7 +85,7 @@ public class UserService : IUserService
         _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync();
 
-        return Map(user);
+        return user.ToDto();
     }
 
     public async Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto)
@@ -118,6 +121,11 @@ public class UserService : IUserService
             entity.DisplayName = dto.DisplayName.Trim();
         }
 
+        if (dto.Phone is not null)
+        {
+            entity.Phone = dto.Phone.Trim();
+        }
+
         if (dto.Address is not null)
         {
             entity.Address = dto.Address.Trim();
@@ -151,7 +159,7 @@ public class UserService : IUserService
         entity.UpdatedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        return Map(entity);
+        return entity.ToDto();
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -168,20 +176,29 @@ public class UserService : IUserService
         return true;
     }
 
-    private static UserDto Map(UserEntity entity)
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
-        return new UserDto
+        var entity = await _dbContext.Users.FindAsync(userId);
+        if (entity is null)
         {
-            Id = entity.Id,
-            UserName = entity.UserName,
-            DisplayName = entity.DisplayName,
-            Email = entity.Email,
-            Address = entity.Address,
-            City = entity.City,
-            Rating = entity.Rating,
-            RatingCount = entity.RatingCount,
-            ProfilePictureUrl = entity.ProfilePictureUrl,
-            Token = null
-        };
+            throw new CustomException("User not found.");
+        }
+
+        var verify = _passwordHasher.VerifyHashedPassword(entity, entity.PasswordHash, currentPassword ?? string.Empty);
+        if (verify == PasswordVerificationResult.Failed)
+        {
+            throw new CustomException("Current password is incorrect.");
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+        {
+            throw new CustomException("New password is invalid.");
+        }
+
+        entity.PasswordHash = _passwordHasher.HashPassword(entity, newPassword);
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
     }
+
+    
 }

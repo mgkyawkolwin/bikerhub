@@ -24,7 +24,9 @@ export class BikeListing {
   favoritesCount?: number = 0;
   isFavorite?: boolean;
   isLiked?: boolean;
+  isSold?: boolean;
   likeCount?: number = 0;
   viewCount?: number = 0;
+  createdById?: string;
   medias?: Media[];
 }

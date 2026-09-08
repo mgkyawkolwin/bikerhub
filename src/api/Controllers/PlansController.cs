@@ -22,12 +22,12 @@ public class PlansController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPlans([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetPlans([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] Guid? userId = null)
     {
         try
         {
-            _logger.LogDebug("CALLED: GetPlans(page={Page}, pageSize={PageSize})", page, pageSize);
-            var result = await _planService.GetPlansAsync(page, pageSize);
+            _logger.LogDebug("CALLED: GetPlans(page={Page}, pageSize={PageSize}, userId={UserId})", page, pageSize, userId);
+            var result = await _planService.GetPlansAsync(page, pageSize, userId);
             _logger.LogDebug("Count: {Count}", result.Items.Count());
             _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(result.Items.FirstOrDefault()));
             return Ok(new { Success = true, Data = result });

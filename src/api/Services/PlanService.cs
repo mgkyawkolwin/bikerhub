@@ -9,7 +9,7 @@ namespace BikerHub.Api.Services;
 
 public interface IPlanService
 {
-    Task<PaginatedResultDto<PlanDto>> GetPlansAsync(int page, int pageSize);
+    Task<PaginatedResultDto<PlanDto>> GetPlansAsync(int page, int pageSize, Guid? userId = null);
     Task<PlanDto?> GetPlanByIdAsync(Guid id);
     Task<PlanDto> CreatePlanAsync(CreatePlanDto dto);
     Task<PlanDto?> UpdatePlanAsync(Guid id, UpdatePlanDto dto);
@@ -33,9 +33,14 @@ public class PlanService : IPlanService
         _googleMapsService = googleMapsService;
     }
 
-    public async Task<PaginatedResultDto<PlanDto>> GetPlansAsync(int page, int pageSize)
+    public async Task<PaginatedResultDto<PlanDto>> GetPlansAsync(int page, int pageSize, Guid? userId = null)
     {
-        var query = _dbContext.Plans.OrderByDescending(plan => plan.CreatedAtUtc);
+        var query = _dbContext.Plans.AsQueryable();
+        if (userId.HasValue)
+        {
+            query = query.Where(plan => plan.CreatedById == userId.Value);
+        }
+        query = query.OrderByDescending(plan => plan.CreatedAtUtc);
         var total = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * pageSize)
@@ -81,6 +86,12 @@ public class PlanService : IPlanService
         };
 
         _dbContext.Plans.Add(plan);
+
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == plan.CreatedById)
+            ?? throw new CustomException("Social profile not found for the current user.");
+        socialProfile.PlanCount += 1;
+        _dbContext.SocialProfiles.Update(socialProfile);
+
         await _dbContext.SaveChangesAsync();
 
         return await _dbContext.Plans
@@ -213,6 +224,13 @@ public class PlanService : IPlanService
         if (plan is null)
         {
             return false;
+        }
+
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == plan.CreatedById);
+        if (socialProfile is not null)
+        {
+            socialProfile.PlanCount = Math.Max(0, socialProfile.PlanCount - 1);
+            _dbContext.SocialProfiles.Update(socialProfile);
         }
 
         _dbContext.Plans.Remove(plan);

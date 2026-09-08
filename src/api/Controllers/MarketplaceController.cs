@@ -96,6 +96,87 @@ public class MarketplaceController : BaseController
         }
     }
 
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateListing([FromRoute] Guid id, [FromBody] CreateBikeListingDto dto)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: UpdateListing(id={ListingId}, dto={Dto})", id, JsonSerializer.Serialize(dto));
+            var listing = await _marketplaceService.UpdateListingAsync(id, dto);
+            if (listing is null)
+            {
+                return NotFound(new { Success = false, Message = "Listing not found." });
+            }
+
+            return Ok(new { Success = true, Data = listing });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating the listing.", Details = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteListing([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteListing({ListingId})", id);
+            var deleted = await _marketplaceService.DeleteListingAsync(id);
+            if (!deleted)
+            {
+                return NotFound(new { Success = false, Message = "Listing not found." });
+            }
+
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while deleting the listing.", Details = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id:guid}/sold")]
+    [Authorize]
+    public async Task<IActionResult> MarkAsSold([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: MarkAsSold({ListingId})", id);
+            var listing = await _marketplaceService.MarkAsSoldAsync(id);
+            if (listing is null)
+            {
+                return NotFound(new { Success = false, Message = "Listing not found." });
+            }
+
+            return Ok(new { Success = true, Data = listing });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating sold status.", Details = ex.Message });
+        }
+    }
+
     [HttpPost("{id:guid}/media")]
     [Authorize]
     public async Task<IActionResult> UploadListingMedia([FromRoute] Guid id, [FromForm] IFormFile file)

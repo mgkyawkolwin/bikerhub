@@ -27,4 +27,6 @@ export type { IChatService as ChatService } from './chatService';
 export { ChatServiceToken } from './chatService';
 export type { AuthService } from './authService';
 export { AuthServiceToken } from './authService';
+export type { UserService } from './userService';
+export { UserServiceToken } from './userService';
 

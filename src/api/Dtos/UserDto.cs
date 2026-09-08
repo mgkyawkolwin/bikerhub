@@ -11,6 +11,7 @@ public sealed record UserDto
     public double? Rating { get; set; }
     public int? RatingCount { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    public string? Phone { get; set; }
     public string? Token { get; set; }
 }
 
@@ -23,6 +24,7 @@ public sealed record CreateUserDto
     public string? Address { get; init; }
     public string? City { get; init; }
     public string? ProfilePictureUrl { get; init; }
+    public string? Phone { get; init; }
     public double? Rating { get; init; }
     public int? RatingCount { get; init; }
 }
@@ -36,6 +38,7 @@ public sealed record UpdateUserDto
     public string? Address { get; init; }
     public string? City { get; init; }
     public string? ProfilePictureUrl { get; init; }
+    public string? Phone { get; init; }
     public double? Rating { get; init; }
     public int? RatingCount { get; init; }
 }

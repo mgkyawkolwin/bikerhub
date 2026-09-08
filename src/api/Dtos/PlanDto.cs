@@ -17,6 +17,8 @@ public sealed record PlanDto
     public int MaybeCount { get; set; }
     public DateTime CreatedAtUTC { get; set; }
     public Guid CreatedById { get; set; }
+    public string? DisplayName { get; set; }
+    public string? ProfilePictureUrl { get; set; }
     public DateTime UpdatedAtUTC { get; set; }
     public Guid UpdatedById { get; set; }
 }

@@ -855,33 +855,44 @@ export default function SocialProfileScreen() {
                     </View>
                   ) : null}
                 </View>
-                {/* Row 4: 5 Stats - Garages, Rides, Distance, Duration, Elevation */}
+                {/* Row 4: Listing and garage summary */}
                 <View style={[styles.fiveStatsGrid, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-                  {/* Garages */}
-                  <TouchableOpacity onPress={() => router.push({ pathname: '/social/garage', params: { userId } })} activeOpacity={0.8}>
+                  <TouchableOpacity onPress={() => router.push({ pathname: '/marketplace', params: { userId } })} activeOpacity={0.8}>
                     <View style={styles.fiveStatItem}>
-                      <MaterialIcons name="garage" size={24} color={colors.accent} />
+                      <MaterialIcons name="sell" size={24} color={colors.accent} />
                       <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                        {profile.garageCount}
+                        {profile.listingCount}
                       </Text>
                       <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
-                        Garage
+                        Listing
                       </Text>
                     </View>
                   </TouchableOpacity>
 
-                  {/* Rides */}
-                  <View style={styles.fiveStatItem}>
-                    <MaterialIcons name="pedal-bike" size={24} color={colors.accent} />
-                    <Text style={[styles.fiveStatValue, { color: colors.text }]}>
-                      {profile.ridesCount}
-                    </Text>
-                    <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
-                      Rides
-                    </Text>
-                  </View>
+                  <TouchableOpacity onPress={() => userId && router.push({ pathname: '/plan/list', params: { userId } })} activeOpacity={0.8}>
+                    <View style={styles.fiveStatItem}>
+                      <MaterialIcons name="route" size={24} color={colors.accent} />
+                      <Text style={[styles.fiveStatValue, { color: colors.text }]}>
+                        {profile.planCount}
+                      </Text>
+                      <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                        Plans
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
 
-                  {/* Distance */}
+                  <TouchableOpacity onPress={() => userId && router.push({ pathname: '/ride/list', params: { userId } })} activeOpacity={0.8}>
+                    <View style={styles.fiveStatItem}>
+                      <MaterialIcons name="pedal-bike" size={24} color={colors.accent} />
+                      <Text style={[styles.fiveStatValue, { color: colors.text }]}>
+                        {profile.ridesCount}
+                      </Text>
+                      <Text style={[styles.fiveStatLabel, { color: colors.secondaryText }]}>
+                        Rides
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="straighten" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
@@ -892,7 +903,6 @@ export default function SocialProfileScreen() {
                     </Text>
                   </View>
 
-                  {/* Duration */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="schedule" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
@@ -903,7 +913,6 @@ export default function SocialProfileScreen() {
                     </Text>
                   </View>
 
-                  {/* Elevation */}
                   <View style={styles.fiveStatItem}>
                     <MaterialIcons name="terrain" size={24} color={colors.accent} />
                     <Text style={[styles.fiveStatValue, { color: colors.text }]}>
@@ -1099,7 +1108,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -1278,13 +1287,15 @@ const styles = StyleSheet.create({
   fiveStatsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 0,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginTop: 4,
   },
   fiveStatItem: {
-    flex: 1,
+    width: 50,
     alignItems: 'center',
     gap: 2,
   },

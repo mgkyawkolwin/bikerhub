@@ -41,7 +41,17 @@ export default function MarketplaceCardItem({
           </View>
         </View>
 
-        <Image source={{ uri: item?.medias?.[0]?.url }} style={styles.cardImage} />
+        <View style={styles.imageWrapper}>
+          <Image source={{ uri: item?.medias?.[0]?.url }} style={styles.cardImage} />
+          {item.isSold ? (
+            <View style={styles.soldBadge}>
+              <View style={styles.soldBadgeContent}>
+                <MaterialIcons name="local-offer" size={20} color={colors.accent} />
+                <Text style={[styles.soldBadgeText, { color: colors.accent }]}>SOLD</Text>
+              </View>
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.cardFooter}>
           <Text style={[styles.cardPrice, { color: colors.accent }]}>Ks {item.price?.toLocaleString()}</Text>
@@ -136,6 +146,31 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: 180,
+  },
+  imageWrapper: {
+    position: 'relative',
+  },
+  soldBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#FFFFFF',
+    width: 90,
+    height: 40,
+    borderRadius: 0,
+    borderBottomColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soldBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  soldBadgeText: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   cardFooter: {
     flexDirection: 'row',

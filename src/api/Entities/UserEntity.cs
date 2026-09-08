@@ -31,6 +31,9 @@ public class UserEntity : BaseEntity<Guid>
     [MaxLength(512)]
     public string? ProfilePictureUrl { get; set; }
 
+    [MaxLength(32)]
+    public string? Phone { get; set; }
+
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 

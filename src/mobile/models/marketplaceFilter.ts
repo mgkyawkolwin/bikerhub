@@ -9,6 +9,7 @@ export type MarketplaceFilterProps = {
   type?: string;
   city?: string;
   country?: string;
+  userId?: string;
 };
 
 export class MarketplaceFilter implements MarketplaceFilterProps {
@@ -21,6 +22,7 @@ export class MarketplaceFilter implements MarketplaceFilterProps {
   type?: string;
   city?: string;
   country?: string;
+  userId?: string;
 
   constructor(props: MarketplaceFilterProps = {}) {
     Object.assign(this, props);

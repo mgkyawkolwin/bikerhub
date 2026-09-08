@@ -21,6 +21,8 @@ export default class Plan {
   maybeCount?: number;
   createdAtUTC?: string;
   createdById?: string;
+  displayName?: string;
+  profilePictureUrl?: string;
   updatedAtUTC?: string;
   updatedById?: string;
 }

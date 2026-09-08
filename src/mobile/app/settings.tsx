@@ -1,4 +1,5 @@
-import { StyleSheet, View, TouchableOpacity, Switch, ScrollView, Text } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, Switch, ScrollView, Text, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
@@ -9,7 +10,8 @@ import appJson from '../app.json';
 export default function SettingsScreen() {
   const ins = useSafeAreaInsets();
   const { colors, isDark, toggleTheme } = useThemeContext();
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, setLocale, availableLocales, getLocaleDisplayName } = useI18n();
+  const [showLangModal, setShowLangModal] = useState(false);
 
   const appVersion = appJson.expo.version;
 
@@ -30,36 +32,52 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* language card */}
-        <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={$.cardHead}>
+        <View style={[$.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+          <View style={[$.cardBody, $.switchRow]}> 
             <MaterialIcons name="translate" size={18} color={colors.secondaryText} />
-            <Text style={[$.cardTitle, { color: colors.text }]}>{t.Title.language}</Text>
+            <Text style={[$.cardTitle, { color: colors.text, flex: 1 }]}>{t.Title.language}</Text>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setShowLangModal(true)}
+              style={[
+                $.langSelect,
+                { },
+              ]}
+            >
+              <Text style={[$.langText, { color: colors.text }]}>{getLocaleDisplayName(locale)}</Text>
+            </TouchableOpacity>
           </View>
-          <View style={[$.divider, { backgroundColor: colors.border }]} />
-          <View style={$.cardBody}>
-            <Text style={[$.desc, { color: colors.secondaryText }]}>{t.Text.selectLanguage}</Text>
-            <View style={$.langRow}>
-              {(['en', 'my'] as const).map((code) => {
-                const active = locale === code;
-                const label = code === 'en' ? t.Title.english : t.Title.myanmar;
-                return (
-                  <TouchableOpacity
-                    key={code}
-                    onPress={() => setLocale(code)}
-                    activeOpacity={0.6}
-                    style={[
-                      $.langBtn,
-                      { borderColor: active ? colors.accent : colors.border, backgroundColor: active ? colors.accent + '0C' : 'transparent' },
-                    ]}>
-                    {active && <MaterialIcons name="check" size={14} color={colors.accent} />}
-                    <Text style={[$.langText, { color: active ? colors.accent : colors.secondaryText }]}>
-                      {label}
-                    </Text>
+
+          <Modal animationType="slide" transparent visible={showLangModal} onRequestClose={() => setShowLangModal(false)}>
+            <View style={[stylesModal.modalBackdrop]}> 
+              <View style={[stylesModal.modalContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}> 
+                <View style={[stylesModal.modalHeader, { borderBottomColor: colors.border }]}> 
+                  <Text style={[stylesModal.modalTitle, { color: colors.text }]}>Select language</Text>
+                  <TouchableOpacity onPress={() => setShowLangModal(false)} hitSlop={14}>
+                    <MaterialIcons name="close" size={22} color={colors.text} />
                   </TouchableOpacity>
-                );
-              })}
+                </View>
+
+                <View style={stylesModal.modalBody}>
+                    {availableLocales.map((code) => {
+                      const label = getLocaleDisplayName(code as any);
+                      const active = locale === code;
+                    return (
+                      <TouchableOpacity
+                        key={code}
+                        onPress={() => { setLocale(code); setShowLangModal(false); }}
+                        style={[stylesModal.optionRow, { borderBottomColor: colors.border }]}
+                      >
+                          <Text style={[stylesModal.optionText, { color: colors.text }]}>{label}</Text>
+                        {active ? <MaterialIcons name="check" size={20} color={colors.accent} /> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
-          </View>
+          </Modal>
         </View>
 
         {/* dark mode card */}
@@ -118,6 +136,15 @@ const $ = StyleSheet.create({
     borderRadius: 8,
   },
   langText: { fontSize: 13, fontWeight: '600' },
+  langSelect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   versionContainer: {
     position: 'absolute',
@@ -129,4 +156,29 @@ const $ = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
+});
+
+const stylesModal = StyleSheet.create({
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)'
+  },
+  modalContainer: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+    maxHeight: '50%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
+  modalBody: { padding: 8 },
+  optionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  optionText: { fontSize: 15, fontWeight: '600' },
 });

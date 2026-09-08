@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { Rating } from '@/components/rating';
 import ImageCarousel from '@/components/imageCarousel';
 import ImageGallery from '@/components/imageGallery';
@@ -20,6 +21,9 @@ export default function BikeDetailScreen() {
   const params = useLocalSearchParams();
   const { t } = useI18n();
   const { colors } = useThemeContext();
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
+  const currentUserId = authUser?.id;
   const marketplaceService = useMemo(
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
@@ -30,6 +34,8 @@ export default function BikeDetailScreen() {
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMarkingAsSold, setIsMarkingAsSold] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -163,6 +169,92 @@ export default function BikeDetailScreen() {
     // Placeholder until chat screen is implemented.
   }
 
+  const canManageListing = Boolean(listing?.createdById && currentUserId && listing.createdById === currentUserId);
+
+  const handleEdit = () => {
+    if (!listing?.id) return;
+    router.push({ pathname: '/marketplace/edit', params: { id: listing.id } });
+  };
+
+  const deleteListing = async () => {
+    if (!listing?.id || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await marketplaceService.deleteListing(listing.id);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      SnackBar.Success('Listing deleted successfully.');
+      setTimeout(() => router.back(), 500);
+    } catch {
+      SnackBar.Error('Unable to delete listing. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Listing',
+      'Are you sure you want to delete this listing?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void deleteListing() },
+      ],
+    );
+  };
+
+  const markAsSold = async () => {
+    if (!listing?.id || listing.isSold || isMarkingAsSold) return;
+
+    setIsMarkingAsSold(true);
+    try {
+      const response = await marketplaceService.markAsSold(listing.id);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const updated = responseJson.data as BikeListing;
+      if (updated) {
+        setListing(updated);
+      }
+      SnackBar.Success('Listing marked as sold.');
+    } catch {
+      SnackBar.Error('Unable to mark as sold. Please try again.');
+    } finally {
+      setIsMarkingAsSold(false);
+    }
+  };
+
+  const confirmMarkAsSold = () => {
+    if (listing?.isSold) return;
+
+    Alert.alert(
+      'Mark As Sold',
+      'Are you sure you want to mark this listing as sold?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark As Sold', onPress: () => void markAsSold() },
+      ],
+    );
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}> 
@@ -203,6 +295,12 @@ export default function BikeDetailScreen() {
             <View style={styles.photoText}>
               <Text style={[styles.title, { color: colors.text }]}>{listing.make} {listing.model} {listing.cc}cc {listing.year} {listing.edition}</Text>
               <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
+              {listing.isSold ? (
+                <View style={styles.soldStatusRow}>
+                  <MaterialIcons name="local-offer" size={20} color="#2E7D32" />
+                  <Text style={styles.soldStatusText}>SOLD</Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={[styles.group, { backgroundColor: colors.background }]}> 
@@ -281,6 +379,41 @@ export default function BikeDetailScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {canManageListing ? (
+              <View style={styles.ownerButtonRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.ownerActionButton,
+                    { borderColor: listing?.isSold ? '#2E7D32' : colors.border, backgroundColor: colors.card },
+                  ]}
+                  onPress={confirmMarkAsSold}
+                  disabled={Boolean(listing?.isSold) || isMarkingAsSold}
+                >
+                  <MaterialIcons name="sell" size={16} color={listing?.isSold ? '#2E7D32' : colors.accent} />
+                  <Text style={[styles.ownerActionLabel, { color: listing?.isSold ? '#2E7D32' : colors.accent }]}>
+                    {isMarkingAsSold ? 'Marking...' : listing?.isSold ? 'Sold' : 'Mark As Sold'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.ownerActionButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  onPress={handleEdit}
+                >
+                  <MaterialIcons name="edit" size={16} color={colors.accent} />
+                  <Text style={[styles.ownerActionLabel, { color: colors.accent }]}>Edit</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.ownerActionButton, styles.deleteButton, { borderColor: '#C62828', backgroundColor: colors.card }]}
+                  onPress={confirmDelete}
+                  disabled={isDeleting}
+                >
+                  <MaterialIcons name="delete" size={16} color="#C62828" />
+                  <Text style={[styles.ownerActionLabel, { color: '#C62828' }]}>{isDeleting ? 'Deleting...' : 'Delete'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -375,6 +508,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  soldStatusRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  soldStatusText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#2E7D32',
+    letterSpacing: 0.2,
+  },
   section: {
     gap: 10,
   },
@@ -443,6 +588,28 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  ownerButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 2,
+  },
+  ownerActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  ownerActionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  deleteButton: {
+    borderWidth: 1,
   },
   emptyState: {
     marginTop: 40,

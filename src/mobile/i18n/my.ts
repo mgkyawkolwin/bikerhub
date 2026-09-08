@@ -93,6 +93,7 @@ const my = {
       sellHistory: 'ရောင်းချမှုမှတ်တမ်း',
       settings: 'ဆက်တင်များ',
       specs: 'ဖော်ပြချက်',
+      specification: 'အသေးစိတ် ဖော်ပြချက်',
       stateDivision: 'ပြည်နယ်/တောမြို့',
       stolenList: 'ခိုးခံရစာရင်း',
       submit: 'တင်မည်',

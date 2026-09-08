@@ -15,7 +15,9 @@ public sealed record SocialProfileDto
     public string? Bio { get; set; } = null;
     public int FollowersCount { get; set; } = 0;
     public int FollowingCount { get; set; } = 0;
+    public int ListingCount { get; set; } = 0;
     public int GarageCount { get; set; } = 0;
+    public int PlanCount { get; set; } = 0;
     public int RidesCount { get; set; } = 0;
     public string? GarageDistance { get; set; } = null;
     public string? GarageDuration { get; set; } = null;

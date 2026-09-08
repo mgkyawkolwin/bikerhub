@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View, Text, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { container } from '@/services';
@@ -14,6 +14,8 @@ export default function PlanListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors } = useThemeContext();
+  const params = useLocalSearchParams();
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
   const planService = useMemo(() => container.resolve<PlanService>(PlanServiceToken), []);
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -26,7 +28,7 @@ export default function PlanListScreen() {
     async (pageNumber: number, reset = false) => {
       setLoading(true);
       try {
-        const response = await planService.getPlans(pageNumber, 20);
+        const response = await planService.getPlans(pageNumber, 20, viewedUserId ?? undefined);
         const responseJson = await response.json().catch(() => null);
         const success = responseJson?.success ?? responseJson?.Success;
         const data = responseJson?.data ?? responseJson?.Data;
@@ -48,7 +50,7 @@ export default function PlanListScreen() {
         setRefreshing(false);
       }
     },
-    [planService],
+    [planService, viewedUserId],
   );
 
   useFocusEffect(
@@ -70,6 +72,9 @@ export default function PlanListScreen() {
 
   const renderPlan = ({ item }: { item: Plan }) => {
     const tripDateTime = item.tripDateTimeUtc ? new Date(item.tripDateTimeUtc).toLocaleString() : 'Date not set';
+    const displayName = item.displayName?.trim() || 'Unknown rider';
+    const planTitle = item.title?.trim() || 'Untitled Plan';
+    const profilePictureUrl = item.profilePictureUrl?.trim() || '';
     const confirmedCount = item.confirmedCount ?? 0;
     const maybeCount = item.maybeCount ?? 0;
 
@@ -85,6 +90,20 @@ export default function PlanListScreen() {
           }
         }}
       >
+        <View style={styles.cardHeader}>
+          <View style={styles.headerIdentityRow}>
+            {profilePictureUrl ? (
+              <Image source={{ uri: profilePictureUrl }} style={styles.avatarImage} />
+            ) : (
+              <View style={[styles.avatarFallback, { backgroundColor: colors.border }]}> 
+                <MaterialIcons name="person" size={14} color={colors.secondaryText} />
+              </View>
+            )}
+            <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+          </View>
+        </View>
         <View style={styles.imageWrapper}>
           {hasMapImage ? (
             <Image
@@ -100,17 +119,19 @@ export default function PlanListScreen() {
           )}
         </View>
         <View style={styles.cardBody}>
-          <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
-            {item.title ?? 'Untitled Plan'}
-          </Text>
-          <Text style={[styles.cardDate, { color: colors.secondaryText }]} numberOfLines={1}>
-            {tripDateTime}
-          </Text>
-          {item.description ? (
-            <Text style={[styles.cardDescription, { color: colors.secondaryText }]} numberOfLines={2}>
-              {item.description}
+          <View style={styles.metaRow}>
+            <View style={styles.metaLeft}>
+              <Text style={[styles.cardDisplayName, { color: colors.text }]} numberOfLines={1}>
+                {planTitle}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.dateRow}>
+            <MaterialIcons name="calendar-month" size={14} color={colors.secondaryText} />
+            <Text style={[styles.cardDate, { color: colors.secondaryText }]} numberOfLines={1}>
+              {tripDateTime}
             </Text>
-          ) : null}
+          </View>
         </View>
         <View style={styles.cardFooter}>
           <View style={styles.countItem}>
@@ -133,7 +154,9 @@ export default function PlanListScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>Plans</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+          {viewedUserId ? 'My Plans' : 'Plans'}
+        </Text>
         <TouchableOpacity
           onPress={() => router.push('/plan/create')}
           hitSlop={14}
@@ -187,7 +210,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -196,6 +219,16 @@ const styles = StyleSheet.create({
     minHeight: 160,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  cardHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  headerIdentityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   mapImage: {
     width: '100%',
@@ -213,20 +246,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cardBody: {
-    padding: 16,
+    padding: 8,
+    gap: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
-  cardDate: {
-    fontSize: 13,
-    marginBottom: 4,
+  cardDisplayName: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
   },
-  cardDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+  cardDate: {
+    flexShrink: 0,
+    fontSize: 13,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -256,7 +318,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   countLabel: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
   },
   headerButton: {

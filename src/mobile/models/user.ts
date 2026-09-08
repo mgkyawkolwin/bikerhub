@@ -9,4 +9,5 @@ export default class User {
     ratingCount?: number;
     profilePictureUrl?: string;
     token?: string;
+    phone?: string;
 }

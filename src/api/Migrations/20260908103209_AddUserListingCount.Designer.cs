@@ -4,6 +4,7 @@ using BikerHub.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260908103209_AddUserListingCount")]
+    partial class AddUserListingCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,9 +103,6 @@ namespace BikerHub.Api.Migrations
 
                     b.Property<int>("FavoritesCount")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsSold")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("LikeCount")
                         .HasColumnType("int");
@@ -1316,12 +1316,6 @@ namespace BikerHub.Api.Migrations
                     b.Property<string>("GarageElevation")
                         .HasColumnType("longtext");
 
-                    b.Property<int>("ListingCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PlanCount")
-                        .HasColumnType("int");
-
                     b.Property<string>("ProfilePhotoUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
@@ -1468,6 +1462,9 @@ namespace BikerHub.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
+
+                    b.Property<int>("ListingCount")
+                        .HasColumnType("int");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

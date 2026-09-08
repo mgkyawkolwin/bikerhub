@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
 import { MarketplaceServiceToken } from '@/services/marketplaceService';
 import type { MarketplaceService } from '@/services/marketplaceService';
@@ -22,6 +23,10 @@ export default function MarketplaceScreen() {
     [],
   );
   const params = useLocalSearchParams();
+  const viewedUserId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+  const { getAuthUser } = useAuthContext();
+  const authUser = getAuthUser();
+  const currentUserId = authUser?.id;
 
   const [listings, setListings] = useState<BikeListing[]>([]);
   const [page, setPage] = useState(1);
@@ -40,6 +45,7 @@ export default function MarketplaceScreen() {
       type: params.type as string ?? '',
       city: params.city as string ?? '',
       country: params.country as string ?? '',
+      userId: viewedUserId ?? undefined,
     } as any as MarketplaceFilter),
     [
       params.make,
@@ -154,6 +160,7 @@ export default function MarketplaceScreen() {
         priceMax: filter.priceMax?.toString(),
         cc: filter.cc,
         type: filter.type,
+        userId: filter.userId,
       },
     });
   }
@@ -188,7 +195,7 @@ export default function MarketplaceScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
             <MaterialIcons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>{t.Title.marketplace}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{viewedUserId && currentUserId === viewedUserId ? 'My Listing' : t.Title.marketplace}</Text>
           <View style={styles.headerRightRow}>
             <TouchableOpacity style={styles.filterButton} onPress={openFilter} hitSlop={12}>
               <MaterialIcons name="tune" size={22} color={colors.text} />

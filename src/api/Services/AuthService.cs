@@ -108,6 +108,7 @@ public class AuthService : IAuthService
         {
             UserName = normalizedName,
             DisplayName = dto.DisplayName,
+            Phone = dto.Phone,
             Email = normalizedEmail,
             CreatedAtUtc = DateTime.UtcNow,
         };
@@ -133,7 +134,9 @@ public class AuthService : IAuthService
             new UserDto
             {
                 Id = user.Id,
+                DisplayName = user.DisplayName,
                 UserName = user.UserName,
+                    Phone = user.Phone,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,
@@ -183,7 +186,9 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
             new UserDto
             {
                 Id = user.Id,
+                DisplayName = user.DisplayName,
                 UserName = user.UserName,
+                    Phone = user.Phone,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,
@@ -237,8 +242,10 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
             new UserDto
             {
                 Id = adminUser.Id,
+                DisplayName = adminUser.UserName,
                 UserName = adminUser.UserName,
                 Email = adminUser.Email,
+                    Phone = null,
                 Address = null,
                 City = null,
                 Rating = null,
@@ -327,7 +334,9 @@ _logger.LogWarning("Sign-in failed for username {Username}: invalid password", d
             new UserDto
             {
                 Id = user.Id,
+                DisplayName = user.DisplayName,
                 UserName = user.UserName,
+                    Phone = user.Phone,
                 Email = user.Email,
                 Address = user.Address,
                 City = user.City,

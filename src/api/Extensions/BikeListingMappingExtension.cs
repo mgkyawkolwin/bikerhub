@@ -29,7 +29,7 @@ public static class BikeListingMappingExtensions
                 SellerId = listing.CreatedById,
                 SellerName = dbContext.Users
                     .Where(u => u.Id == listing.CreatedById)
-                    .Select(u => u.UserName)
+                    .Select(u => u.DisplayName)
                     .FirstOrDefault()!,
                 SellerPhone = listing.SellerPhone,
                 SellerCity = listing.SellerCity,
@@ -45,6 +45,7 @@ public static class BikeListingMappingExtensions
                 FavoritesCount = listing.FavoritesCount,
                 LikeCount = listing.LikeCount,
                 ViewCount = listing.ViewCount,
+                IsSold = listing.IsSold,
                 IsFavorite = dbContext.Favorites.Any(f => f.EntityId == listing.Id && f.UserId == currentUserId),
                 IsLiked = dbContext.Likes.Any(l => l.EntityId == listing.Id && l.UserId == currentUserId),
                 Medias = dbContext.Medias

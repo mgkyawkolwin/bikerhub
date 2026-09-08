@@ -40,4 +40,6 @@ public class BikeListingEntity : BaseEntity<Guid>
     public int LikeCount { get; set; }
     [Required]
     public int ViewCount { get; set; }
+    [Required]
+    public bool IsSold { get; set; }
 }

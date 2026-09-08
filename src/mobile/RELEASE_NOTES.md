@@ -1,0 +1,12 @@
+Version 1.0.33
+- Added confirmed password field in registration form
+- Changed validation style in registration form
+- Added links in profile page
+- Added change password page
+- Added edit profile page
+- Added/Updated profile page menu items
+- Updated stat items in profile page
+- Updated plan item layout
+- Updated plan detail layout
+- Display "Display Name" instead of user name in market place listing
+- Implemented update and delete for marketplace item

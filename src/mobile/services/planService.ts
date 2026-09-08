@@ -4,17 +4,20 @@ import { fetchApi, authenticatedFetchApi } from './apiClient';
 export const PlanServiceToken = Symbol('PlanService');
 
 export interface PlanService {
-  getPlans(page: number, pageSize: number): Promise<Response>;
+  getPlans(page: number, pageSize: number, userId?: string | null): Promise<Response>;
   getPlanById(id: string): Promise<Response>;
   createPlan(plan: Plan): Promise<Response>;
   updatePlan(id: string, plan: Plan): Promise<Response>;
+  deletePlan(id: string): Promise<Response>;
   updatePlanAttendance(id: string, confirmed: boolean): Promise<Response>;
   removePlanAttendance(id: string): Promise<Response>;
 }
 
 export class PlanServiceClient implements PlanService {
-  async getPlans(page: number, pageSize: number): Promise<Response> {
-    return fetchApi(`/plans?page=${page}&pageSize=${pageSize}`);
+  async getPlans(page: number, pageSize: number, userId?: string | null): Promise<Response> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (userId) params.append('userId', userId);
+    return fetchApi(`/plans?${params.toString()}`);
   }
 
   async getPlanById(id: string): Promise<Response> {
@@ -32,6 +35,12 @@ export class PlanServiceClient implements PlanService {
     return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(plan),
+    });
+  }
+
+  async deletePlan(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   }
 

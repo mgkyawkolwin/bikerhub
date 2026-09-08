@@ -56,6 +56,17 @@ public static class PlanMappingExtensions
                        .Count(r => r.PlanId == plan.Id && !r.Confirmed),
                    CreatedAtUTC = plan.CreatedAtUtc,
                    CreatedById = plan.CreatedById,
+                   DisplayName = dbContext.Users
+                       .Where(u => u.Id == plan.CreatedById)
+                       .Select(u => u.DisplayName)
+                       .FirstOrDefault(),
+                   ProfilePictureUrl = dbContext.SocialProfiles
+                       .Where(s => s.UserId == plan.CreatedById)
+                       .Select(s => s.ProfilePhotoUrl)
+                       .FirstOrDefault() ?? dbContext.Users
+                       .Where(u => u.Id == plan.CreatedById)
+                       .Select(u => u.ProfilePictureUrl)
+                       .FirstOrDefault(),
                    UpdatedAtUTC = plan.UpdatedAtUtc,
                    UpdatedById = plan.UpdatedById
                };

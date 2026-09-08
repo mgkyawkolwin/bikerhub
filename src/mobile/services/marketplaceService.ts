@@ -9,6 +9,9 @@ export interface MarketplaceService {
   getListings(filter: MarketplaceFilter, page: number, pageSize: number): Promise<Response>;
   getListingById(id: string): Promise<Response>;
   createListing(listing: BikeListing): Promise<Response>;
+  updateListing(id: string, listing: BikeListing): Promise<Response>;
+  deleteListing(id: string): Promise<Response>;
+  markAsSold(id: string): Promise<Response>;
   uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   toggleFavorite(listingId: string): Promise<Response>;
   toggleLike(listingId: string): Promise<Response>;
@@ -29,6 +32,7 @@ function buildMarketplaceQuery(filter: MarketplaceFilter, page: number, pageSize
   if (filter.country) params.set('country', filter.country);
   params.set('page', String(page));
   params.set('pageSize', String(pageSize));
+  if ((filter as any).userId) params.set('userId', (filter as any).userId);
   return params.toString();
 }
 
@@ -45,6 +49,25 @@ export class MarketplaceServiceClient implements MarketplaceService {
     return authenticatedFetchApi('/marketplace', {
       method: 'POST',
       body: JSON.stringify(listing),
+    });
+  }
+
+  async updateListing(id: string, listing: BikeListing): Promise<Response> {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(listing),
+    });
+  }
+
+  async deleteListing(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markAsSold(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}/sold`, {
+      method: 'PATCH',
     });
   }
 

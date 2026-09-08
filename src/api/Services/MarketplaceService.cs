@@ -16,9 +16,12 @@ public interface IMarketplaceService
     Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(BikeListingFilterDto filter);
     Task<BikeListingDto?> GetListingByIdAsync(Guid id);
     Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto);
+    Task<BikeListingDto?> UpdateListingAsync(Guid listingId, CreateBikeListingDto dto);
+    Task<bool> DeleteListingAsync(Guid listingId);
+    Task<BikeListingDto?> MarkAsSoldAsync(Guid listingId);
     Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file);
-    Task<BikeListingDto> ToggleFavoriteAsync(Guid listingId);
-    Task<BikeListingDto> ToggleLikeAsync(Guid listingId);
+    Task<BikeListingDto?> ToggleFavoriteAsync(Guid listingId);
+    Task<BikeListingDto?> ToggleLikeAsync(Guid listingId);
     Task<IEnumerable<BikeListingDto>> GetFavoritesAsync();
     Task<BikeListingDto?> SubmitRatingAsync(Guid listingId, int rating);
 }
@@ -57,6 +60,7 @@ public class MarketplaceService : IMarketplaceService
             query = query.Where(x => x.SellerCity == filter.City);
         }
         if (!string.IsNullOrWhiteSpace(filter.Country)) query = query.Where(x => x.SellerCountry == filter.Country);
+        if (filter.UserId.HasValue) query = query.Where(x => x.CreatedById == filter.UserId.Value);
 
         var total = await query.CountAsync();
         var items = (await query.ProjectToDto(_dbContext, _currentUserService)
@@ -111,6 +115,11 @@ public class MarketplaceService : IMarketplaceService
         };
 
         _dbContext.BikeListings.Add(entity);
+
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == entity.CreatedById)
+            ?? throw new CustomException("Social profile not found for the current user.");
+        socialProfile.ListingCount += 1;
+        _dbContext.SocialProfiles.Update(socialProfile);
 
         var existingMake = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "MAKE" && x.Code.Contains(dto.Make!.ToUpperInvariant()));
         _logger.LogTrace("Existing make: {ExistingMake}", JsonSerializer.Serialize(existingMake));
@@ -174,6 +183,143 @@ public class MarketplaceService : IMarketplaceService
 
         await _dbContext.SaveChangesAsync();
         return (await _dbContext.BikeListings.Where(x => x.Id == entity.Id).ProjectToDto(_dbContext, _currentUserService).FirstOrDefaultAsync())!.ResolveMediaUrls(_storageService)!;
+    }
+
+    public async Task<BikeListingDto?> UpdateListingAsync(Guid listingId, CreateBikeListingDto dto)
+    {
+        DtoValidationHelper.ValidateRequiredString(dto.Make, "Make");
+        DtoValidationHelper.ValidateRequiredString(dto.Model, "Model");
+        DtoValidationHelper.ValidateRequiredString(dto.Type, "Type");
+
+        var entity = await _dbContext.BikeListings.FirstOrDefaultAsync(x => x.Id == listingId);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        if (entity.CreatedById != currentUserId)
+        {
+            throw new CustomException("You are not allowed to edit this listing.");
+        }
+
+        entity.Make = dto.Make;
+        entity.Model = dto.Model;
+        entity.Edition = dto.Edition;
+        entity.Year = dto.Year;
+        entity.Price = dto.Price;
+        entity.Cc = dto.Cc;
+        entity.Type = dto.Type;
+        entity.SellerPhone = dto.SellerPhone;
+        entity.Mileage = dto.Mileage;
+        entity.Vin = dto.Vin;
+        entity.SellerCity = dto.SellerCity;
+        entity.SellerCountry = dto.SellerCountry;
+        entity.Description = dto.Description;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.UpdatedById = currentUserId;
+
+        _dbContext.BikeListings.Update(entity);
+        await _dbContext.SaveChangesAsync();
+
+        return (await _dbContext.BikeListings
+            .Where(x => x.Id == entity.Id)
+            .ProjectToDto(_dbContext, _currentUserService)
+            .FirstOrDefaultAsync())
+            ?.ResolveMediaUrls(_storageService);
+    }
+
+    public async Task<bool> DeleteListingAsync(Guid listingId)
+    {
+        var entity = await _dbContext.BikeListings.FirstOrDefaultAsync(x => x.Id == listingId);
+        if (entity is null)
+        {
+            return false;
+        }
+
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        if (entity.CreatedById != currentUserId)
+        {
+            throw new CustomException("You are not allowed to delete this listing.");
+        }
+
+        var medias = await _dbContext.Medias.Where(x => x.OwnerId == listingId).ToListAsync();
+        foreach (var media in medias)
+        {
+            try
+            {
+                await _storageService.DeleteObjectAsync(media.ObjectName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete media object {ObjectName} for listing {ListingId}", media.ObjectName, listingId);
+            }
+        }
+
+        if (medias.Count > 0)
+        {
+            _dbContext.Medias.RemoveRange(medias);
+        }
+
+        var favorites = await _dbContext.Favorites.Where(x => x.EntityId == listingId).ToListAsync();
+        if (favorites.Count > 0)
+        {
+            _dbContext.Favorites.RemoveRange(favorites);
+        }
+
+        var likes = await _dbContext.Likes.Where(x => x.EntityId == listingId).ToListAsync();
+        if (likes.Count > 0)
+        {
+            _dbContext.Likes.RemoveRange(likes);
+        }
+
+        var ratings = await _dbContext.Ratings.Where(x => x.EntityId == listingId).ToListAsync();
+        if (ratings.Count > 0)
+        {
+            _dbContext.Ratings.RemoveRange(ratings);
+        }
+
+        var socialProfile = await _dbContext.SocialProfiles.FirstOrDefaultAsync(x => x.UserId == entity.CreatedById);
+        if (socialProfile is not null)
+        {
+            socialProfile.ListingCount = Math.Max(0, socialProfile.ListingCount - 1);
+            _dbContext.SocialProfiles.Update(socialProfile);
+        }
+
+        _dbContext.BikeListings.Remove(entity);
+        await _dbContext.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<BikeListingDto?> MarkAsSoldAsync(Guid listingId)
+    {
+        var entity = await _dbContext.BikeListings.FirstOrDefaultAsync(x => x.Id == listingId);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        if (entity.CreatedById != currentUserId)
+        {
+            throw new CustomException("You are not allowed to mark this listing as sold.");
+        }
+
+        if (!entity.IsSold)
+        {
+            entity.IsSold = true;
+            entity.UpdatedAtUtc = DateTime.UtcNow;
+            entity.UpdatedById = currentUserId;
+            _dbContext.BikeListings.Update(entity);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        return (await _dbContext.BikeListings
+            .Where(x => x.Id == entity.Id)
+            .ProjectToDto(_dbContext, _currentUserService)
+            .FirstOrDefaultAsync())
+            ?.ResolveMediaUrls(_storageService);
     }
 
     public async Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file)

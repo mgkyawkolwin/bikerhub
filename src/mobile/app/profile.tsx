@@ -43,54 +43,102 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
             activeOpacity={0.8}
-            onPress={() => router.push({ pathname: '/social/garage', params: { userId: authUser?.id ?? '' } })}
+            onPress={() => router.push('/editprofile')}
           >
-            <MaterialIcons name="garage" size={22} color={colors.accent} />
-            <Text style={[styles.navLabel, { color: colors.text }]}>Garage</Text>
+            <MaterialIcons name="edit" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
             activeOpacity={0.8}
-            onPress={() => router.push({ pathname: '/social/listing', params: { userId: authUser?.id ?? '' } })}
+            onPress={() => router.push('/changepassword')}
+          >
+            <MaterialIcons name="lock" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Change Password</Text>
+          </TouchableOpacity>
+          
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+          <TouchableOpacity
+            style={styles.navItem}
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/social/garage', params: { userId: authUser?.id ?? '' } })}
+          >
+            <MaterialIcons name="garage" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>My Garage</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/marketplace', params: { userId: authUser?.id ?? '' } })}
           >
             <MaterialIcons name="storefront" size={22} color={colors.accent} />
             <Text style={[styles.navLabel, { color: colors.text }]}>My Listing</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/ride/list', params: { userId: authUser?.id ?? '' } })}
+          >
+            <MaterialIcons name="pedal-bike" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>My Rides</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/plan/list', params: { userId: authUser?.id ?? '' } })}
+          >
+            <MaterialIcons name="event" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>My Plans</Text>
+          </TouchableOpacity>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           <TouchableOpacity
             style={styles.navItem}
             activeOpacity={0.8}
-            onPress={() => router.push('/ride/list')}
+            onPress={() => router.push('/blog/list')}
           >
-            <MaterialIcons name="pedal-bike" size={22} color={colors.accent} />
-            <Text style={[styles.navLabel, { color: colors.text }]}>Rides</Text>
+            <MaterialIcons name="newspaper" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Blogs</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
             activeOpacity={0.8}
-            onPress={() => router.push('/ride/plans')}
+            onPress={() => router.push('/plan/list')}
           >
             <MaterialIcons name="event" size={22} color={colors.accent} />
             <Text style={[styles.navLabel, { color: colors.text }]}>Plans</Text>
           </TouchableOpacity>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-          <TouchableOpacity
-            style={styles.navItem}
-            activeOpacity={0.8}
-            onPress={() => router.push('/group/explore')}
-          >
-            <MaterialIcons name="settings" size={22} color={colors.accent} />
-            <Text style={[styles.navLabel, { color: colors.text }]}>Manage Groups</Text>
-          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
             activeOpacity={0.8}
-            onPress={() => router.push('/group/explore?section=myGroups')}
+            onPress={() => router.push('/marketplace')}
           >
-            <MaterialIcons name="groups" size={22} color={colors.accent} />
-            <Text style={[styles.navLabel, { color: colors.text }]}>Followed Groups</Text>
+            <MaterialIcons name="storefront" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Marketplace</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => router.push('/challenge/list')}
+          >
+            <MaterialIcons name="flag" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Challenge</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}
+            activeOpacity={0.8}
+            onPress={() => router.push('/directory/directory')}
+          >
+            <MaterialIcons name="business" size={22} color={colors.accent} />
+            <Text style={[styles.navLabel, { color: colors.text }]}>Directory</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

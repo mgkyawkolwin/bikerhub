@@ -210,6 +210,19 @@ export default function PlanViewScreen() {
                   <Text style={[styles.metaText, { color: colors.secondaryText }]}>{formatDate(plan.tripDateTimeUtc)}</Text>
                 </View>
 
+                <View style={styles.ownerRow}>
+                  {plan.profilePictureUrl ? (
+                    <Image source={{ uri: plan.profilePictureUrl }} style={styles.ownerAvatar} />
+                  ) : (
+                    <View style={[styles.ownerAvatarFallback, { borderColor: colors.border, backgroundColor: colors.background }]}> 
+                      <MaterialIcons name="person" size={16} color={colors.secondaryText} />
+                    </View>
+                  )}
+                  <Text style={[styles.ownerName, { color: colors.text }]} numberOfLines={1}>
+                    {plan.displayName ?? 'Rider'}
+                  </Text>
+                </View>
+
                 {plan.description ? (
                   <Text style={[styles.description, { color: colors.secondaryText }]}>{plan.description}</Text>
                 ) : null}
@@ -336,6 +349,29 @@ const styles = StyleSheet.create({
   placeholderText: { marginTop: 8, fontSize: 14 },
   content: { padding: 16, gap: 16 },
   title: { fontSize: 28, fontWeight: '700', lineHeight: 34 },
+  ownerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  ownerAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  ownerAvatarFallback: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ownerName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaText: { fontSize: 14 },
   description: { fontSize: 15, lineHeight: 22 },

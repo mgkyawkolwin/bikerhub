@@ -11,7 +11,9 @@ export default interface SocialProfile {
   bio?: string;
   followersCount: number;
   followingCount: number;
+  listingCount: number;
   garageCount: number;
+  planCount: number;
   ridesCount: number;
   garageDistance?: string;
   garageDuration?: string;

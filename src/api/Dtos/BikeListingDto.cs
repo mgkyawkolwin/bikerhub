@@ -24,6 +24,7 @@ public sealed record BikeListingDto
     public required int FavoritesCount { get; set; }
     public required int LikeCount { get; set; }
     public required int ViewCount { get; set; }
+    public required bool IsSold { get; set; }
     public required bool IsFavorite { get; set; }
     public required bool IsLiked { get; set; }
     public List<MediaDto>? Medias { get; set; }
