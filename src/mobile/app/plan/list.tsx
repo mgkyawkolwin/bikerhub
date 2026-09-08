@@ -121,19 +121,7 @@ export default function PlanListScreen() {
             <MaterialIcons name="help-outline" size={16} color={colors.text} />
             <Text style={[styles.countLabel, { color: colors.text }]}>{maybeCount} may be</Text>
           </View>
-          <TouchableOpacity
-            style={[styles.editButton, { borderColor: colors.border }]}
-            onPress={(event) => {
-              event.stopPropagation();
-              if (item.id) {
-                void router.push({ pathname: '/plan/edit', params: { planId: item.id } });
-              }
-            }}
-            hitSlop={8}
-          >
-            <MaterialIcons name="edit" size={16} color={colors.text} />
-            <Text style={[styles.editButtonText, { color: colors.text }]}>Edit</Text>
-          </TouchableOpacity>
+          {/* edit button removed as per UI change */}
         </View>
       </TouchableOpacity>
     );
@@ -145,9 +133,16 @@ export default function PlanListScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Plans</Text>
-        <TouchableOpacity onPress={() => router.push('/plan/create')} hitSlop={14} style={styles.headerButton}>
-          <MaterialIcons name="add" size={22} color={colors.text} />
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>Plans</Text>
+        <TouchableOpacity
+          onPress={() => router.push('/plan/create')}
+          hitSlop={14}
+          style={[
+            styles.headerButton,
+            { backgroundColor: colors.accent, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.headerButtonText, { color: colors.card }]}>New Plan</Text>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -179,10 +174,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
   },
   list: {
     paddingHorizontal: 16,
@@ -262,9 +260,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  headerButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   emptyState: {
     paddingTop: 60,

@@ -9,6 +9,7 @@ export interface PlanService {
   createPlan(plan: Plan): Promise<Response>;
   updatePlan(id: string, plan: Plan): Promise<Response>;
   updatePlanAttendance(id: string, confirmed: boolean): Promise<Response>;
+  removePlanAttendance(id: string): Promise<Response>;
 }
 
 export class PlanServiceClient implements PlanService {
@@ -38,6 +39,12 @@ export class PlanServiceClient implements PlanService {
     return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}/attendance`, {
       method: 'PATCH',
       body: JSON.stringify({ confirmed }),
+    });
+  }
+
+  async removePlanAttendance(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/plans/${encodeURIComponent(id)}/attendance`, {
+      method: 'DELETE',
     });
   }
 }

@@ -64,11 +64,41 @@ export default function PlanViewScreen() {
     void loadPlan();
   }, [loadPlan]);
 
-  const isOwner = Boolean(plan?.createdById && authUser?.id && plan.createdById === authUser.id);
-  const currentUserAttendance = plan?.riders?.find((rider) => rider.userId === authUser?.id);
+  const currentUserId = useMemo(() => {
+    // prefer explicit id, but fall back to common alternatives if present
+    // some parts of the app might store different shapes (userId, profileId)
+    // normalize to a string id used for comparisons
+    const anyUser = authUser as any;
+    return (authUser?.id ?? anyUser?.userId ?? anyUser?.userID ?? anyUser?.profileId) as string | undefined;
+  }, [authUser]);
+
+  const isOwner = Boolean(plan?.createdById && currentUserId && plan.createdById === currentUserId);
+  const currentUserAttendance = plan?.riders?.find((rider) => rider.userId === currentUserId);
 
   const handleJoin = async (confirmed: boolean) => {
     if (!plan?.id || submitting) return;
+
+    // optimistic UI update
+    const optimisticUpdateAttendance = (confirmedValue: boolean) => {
+      const userId = currentUserId;
+      if (!userId) return;
+      const existing = plan.riders ?? [];
+      const idx = existing.findIndex((r) => r.userId === userId);
+      const newRiders = [...existing];
+
+      if (idx >= 0) {
+        newRiders[idx] = { ...newRiders[idx], confirmed: confirmedValue };
+      } else {
+        newRiders.push({ userId, displayName: authUser?.displayName, profilePictureUrl: authUser?.profilePictureUrl, confirmed: confirmedValue });
+      }
+
+      const confirmedCount = newRiders.filter((r) => r.confirmed).length;
+      const maybeCount = newRiders.filter((r) => !r.confirmed).length;
+
+      setPlan({ ...plan, riders: newRiders, confirmedCount, maybeCount } as Plan);
+    };
+
+    optimisticUpdateAttendance(confirmed);
 
     setSubmitting(true);
     try {
@@ -86,6 +116,46 @@ export default function PlanViewScreen() {
     } catch (error) {
       console.error('Failed to update attendance:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Unable to update attendance.');
+      // revert to server state
+      void loadPlan();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!plan?.id || submitting) return;
+
+    const optimisticRemove = () => {
+      const userId = currentUserId;
+      if (!userId) return;
+      const newRiders = (plan.riders ?? []).filter((r) => r.userId !== userId);
+      const confirmedCount = newRiders.filter((r) => r.confirmed).length;
+      const maybeCount = newRiders.filter((r) => !r.confirmed).length;
+      setPlan({ ...plan, riders: newRiders, confirmedCount, maybeCount } as Plan);
+    };
+
+    optimisticRemove();
+
+    setSubmitting(true);
+    try {
+      // try to delete attendance on server (may return 404 if unsupported)
+      const response = await planService.removePlanAttendance(plan.id);
+      const responseJson = await response.json().catch(() => null);
+      const success = responseJson?.success ?? responseJson?.Success;
+      const data = responseJson?.data ?? responseJson?.Data;
+
+      if (!response.ok || !success || !data) {
+        // if failed, reload server state
+        const message = responseJson?.message ?? responseJson?.Message ?? 'Unable to cancel attendance.';
+        throw new Error(message);
+      }
+
+      setPlan(data as Plan);
+    } catch (error) {
+      console.error('Failed to cancel attendance:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Unable to cancel attendance.');
+      void loadPlan();
     } finally {
       setSubmitting(false);
     }
@@ -145,21 +215,45 @@ export default function PlanViewScreen() {
                 ) : null}
 
                 <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: currentUserAttendance?.confirmed ? colors.accent : colors.border }]}
-                    onPress={() => void handleJoin(true)}
-                    disabled={submitting}
-                  >
-                    <Text style={[styles.actionText, { color: currentUserAttendance?.confirmed ? '#FFFFFF' : colors.text }]}>Join</Text>
-                  </TouchableOpacity>
+                  {currentUserAttendance ? (
+                    // If user already attended, show toggle to switch to the opposite status and Cancel
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: currentUserAttendance.confirmed ? colors.border : colors.accent }]}
+                        onPress={() => void handleJoin(!currentUserAttendance.confirmed)}
+                        disabled={submitting}
+                      >
+                        <Text style={[styles.actionText, { color: currentUserAttendance.confirmed ? colors.text : '#FFFFFF' }]}>{currentUserAttendance.confirmed ? 'May Be' : 'Join'}</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: currentUserAttendance && !currentUserAttendance.confirmed ? colors.accent : colors.border }]}
-                    onPress={() => void handleJoin(false)}
-                    disabled={submitting}
-                  >
-                    <Text style={[styles.actionText, { color: currentUserAttendance && !currentUserAttendance.confirmed ? '#FFFFFF' : colors.text }]}>May Be</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: colors.border }]}
+                        onPress={() => void handleCancel()}
+                        disabled={submitting}
+                      >
+                        <Text style={[styles.actionText, { color: colors.text }]}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    // Not attending yet: show Join and May Be as before
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: colors.border }]}
+                        onPress={() => void handleJoin(true)}
+                        disabled={submitting}
+                      >
+                        <Text style={[styles.actionText, { color: colors.text }]}>Join</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: colors.border }]}
+                        onPress={() => void handleJoin(false)}
+                        disabled={submitting}
+                      >
+                        <Text style={[styles.actionText, { color: colors.text }]}>May Be</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
 
                 <View style={styles.summaryRow}>
@@ -180,12 +274,21 @@ export default function PlanViewScreen() {
                       const isConfirmed = rider.confirmed ?? false;
                       return (
                         <View key={`${rider.userId ?? 'unknown'}-${isConfirmed ? 'confirmed' : 'maybe'}`} style={[styles.riderRow, { borderBottomColor: colors.border }]}> 
-                          <Image
-                            source={{ uri: rider.profilePictureUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(rider.displayName ?? 'Rider') }}
-                            style={styles.avatar}
-                          />
+
+                          {rider.profilePictureUrl ? (
+                            <Image
+                              source={{ uri: rider.profilePictureUrl }}
+                              style={styles.avatar}
+                            />
+                          ) : (
+                            <View style={[styles.avatarPlaceholder, { borderColor: colors.border, backgroundColor: colors.background }]}> 
+                              <MaterialIcons name="person" size={18} color={colors.secondaryText} />
+                            </View>
+                          )}
+
                           <Text style={[styles.riderName, { color: colors.text }]}>{rider.displayName ?? 'Rider'}</Text>
-                          <View style={[styles.badge, { backgroundColor: isConfirmed ? colors.accent : colors.border }]}> 
+
+                          <View style={[styles.badge, { backgroundColor: isConfirmed ? colors.accent : colors.border, marginLeft: 12 }]}> 
                             <Text style={[styles.badgeText, { color: isConfirmed ? '#FFFFFF' : colors.text }]}>{isConfirmed ? 'Confirmed' : 'Maybe'}</Text>
                           </View>
                         </View>
@@ -272,6 +375,22 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   badgeText: { fontSize: 11, fontWeight: '700' },
+  actionGroup: { flexDirection: 'row', alignItems: 'center' },
+  smallButton: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  smallButtonText: { fontSize: 12, fontWeight: '700' },
+  avatarPlaceholder: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 15, textAlign: 'center' },
 });

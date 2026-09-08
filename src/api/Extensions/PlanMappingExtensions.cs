@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
@@ -75,17 +76,105 @@ public static class PlanMappingExtensions
                 return null;
             }
 
-            var waypoints = pointsElement.Deserialize<List<RouteLocationDto>>();
+            // try to deserialize points (case-insensitive to match client JSON keys like "latitude")
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var waypoints = pointsElement.Deserialize<List<RouteLocationDto>>(options) ?? new List<RouteLocationDto>();
+
+            // attempt to find OSRM route geometry and encode it as a polyline (preferred for accurate path rendering)
+            string? encodedPolyline = null;
+            if (document.RootElement.TryGetProperty("route", out var routeElement))
+            {
+                try
+                {
+                    // navigate to routes[0].geometry.coordinates
+                    if (routeElement.TryGetProperty("routes", out var routesEl) && routesEl.ValueKind == JsonValueKind.Array && routesEl.GetArrayLength() > 0)
+                    {
+                        var firstRoute = routesEl[0];
+                        if (firstRoute.TryGetProperty("geometry", out var geometryEl) && geometryEl.ValueKind == JsonValueKind.Object)
+                        {
+                            if (geometryEl.TryGetProperty("coordinates", out var coordsEl) && coordsEl.ValueKind == JsonValueKind.Array)
+                            {
+                                var coords = new List<RouteLocationDto>();
+                                foreach (var coordEl in coordsEl.EnumerateArray())
+                                {
+                                    if (coordEl.ValueKind == JsonValueKind.Array && coordEl.GetArrayLength() >= 2)
+                                    {
+                                        // OSRM returns [lon, lat]
+                                        var lon = coordEl[0].GetDouble();
+                                        var lat = coordEl[1].GetDouble();
+                                        coords.Add(new RouteLocationDto(lat, lon));
+                                    }
+                                }
+
+                                if (coords.Count > 0)
+                                {
+                                    // keep any explicit waypoints for markers, but prefer encoded polyline for the path
+                                    encodedPolyline = EncodePolyline(coords);
+                                    // if we didn't deserialize explicit points earlier, use the route coords as markers as well
+                                    if (waypoints.Count == 0)
+                                    {
+                                        waypoints = coords;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // ignore and fall through to return null below if still empty
+                }
+            }
+
             if (waypoints is null || waypoints.Count == 0)
             {
                 return null;
             }
 
-            return googleMapsService.GetStaticMapUrl(new RouteStaticMapDto(waypoints, 640, 320, 2));
+            return googleMapsService.GetStaticMapUrl(new RouteStaticMapDto(waypoints, 640, 320, 2, encodedPolyline));
         }
         catch
         {
             return null;
         }
+    }
+
+    // Encodes a list of lat/lng points to a Google encoded polyline string
+    private static string EncodePolyline(List<RouteLocationDto> points)
+    {
+        var result = new StringBuilder();
+        var prevLat = 0;
+        var prevLng = 0;
+
+        foreach (var pt in points)
+        {
+            var lat = (int)Math.Round(pt.Latitude * 1e5);
+            var lng = (int)Math.Round(pt.Longitude * 1e5);
+            var dLat = lat - prevLat;
+            var dLng = lng - prevLng;
+            EncodeSignedNumber(dLat, result);
+            EncodeSignedNumber(dLng, result);
+            prevLat = lat;
+            prevLng = lng;
+        }
+
+        return result.ToString();
+    }
+
+    private static void EncodeSignedNumber(int num, StringBuilder sb)
+    {
+        num <<= 1;
+        if (num < 0)
+        {
+            num = ~num;
+        }
+
+        while (num >= 0x20)
+        {
+            sb.Append((char)(((num & 0x1f) | 0x20) + 63));
+            num >>= 5;
+        }
+
+        sb.Append((char)(num + 63));
     }
 }

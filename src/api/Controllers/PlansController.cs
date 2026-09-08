@@ -159,6 +159,33 @@ public class PlansController : ControllerBase
         }
     }
 
+    [HttpDelete("{id:guid}/attendance")]
+    [Authorize]
+    public async Task<IActionResult> RemovePlanAttendance([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: RemovePlanAttendance(id={Id})", id);
+            var plan = await _planService.RemovePlanAttendanceAsync(id);
+            if (plan is null)
+            {
+                return NotFound(new { Success = false, Message = "Plan not found." });
+            }
+
+            return Ok(new { Success = true, Data = plan });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred in RemovePlanAttendance");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> DeletePlan([FromRoute] Guid id)
