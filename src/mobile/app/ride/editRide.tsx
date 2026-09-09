@@ -199,7 +199,7 @@ export default function EditRideScreen() {
 
         const result = fromCamera
             ? await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: false })
-            : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, allowsEditing: false, allowsMultipleSelection: true, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+            : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, allowsEditing: false, allowsMultipleSelection: true, mediaTypes: ['images', 'videos'] });
 
         const assets = Array.isArray(result.assets) ? result.assets : [];
         const uris = assets.map((a: any) => a.uri).filter(Boolean);

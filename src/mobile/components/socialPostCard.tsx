@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { container } from '@/services';
@@ -17,6 +18,33 @@ export interface SocialPostCardProps {
   onOpenComments: (postId?: string) => void;
   onSharePress?: () => void;
   onMenuPress?: () => void;  // Added for three-dot menu
+}
+
+function SocialVideoPlayer({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri || 'https://example.com/placeholder.mp4');
+
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentFit="cover"
+      nativeControls
+    />
+  );
+}
+
+function SocialPostMedia({ uri, contentType, style }: { uri?: string; contentType?: string; style: any }) {
+  const isVideo = Boolean(contentType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(uri ?? ''));
+
+  if (!uri) {
+    return <Image source={{ uri: '' }} style={style} />;
+  }
+
+  if (isVideo) {
+    return <SocialVideoPlayer uri={uri} style={style} />;
+  }
+
+  return <Image source={{ uri }} style={style} />;
 }
 
 export default function SocialPostCard({
@@ -133,6 +161,23 @@ export default function SocialPostCard({
           {post.medias.slice(0, 4).map((item, idx) => {
             const extraCount = post.medias!.length - 4;
             const isLastSlot = idx === 3 && extraCount > 0;
+            const isVideo = Boolean(item.contentType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(item.url ?? ''));
+
+            const mediaTile = (
+              <>
+                <SocialPostMedia uri={item.url ?? ''} contentType={item.contentType} style={styles.gridItemImage} />
+                {isLastSlot ? (
+                  <View style={styles.overlay}>
+                    <Text style={styles.overlayText}>+{extraCount}</Text>
+                  </View>
+                ) : null}
+              </>
+            );
+
+            if (isVideo) {
+              return <View key={`${post.id}-${idx}`} style={[styles.gridItem, post.medias!.length === 1 ? styles.singleImage : styles.gridItem]}>{mediaTile}</View>;
+            }
+
             return (
               <TouchableOpacity
                 key={`${post.id}-${idx}`}
@@ -140,12 +185,7 @@ export default function SocialPostCard({
                 style={[styles.gridItem, post.medias!.length === 1 ? styles.singleImage : styles.gridItem]}
                 onPress={() => handleMediaPress(idx)}
               >
-                <Image source={{ uri: item.url ?? '' }} style={styles.gridItemImage} />
-                {isLastSlot ? (
-                  <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>+{extraCount}</Text>
-                  </View>
-                ) : null}
+                {mediaTile}
               </TouchableOpacity>
             );
           })}

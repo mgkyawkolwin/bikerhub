@@ -153,7 +153,7 @@ export default function MarketplaceEditScreen() {
         quality: 0.6,
         allowsEditing: false,
         allowsMultipleSelection: true,
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images', 'videos'],
       });
 
     const imageResult = result as ImagePicker.ImagePickerResult;

@@ -241,7 +241,7 @@ export default function SocialProfileScreen() {
       if (!(await requestCamera())) return null;
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         quality: 0.7,
       });
@@ -257,7 +257,7 @@ export default function SocialProfileScreen() {
     if (!(await requestLibrary())) return null;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images', 'videos'],
       allowsEditing: true,
       quality: 0.7,
     });

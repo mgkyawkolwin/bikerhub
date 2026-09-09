@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useThemeContext } from '@/hooks/use-theme-context';
 
 type MediaItem = {
@@ -19,6 +20,25 @@ type MediaListProps = {
 
 const ITEM_HEIGHT = 320;
 
+function VideoPlayerView({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri || 'https://example.com/placeholder.mp4');
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls />;
+}
+
+function MediaRenderer({ item, style }: { item: MediaItem; style: any }) {
+  const isVideo = Boolean(item.contentType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(item.uri ?? ''));
+
+  if (!item.uri) {
+    return <Image source={undefined} style={style} resizeMode="cover" />;
+  }
+
+  if (isVideo) {
+    return <VideoPlayerView uri={item.uri} style={style} />;
+  }
+
+  return <Image source={{ uri: item.uri }} style={style} resizeMode="cover" />;
+}
+
 export default function MediaList({ media, initialIndex = 0, onMediaPress, onMenuPress, canDelete = false }: MediaListProps) {
   const { colors } = useThemeContext();
   const listRef = useRef<FlatList<MediaItem>>(null);
@@ -33,29 +53,34 @@ export default function MediaList({ media, initialIndex = 0, onMediaPress, onMen
     listRef.current.scrollToIndex({ index: initialIndex, animated: false });
   }, [initialIndex, parsedMedia.length]);
 
-  const renderMediaItem = ({ item, index }: { item: MediaItem; index: number }) => (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => onMediaPress?.(item, index)}
-        style={styles.mediaWrapper}
-      >
-        <Image
-          source={item.uri ? { uri: item.uri } : undefined}
-          style={styles.mediaImage}
-          resizeMode="cover"
-        />
-      </TouchableOpacity>
-      {onMenuPress && canDelete ? (
-        <TouchableOpacity
-          style={[styles.menuButton, { backgroundColor: colors.card + 'CC' }]}
-          onPress={() => onMenuPress(item, index)}
-        >
-          <MaterialIcons name="more-vert" size={20} color={colors.text} />
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  );
+  const renderMediaItem = ({ item, index }: { item: MediaItem; index: number }) => {
+    const isVideo = Boolean(item.contentType?.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(item.uri ?? ''));
+    const mediaContent = <MediaRenderer item={item} style={styles.mediaImage} />;
+
+    return (
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+        {isVideo ? (
+          <View style={styles.mediaWrapper}>{mediaContent}</View>
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => onMediaPress?.(item, index)}
+            style={styles.mediaWrapper}
+          >
+            {mediaContent}
+          </TouchableOpacity>
+        )}
+        {onMenuPress && canDelete ? (
+          <TouchableOpacity
+            style={[styles.menuButton, { backgroundColor: colors.card + 'CC' }]}
+            onPress={() => onMenuPress(item, index)}
+          >
+            <MaterialIcons name="more-vert" size={20} color={colors.text} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    );
+  };
 
   return (
     <FlatList

@@ -3,7 +3,20 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useThemeContext } from '@/hooks/use-theme-context';
+
+function VideoMediaViewer({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri || 'https://example.com/placeholder.mp4');
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentFit="contain"
+      nativeControls
+    />
+  );
+}
 
 export default function PhotoViewerScreen() {
   const router = useRouter();
@@ -26,7 +39,11 @@ export default function PhotoViewerScreen() {
       </View>
       <View style={styles.content}> 
         {url ? (
-          <Image source={{ uri: url }} style={styles.image} resizeMode="contain" />
+          url.match(/\.(mp4|mov|m4v|webm)$/i) ? (
+            <VideoMediaViewer uri={url} style={styles.video} />
+          ) : (
+            <Image source={{ uri: url }} style={styles.image} resizeMode="contain" />
+          )
         ) : (
           <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No photo to display.</Text>
         )}
@@ -64,6 +81,12 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+    backgroundColor: '#000000',
   },
   emptyText: {
     fontSize: 16,

@@ -1,7 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Image, TouchableOpacity, LayoutChangeEvent, PanResponder } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useThemeContext } from '@/hooks/use-theme-context';
+
+function VideoPreview({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri);
+  return <VideoView player={player} style={style} contentFit="cover" nativeControls={false} />;
+}
+
+function isVideoUrl(url?: string) {
+  return Boolean(url && /\.(mp4|mov|m4v|webm|mkv)$/i.test(url));
+}
 
 type ImageCarouselProps = {
   images: string[];
@@ -71,10 +81,17 @@ export default function ImageCarousel({ images, imageHeight = 260, onImagePress 
             onPress={() => onImagePress?.(activeIndex)}
             disabled={!onImagePress}
           >
-            <Image
-              source={{ uri: currentImage }}
-              style={[styles.image, { width: containerWidth, height: imageHeight }]}
-            />
+            {isVideoUrl(currentImage) ? (
+              <VideoPreview
+                uri={currentImage}
+                style={[styles.image, { width: containerWidth, height: imageHeight }]}
+              />
+            ) : (
+              <Image
+                source={{ uri: currentImage }}
+                style={[styles.image, { width: containerWidth, height: imageHeight }]}
+              />
+            )}
           </TouchableOpacity>
         ) : null}
       </View>

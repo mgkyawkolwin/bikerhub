@@ -13,7 +13,17 @@ import {
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useThemeContext } from '@/hooks/use-theme-context';
+
+function VideoGalleryPlayer({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri);
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls />;
+}
+
+function isVideoUrl(url?: string) {
+  return Boolean(url && /\.(mp4|mov|m4v|webm|mkv)$/i.test(url));
+}
 
 type ImageGalleryProps = {
   visible: boolean;
@@ -223,18 +233,29 @@ export default function ImageGallery({ visible, images, startIndex = 0, onClose 
                 {currentImage ? (
                   <TouchableWithoutFeedback onPress={toggleFullscreen}>
                     <Animated.View style={styles.imageFrame}>
-                      <Animated.Image
-                        source={{ uri: currentImage }}
-                        style={[
-                          styles.image,
-                          {
+                      {isVideoUrl(currentImage) ? (
+                        <VideoGalleryPlayer
+                          uri={currentImage}
+                          style={{
                             width: dimensions.width,
                             height: dimensions.height,
                             transform: [{ scale }],
-                          },
-                        ]}
-                        resizeMode="contain"
-                      />
+                          }}
+                        />
+                      ) : (
+                        <Animated.Image
+                          source={{ uri: currentImage }}
+                          style={[
+                            styles.image,
+                            {
+                              width: dimensions.width,
+                              height: dimensions.height,
+                              transform: [{ scale }],
+                            },
+                          ]}
+                          resizeMode="contain"
+                        />
+                      )}
                     </Animated.View>
                   </TouchableWithoutFeedback>
                 ) : (

@@ -234,7 +234,7 @@ export default function DirectoryCreateScreen() {
       quality: 0.7,
       allowsEditing: true,
       aspect,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images', 'videos'],
     });
 
     const imageResult = result as ImagePicker.ImagePickerResult;

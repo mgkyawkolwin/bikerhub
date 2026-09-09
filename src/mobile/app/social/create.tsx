@@ -78,7 +78,7 @@ export default function SocialCreateScreen() {
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.6,
       allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images', 'videos'],
     });
 
     const imageResult = result as ImagePicker.ImagePickerResult;
@@ -95,7 +95,7 @@ export default function SocialCreateScreen() {
       quality: 0.6,
       allowsEditing: false,
       allowsMultipleSelection: true,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images', 'videos'],
     });
 
     const imageResult = result as ImagePicker.ImagePickerResult;
