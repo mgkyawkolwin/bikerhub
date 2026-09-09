@@ -8,6 +8,7 @@ export interface StolenBikeService {
   createReport(report: StolenBikeReport): Promise<Response>;
   getReports(filter: MarketplaceFilter, page: number, pageSize: number): Promise<Response>;
   getReportById(id: string): Promise<Response>;
+  deleteReport(id: string): Promise<Response>;
   uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
 }
 
@@ -44,6 +45,12 @@ export class StolenBikeServiceClient implements StolenBikeService {
 
   async getReportById(id: string): Promise<Response> {
     return fetchApi(`/stolenbikes/${encodeURIComponent(id)}`);
+  }
+
+  async deleteReport(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/stolenbikes/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
   }
 
   async uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response> {

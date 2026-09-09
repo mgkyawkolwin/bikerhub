@@ -4,6 +4,7 @@ using BikerHub.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909052435_ggg")]
+    partial class ggg
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -592,54 +595,6 @@ namespace BikerHub.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GarageBikes");
-                });
-
-            modelBuilder.Entity("BikerHub.Api.Entities.GarageBikeServiceHistoryEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("CreatedById")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("GarageBikeId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("Mileage")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<Guid>("RowVersion")
-                        .IsConcurrencyToken()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("ServiceDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("ServiceType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("UpdatedById")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GarageBikeId", "ServiceType", "ServiceDate");
-
-                    b.ToTable("GarageBikeServiceHistory");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.Group", b =>
@@ -1643,17 +1598,6 @@ namespace BikerHub.Api.Migrations
                     b.Navigation("FromUser");
 
                     b.Navigation("ToUser");
-                });
-
-            modelBuilder.Entity("BikerHub.Api.Entities.GarageBikeServiceHistoryEntity", b =>
-                {
-                    b.HasOne("BikerHub.Api.Entities.GarageBikeEntity", "GarageBike")
-                        .WithMany()
-                        .HasForeignKey("GarageBikeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GarageBike");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.MediaEntity", b =>

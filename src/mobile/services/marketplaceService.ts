@@ -11,7 +11,8 @@ export interface MarketplaceService {
   createListing(listing: BikeListing): Promise<Response>;
   updateListing(id: string, listing: BikeListing): Promise<Response>;
   deleteListing(id: string): Promise<Response>;
-  markAsSold(id: string): Promise<Response>;
+  toggleSoldStatus(id: string): Promise<Response>;
+  toggleReportStatus(id: string): Promise<Response>;
   uploadListingImage(listingId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   toggleFavorite(listingId: string): Promise<Response>;
   toggleLike(listingId: string): Promise<Response>;
@@ -65,8 +66,14 @@ export class MarketplaceServiceClient implements MarketplaceService {
     });
   }
 
-  async markAsSold(id: string): Promise<Response> {
+  async toggleSoldStatus(id: string): Promise<Response> {
     return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}/sold`, {
+      method: 'PATCH',
+    });
+  }
+
+  async toggleReportStatus(id: string): Promise<Response> {
+    return authenticatedFetchApi(`/marketplace/${encodeURIComponent(id)}/report`, {
       method: 'PATCH',
     });
   }

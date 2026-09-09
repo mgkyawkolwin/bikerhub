@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     gap: 12,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: 'hidden',
   },

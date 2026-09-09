@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -10,9 +10,10 @@ import {
   View,
   Text
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n } from '@/i18n';
@@ -31,6 +32,7 @@ type DropdownField = 'model' | 'type' | null;
 export default function MarketplaceCreateScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const params = useLocalSearchParams();
   const marketplaceService = useMemo(
     () => container.resolve<MarketplaceService>(MarketplaceServiceToken),
     [],
@@ -70,7 +72,70 @@ export default function MarketplaceCreateScreen() {
   const [countrySuggestionsVisible, setCountrySuggestionsVisible] = useState(false);
   const [edition, setEdition] = useState('');
 
+  const garageBikeParam = useMemo(() => {
+    const rawGarageBike = Array.isArray(params.garageBike) ? params.garageBike[0] : params.garageBike;
+    if (!rawGarageBike) {
+      return null;
+    }
 
+    try {
+      return JSON.parse(rawGarageBike as string) as Partial<{
+        make?: string;
+        model?: string;
+        edition?: string;
+        year?: number;
+        cc?: string;
+        type?: BikeType;
+        vin?: string;
+        km?: string;
+        images?: string[];
+      }>;
+    } catch {
+      return null;
+    }
+  }, [params.garageBike]);
+
+  useEffect(() => {
+    const hydrateFromGarageBike = async () => {
+      const rawStoreValue = await AsyncStorage.getItem('marketplace_sell_garagebike_pending');
+      const storedGarageBike = rawStoreValue ? JSON.parse(rawStoreValue) as Partial<{
+        make?: string;
+        model?: string;
+        edition?: string;
+        year?: number;
+        cc?: string;
+        type?: BikeType;
+        vin?: string;
+        km?: string;
+        images?: string[];
+      }> : null;
+
+      const source = garageBikeParam ?? storedGarageBike;
+      if (!source) {
+        return;
+      }
+
+      setMake(source.make ?? '');
+      setModel(source.model ?? '');
+      setEdition(source.edition ?? '');
+      setModelYear(source.year?.toString() ?? '');
+      setCc(source.cc ?? '');
+      setVin(source.vin ?? '');
+      setMileage(source.km ?? '');
+      setType(source.type ?? undefined);
+
+      const savedImages = (source.images ?? []).filter((image): image is string => Boolean(image && typeof image === 'string'));
+      if (savedImages.length > 0) {
+        setPhotos(savedImages);
+      }
+
+      if (storedGarageBike) {
+        await AsyncStorage.removeItem('marketplace_sell_garagebike_pending');
+      }
+    };
+
+    void hydrateFromGarageBike();
+  }, [garageBikeParam]);
 
   // const dropdownItems = useMemo(
   //   () => ({

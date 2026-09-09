@@ -19,6 +19,9 @@ public interface IGarageBikeService
     Task<GarageBikeDto?> DeleteGarageBikeAsync(Guid id);
     Task<GarageBikeDto?> UploadGarageBikeMediaAsync(Guid garageBikeId, IFormFile file);
     Task<bool> DeleteGarageBikeMediaAsync(Guid garageBikeId, Guid mediaId);
+    Task<IEnumerable<GarageBikeServiceHistoryDto>> GetServiceHistoryAsync(Guid garageBikeId);
+    Task<GarageBikeServiceHistoryDto> CreateServiceHistoryAsync(Guid garageBikeId, GarageBikeServiceHistoryDto historyDto);
+    Task<GarageBikeServiceHistoryDto?> UpdateServiceHistoryAsync(Guid garageBikeId, Guid historyId, GarageBikeServiceHistoryDto historyDto);
 }
 
 public class GarageBikeService : IGarageBikeService
@@ -70,6 +73,7 @@ public class GarageBikeService : IGarageBikeService
             Id = garageBike.Id != Guid.Empty ? garageBike.Id : Guid.NewGuid(),
             Make = garageBike.Make,
             Model = garageBike.Model,
+            Edition = garageBike.Edition,
             Year = garageBike.Year,
             Cc = garageBike.Cc,
             Type = garageBike.Type,
@@ -135,6 +139,26 @@ public class GarageBikeService : IGarageBikeService
             _dbContext.LookUps.Add(newType);
         }
 
+        if (!string.IsNullOrWhiteSpace(garageBike.Edition))
+        {
+            var editionLookupCode = $"{garageBike.Make}|{garageBike.Model}";
+            var existingEdition = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "EDITION" && x.Code == editionLookupCode && x.Value == garageBike.Edition);
+            if (existingEdition is null)
+            {
+                var newEdition = new LookUpEntity
+                {
+                    Id = Guid.NewGuid(),
+                    Category = "EDITION",
+                    Code = editionLookupCode,
+                    Value = garageBike.Edition,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedById = Guid.Parse(_currentUserService.UserId!),
+                    UpdatedAtUtc = DateTime.UtcNow,
+                    UpdatedById = Guid.Parse(_currentUserService.UserId!)
+                };
+                _dbContext.LookUps.Add(newEdition);
+            }
+        }
 
         await _dbContext.SaveChangesAsync();
         return MapToDto(garageBikeEntity);
@@ -150,6 +174,7 @@ public class GarageBikeService : IGarageBikeService
 
         garageBike.Make = updatedGarageBike.Make;
         garageBike.Model = updatedGarageBike.Model;
+        garageBike.Edition = updatedGarageBike.Edition;
         garageBike.Year = updatedGarageBike.Year;
         garageBike.Cc = updatedGarageBike.Cc;
         garageBike.Type = updatedGarageBike.Type;
@@ -204,6 +229,27 @@ public class GarageBikeService : IGarageBikeService
                 UpdatedById = Guid.Parse(_currentUserService.UserId!)
             };
             _dbContext.LookUps.Add(newType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(garageBike.Edition))
+        {
+            var editionLookupCode = $"{garageBike.Make}|{garageBike.Model}";
+            var existingEdition = await _dbContext.LookUps.FirstOrDefaultAsync(x => x.Category == "EDITION" && x.Code == editionLookupCode && x.Value == garageBike.Edition);
+            if (existingEdition is null)
+            {
+                var newEdition = new LookUpEntity
+                {
+                    Id = Guid.NewGuid(),
+                    Category = "EDITION",
+                    Code = editionLookupCode,
+                    Value = garageBike.Edition,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedById = Guid.Parse(_currentUserService.UserId!),
+                    UpdatedAtUtc = DateTime.UtcNow,
+                    UpdatedById = Guid.Parse(_currentUserService.UserId!)
+                };
+                _dbContext.LookUps.Add(newEdition);
+            }
         }
 
         await _dbContext.SaveChangesAsync();
@@ -272,7 +318,6 @@ public class GarageBikeService : IGarageBikeService
             }
             catch (Exception ex)
             {
-                // Best effort: continue to remove the DB record even if storage deletion fails.
                 Console.WriteLine($"Failed to delete media object {media.ObjectName}: {ex.Message}");
             }
         }
@@ -280,6 +325,83 @@ public class GarageBikeService : IGarageBikeService
         _dbContext.Medias.Remove(media);
         await _dbContext.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<IEnumerable<GarageBikeServiceHistoryDto>> GetServiceHistoryAsync(Guid garageBikeId)
+    {
+        var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == garageBikeId);
+        if (garageBike is null)
+        {
+            throw new CustomException("Garage bike not found.");
+        }
+
+        var history = await _dbContext.GarageBikeServiceHistory
+            .AsNoTracking()
+            .Where(x => x.GarageBikeId == garageBikeId)
+            .OrderByDescending(x => x.ServiceDate)
+            .ToListAsync();
+
+        return [.. history.Select(MapServiceHistoryToDto)];
+    }
+
+    public async Task<GarageBikeServiceHistoryDto> CreateServiceHistoryAsync(Guid garageBikeId, GarageBikeServiceHistoryDto historyDto)
+    {
+        var garageBike = await _dbContext.GarageBikes.FirstOrDefaultAsync(x => x.Id == garageBikeId);
+        if (garageBike is null)
+        {
+            throw new CustomException("Garage bike not found.");
+        }
+
+        var item = new GarageBikeServiceHistoryEntity
+        {
+            Id = historyDto.Id != Guid.Empty ? historyDto.Id : Guid.NewGuid(),
+            GarageBikeId = garageBikeId,
+            ServiceType = string.IsNullOrWhiteSpace(historyDto.ServiceType) ? "Oil" : historyDto.ServiceType,
+            Name = string.IsNullOrWhiteSpace(historyDto.Name) ? "Oil Change" : historyDto.Name,
+            ServiceDate = historyDto.ServiceDate,
+            Mileage = historyDto.Mileage,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedById = Guid.Parse(_currentUserService.UserId!),
+            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedById = Guid.Parse(_currentUserService.UserId!)
+        };
+
+        _dbContext.GarageBikeServiceHistory.Add(item);
+        await _dbContext.SaveChangesAsync();
+
+        return MapServiceHistoryToDto(item);
+    }
+
+    public async Task<GarageBikeServiceHistoryDto?> UpdateServiceHistoryAsync(Guid garageBikeId, Guid historyId, GarageBikeServiceHistoryDto historyDto)
+    {
+        var history = await _dbContext.GarageBikeServiceHistory.FirstOrDefaultAsync(x => x.Id == historyId && x.GarageBikeId == garageBikeId);
+        if (history is null)
+        {
+            return null;
+        }
+
+        history.ServiceType = string.IsNullOrWhiteSpace(historyDto.ServiceType) ? "Oil" : historyDto.ServiceType;
+        history.Name = string.IsNullOrWhiteSpace(historyDto.Name) ? "Oil Change" : historyDto.Name;
+        history.ServiceDate = historyDto.ServiceDate;
+        history.Mileage = historyDto.Mileage;
+        history.UpdatedAtUtc = DateTime.UtcNow;
+        history.UpdatedById = Guid.Parse(_currentUserService.UserId!);
+
+        await _dbContext.SaveChangesAsync();
+        return MapServiceHistoryToDto(history);
+    }
+
+    private static GarageBikeServiceHistoryDto MapServiceHistoryToDto(GarageBikeServiceHistoryEntity history)
+    {
+        return new GarageBikeServiceHistoryDto
+        {
+            Id = history.Id,
+            GarageBikeId = history.GarageBikeId,
+            ServiceType = history.ServiceType,
+            Name = history.Name,
+            ServiceDate = history.ServiceDate,
+            Mileage = history.Mileage,
+        };
     }
 
     private GarageBikeDto MapToDto(GarageBikeEntity? garageBike, IEnumerable<MediaEntity>? medias = null)
@@ -293,6 +415,7 @@ public class GarageBikeService : IGarageBikeService
             Id = garageBike.Id,
             Make = garageBike.Make,
             Model = garageBike.Model,
+            Edition = garageBike.Edition,
             Year = garageBike.Year,
             Cc = garageBike.Cc,
             Type = garageBike.Type,

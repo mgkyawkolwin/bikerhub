@@ -198,4 +198,66 @@ public class GarageBikesController : BaseController
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while deleting the garage bike media.", Details = ex.Message });
         }
     }
+
+    [HttpGet("{id:guid}/service-history")]
+    [Authorize]
+    public async Task<IActionResult> GetGarageBikeServiceHistory(Guid id)
+    {
+        try
+        {
+            var history = await _garageBikeService.GetServiceHistoryAsync(id);
+            return Ok(new { Success = true, Data = history });
+        }
+        catch (CustomException ex)
+        {
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while fetching service history.", Details = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/service-history")]
+    [Authorize]
+    public async Task<IActionResult> CreateGarageBikeServiceHistory(Guid id, [FromBody] GarageBikeServiceHistoryDto historyDto)
+    {
+        try
+        {
+            var result = await _garageBikeService.CreateServiceHistoryAsync(id, historyDto);
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while creating service history.", Details = ex.Message });
+        }
+    }
+
+    [HttpPut("{id:guid}/service-history/{historyId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateGarageBikeServiceHistory(Guid id, Guid historyId, [FromBody] GarageBikeServiceHistoryDto historyDto)
+    {
+        try
+        {
+            var result = await _garageBikeService.UpdateServiceHistoryAsync(id, historyId, historyDto);
+            if (result is null)
+            {
+                return NotFound(new { Success = false, Message = "Service history not found." });
+            }
+
+            return Ok(new { Success = true, Data = result });
+        }
+        catch (CustomException ex)
+        {
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating service history.", Details = ex.Message });
+        }
+    }
 }

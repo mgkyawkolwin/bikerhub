@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -17,13 +17,18 @@ export default function ChallengeDetailScreen() {
   const challengeService = useMemo(() => container.resolve<ChallengeService>(ChallengeServiceToken), []);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [joining, setJoining] = useState(false);
   const isCurrentChallenge = Boolean(challenge?.isStarted && !challenge?.isEnded);
 
-  const loadChallenge = useCallback(async () => {
+  const loadChallenge = useCallback(async (isRefresh = false) => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) return;
-    setLoading(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const response = await challengeService.getChallengeById(id);
       if (!response.ok) {
@@ -37,7 +42,11 @@ export default function ChallengeDetailScreen() {
       }
       setChallenge(responseJson?.data ?? null);
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [challengeService, params.id]);
 
@@ -50,20 +59,14 @@ export default function ChallengeDetailScreen() {
         : await challengeService.joinChallenge(challenge.id);
       const payload = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
       if (response.ok && payload?.success) {
-        setChallenge((current) => {
-          if (!current) return current;
-          const nextJoined = !current.isJoined;
-          return {
-            ...current,
-            isJoined: nextJoined,
-            noOfParticipants: Math.max(0, (current.noOfParticipants ?? 0) + (nextJoined ? 1 : -1)),
-          };
-        });
+        await loadChallenge(true);
+      } else {
+        SnackBar.Error(payload?.message ?? 'Unable to update membership. Please try again.');
       }
     } finally {
       setJoining(false);
     }
-  }, [challenge?.id, challenge?.isJoined, challengeService, joining]);
+  }, [challenge?.id, challenge?.isJoined, challengeService, joining, loadChallenge]);
 
   React.useEffect(() => {
     void loadChallenge();
@@ -131,7 +134,17 @@ export default function ChallengeDetailScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void loadChallenge(true)}
+            colors={[colors.accent]}
+            tintColor={colors.accent}
+          />
+        }
+      >
         <View style={[styles.challengeCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
           {challenge.coverImageUrl ? <Image source={{ uri: challenge.coverImageUrl }} style={styles.coverImage} /> : null}
           <View style={styles.challengeInfo}>

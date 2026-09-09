@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, TextInput, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,7 @@ export default function EditProfileScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invalid, setInvalid] = useState({ displayName: false, email: false });
 
   const loadProfile = React.useCallback(async () => {
     setLoading(true);
@@ -30,7 +31,6 @@ export default function EditProfileScreen() {
       }
 
       const json = await resp.json().catch(() => null);
-      const success = json?.success ?? json?.Success ?? true;
       const data = json?.data ?? json?.Data ?? json;
 
       if (data) {
@@ -50,8 +50,24 @@ export default function EditProfileScreen() {
   }, [loadProfile]);
 
   const handleSave = async () => {
-    if (!displayName.trim() || !email.trim()) {
-      SnackBar.Error('Please fill required fields.');
+    const nextInvalid = { displayName: false, email: false };
+
+    if (!displayName.trim()) {
+      nextInvalid.displayName = true;
+    }
+
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      nextInvalid.email = true;
+    }
+
+    setInvalid(nextInvalid);
+
+    if (nextInvalid.displayName || nextInvalid.email) {
+      if (nextInvalid.displayName) {
+        SnackBar.Error('Display name is required.');
+      } else if (nextInvalid.email) {
+        SnackBar.Error('Please enter a valid email address.');
+      }
       return;
     }
 
@@ -65,12 +81,13 @@ export default function EditProfileScreen() {
         // Update local auth user by reading stored value and merging server response
         const storedJson = await SecureStore.getItemAsync('auth_user');
         const stored = storedJson ? JSON.parse(storedJson) : {};
-        const updated = {
+        const _updated = {
           ...(stored ?? {}),
           displayName: data?.displayName ?? data?.DisplayName ?? displayName.trim(),
           email: data?.email ?? data?.Email ?? email.trim(),
           phone: data?.phone ?? data?.Phone ?? phone.trim(),
         };
+        void _updated;
         // setAuthUser(updated as any);
         SnackBar.Success('Profile updated.');
         router.back();
@@ -91,16 +108,36 @@ export default function EditProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={14}>
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Edit Personal Info</Text>
         <View style={{ width: 22 }} />
       </View>
 
       <View style={[styles.content, { paddingBottom: insets.bottom + 24 }]}> 
-        <Text style={[styles.label, { color: colors.secondaryText }]}>Display name</Text>
-        <TextInput value={displayName} onChangeText={setDisplayName} style={[styles.input, { borderColor: colors.border, color: colors.text }]} placeholder="Display name" placeholderTextColor={colors.secondaryText} />
+        <Text style={[styles.label, { color: colors.secondaryText }]}>Display name *</Text>
+        <TextInput
+          value={displayName}
+          onChangeText={(value) => {
+            setDisplayName(value);
+            if (invalid.displayName) setInvalid((prev) => ({ ...prev, displayName: false }));
+          }}
+          style={[styles.input, { borderColor: invalid.displayName ? colors.accent : colors.border, color: colors.text }]}
+          placeholder="Display name"
+          placeholderTextColor={colors.secondaryText}
+        />
 
         <Text style={[styles.label, { color: colors.secondaryText }]}>Email</Text>
-        <TextInput value={email} onChangeText={setEmail} style={[styles.input, { borderColor: colors.border, color: colors.text }]} placeholder="Email" placeholderTextColor={colors.secondaryText} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput
+          value={email}
+          onChangeText={(value) => {
+            setEmail(value);
+            if (invalid.email) setInvalid((prev) => ({ ...prev, email: false }));
+          }}
+          style={[styles.input, { borderColor: invalid.email ? colors.accent : colors.border, color: colors.text }]}
+          placeholder="Email"
+          placeholderTextColor={colors.secondaryText}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
         <Text style={[styles.label, { color: colors.secondaryText }]}>Phone</Text>
         <TextInput value={phone} onChangeText={setPhone} style={[styles.input, { borderColor: colors.border, color: colors.text }]} placeholder="Phone" placeholderTextColor={colors.secondaryText} keyboardType="phone-pad" />

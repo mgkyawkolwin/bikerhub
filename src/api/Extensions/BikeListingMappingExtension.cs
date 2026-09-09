@@ -46,6 +46,7 @@ public static class BikeListingMappingExtensions
                 LikeCount = listing.LikeCount,
                 ViewCount = listing.ViewCount,
                 IsSold = listing.IsSold,
+                IsReported = listing.IsReported,
                 IsFavorite = dbContext.Favorites.Any(f => f.EntityId == listing.Id && f.UserId == currentUserId),
                 IsLiked = dbContext.Likes.Any(l => l.EntityId == listing.Id && l.UserId == currentUserId),
                 Medias = dbContext.Medias

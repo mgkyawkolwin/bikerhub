@@ -57,6 +57,7 @@ export default function AddGarageBikeScreen() {
 
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
+  const [edition, setEdition] = useState('');
   const [editingGarageBike, setEditingGarageBike] = useState<GarageBike | null>(null);
   const [modelYear, setModelYear] = useState('');
   const [cc, setCc] = useState('');
@@ -66,12 +67,14 @@ export default function AddGarageBikeScreen() {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<DropdownField>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<'make' | 'model' | 'year' | 'cc' | 'price' | 'type', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<'make' | 'model' | 'year' | 'cc' | 'price' | 'type' | 'edition', string>>>({});
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
+  const [editions, setEditions] = useState<string[]>([]);
   const [types, setTypes] = useState<BikeType[]>([]);
   const [makeSuggestionsVisible, setMakeSuggestionsVisible] = useState(false);
   const [modelSuggestionsVisible, setModelSuggestionsVisible] = useState(false);
+  const [editionSuggestionsVisible, setEditionSuggestionsVisible] = useState(false);
   const [typeSuggestionsVisible, setTypeSuggestionsVisible] = useState(false);
 
   const garageBikeId = Array.isArray(params.garageBikeId) ? params.garageBikeId[0] : params.garageBikeId;
@@ -101,6 +104,7 @@ export default function AddGarageBikeScreen() {
       setEditingGarageBike(parsedGarageBike);
       setMake(parsedGarageBike.make ?? '');
       setModel(parsedGarageBike.model ?? '');
+      setEdition(parsedGarageBike.edition ?? '');
       setModelYear(parsedGarageBike.year?.toString() ?? '');
       setCc(parsedGarageBike.cc ?? '');
       setKm(parsedGarageBike.km ?? '');
@@ -136,7 +140,7 @@ export default function AddGarageBikeScreen() {
       model: models,
       type: types,
     }),
-    [],
+    [makes, models, types],
   );
 
   const removePhoto = useCallback(async (index: number) => {
@@ -255,6 +259,7 @@ export default function AddGarageBikeScreen() {
       const garageBike: GarageBike = {
         make,
         model,
+        edition: edition.trim(),
         year: Number(modelYear),
         cc: cc,
         km: km.trim(),
@@ -338,6 +343,10 @@ export default function AddGarageBikeScreen() {
   
     const handleMakeTextChange = async (text: string) => {
       setMake(text);
+      setModel('');
+      setEdition('');
+      setModels([]);
+      setEditions([]);
       const response = await lookupService.getLookup('MAKE', "", text);
       if (!response.ok) {
         SnackBar.Error('Request failed. Please try again.');
@@ -355,6 +364,8 @@ export default function AddGarageBikeScreen() {
   
     const handleModelTextChange = async (text: string) => {
       setModel(text);
+      setEdition('');
+      setEditions([]);
       const response = await lookupService.getLookup(make, '', text);
       if (!response.ok) {
         SnackBar.Error('Request failed. Please try again.');
@@ -368,6 +379,30 @@ export default function AddGarageBikeScreen() {
   
       const lookups = responseJson.data as Lookup[];
       setModels(lookups.map((lookup) => lookup.value));
+    }
+
+    const handleEditionTextChange = async (text: string) => {
+      setEdition(text);
+      const lookupCategory = 'EDITION';
+      const lookupCode = `${make}|${model}`.trim();
+      if (!make || !model || !lookupCode || lookupCode === '|') {
+        setEditions([]);
+        return;
+      }
+
+      const response = await lookupService.getLookup(lookupCategory, lookupCode, text);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const lookups = responseJson.data as Lookup[];
+      setEditions(lookups.map((lookup) => lookup.value));
     }
   
     const handleTypeTextChange = async (text: string) => {
@@ -442,6 +477,25 @@ export default function AddGarageBikeScreen() {
               ]}
             />
             {errors.model ? <Text style={styles.errorText}>{errors.model}</Text> : null}
+
+            <Text style={[styles.fieldLabel, { color: colors.secondaryText }]}>{t.Title.edition}</Text>
+            <AutoCompleteTextInput
+              value={edition}
+              onBlur={() => setEditionSuggestionsVisible(false)}
+              onTextChange={(text) => {
+                handleEditionTextChange(text);
+                if (errors.edition) setErrors((prev) => ({ ...prev, edition: undefined }));
+              }}
+              isSuggestionsVisible={editionSuggestionsVisible}
+              suggestions={editions}
+              placeholder={t.Title.edition}
+              placeholderTextColor={colors.placeholder}
+              style={[
+                styles.textInput,
+                { borderColor: errors.edition ? colors.accent : colors.border, backgroundColor: colors.card, color: colors.text },
+              ]}
+            />
+            {errors.edition ? <Text style={styles.errorText}>{errors.edition}</Text> : null}
 
             <View style={styles.fieldHalf}>
 

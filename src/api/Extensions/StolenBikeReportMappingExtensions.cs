@@ -44,7 +44,7 @@ public static class StolenBikeReportMappingExtensions
                 report.CreatedById,
                 dbContext.Users
                     .Where(u => u.Id == report.CreatedById)
-                    .Select(u => u.UserName)
+                    .Select(u => u.DisplayName ?? u.UserName)
                     .FirstOrDefault(),
                 report.CreatedById,
                 report.CreatedAtUtc,

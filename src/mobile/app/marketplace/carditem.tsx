@@ -46,8 +46,8 @@ export default function MarketplaceCardItem({
           {item.isSold ? (
             <View style={styles.soldBadge}>
               <View style={styles.soldBadgeContent}>
-                <MaterialIcons name="local-offer" size={20} color={colors.accent} />
-                <Text style={[styles.soldBadgeText, { color: colors.accent }]}>SOLD</Text>
+                <MaterialIcons name="local-offer" size={20} color={"#ffffff"} />
+                <Text style={[styles.soldBadgeText, {  }]}>SOLD</Text>
               </View>
             </View>
           ) : null}
@@ -154,10 +154,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 5,
     right: 5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ff0000',
     width: 90,
     height: 40,
-    borderRadius: 0,
+    borderRadius: 5,
     borderBottomColor: '#E0E0E0',
     alignItems: 'center',
     justifyContent: 'center',
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   soldBadgeText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.3,

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -36,32 +36,40 @@ export default function BikeDetailScreen() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMarkingAsSold, setIsMarkingAsSold] = useState(false);
+  const [isReportingScam, setIsReportingScam] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const loadListing = useCallback(async (showRefreshIndicator = false) => {
     if (!id) return;
 
-    let active = true;
-    (async () => {
+    if (showRefreshIndicator) {
+      setRefreshing(true);
+    }
+
+    try {
       const response = await marketplaceService.getListingById(id);
       if (!response.ok) {
         SnackBar.Error('Request failed. Please try again.');
         return;
       }
+
       const responseJson = await response.json();
       if (!responseJson.success) {
         SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
         return;
       }
-      const item = responseJson.data as BikeListing;
-      if (active) {
-        setListing(item ?? null);
-      }
-    })();
 
-    return () => {
-      active = false;
-    };
+      setListing((responseJson.data as BikeListing) ?? null);
+    } finally {
+      if (showRefreshIndicator) {
+        setRefreshing(false);
+      }
+    }
   }, [id, marketplaceService]);
+
+  useEffect(() => {
+    void loadListing();
+  }, [loadListing]);
 
   const images = listing?.medias?.map((media) => media.url) ?? [];
 
@@ -166,7 +174,10 @@ export default function BikeDetailScreen() {
   };
 
   function handleChat() {
-    // Placeholder until chat screen is implemented.
+    const friendId = listing?.createdById ?? listing?.sellerId;
+    if (!friendId) return;
+
+    router.push({ pathname: '/chat/chat', params: { friendId } });
   }
 
   const canManageListing = Boolean(listing?.createdById && currentUserId && listing.createdById === currentUserId);
@@ -213,12 +224,17 @@ export default function BikeDetailScreen() {
     );
   };
 
-  const markAsSold = async () => {
-    if (!listing?.id || listing.isSold || isMarkingAsSold) return;
+  const handleRefresh = async () => {
+    await loadListing(true);
+  };
 
+  const toggleSoldStatus = async () => {
+    if (!listing?.id || isMarkingAsSold) return;
+
+    const shouldMarkAsSold = !listing.isSold;
     setIsMarkingAsSold(true);
     try {
-      const response = await marketplaceService.markAsSold(listing.id);
+      const response = await marketplaceService.toggleSoldStatus(listing.id);
       if (!response.ok) {
         SnackBar.Error('Request failed. Please try again.');
         return;
@@ -234,23 +250,70 @@ export default function BikeDetailScreen() {
       if (updated) {
         setListing(updated);
       }
-      SnackBar.Success('Listing marked as sold.');
+      SnackBar.Success(shouldMarkAsSold ? 'Listing marked as sold.' : 'Listing unmarked as sold.');
     } catch {
-      SnackBar.Error('Unable to mark as sold. Please try again.');
+      SnackBar.Error(shouldMarkAsSold ? 'Unable to mark as sold. Please try again.' : 'Unable to unmark sold status. Please try again.');
     } finally {
       setIsMarkingAsSold(false);
     }
   };
 
-  const confirmMarkAsSold = () => {
-    if (listing?.isSold) return;
+  const confirmToggleSoldStatus = () => {
+    const actionText = listing?.isSold ? 'Unmark Sold' : 'Mark Sold';
+    const message = listing?.isSold ? 'Are you sure you want to unmark this listing as sold?' : 'Are you sure you want to mark this listing as sold?';
 
     Alert.alert(
-      'Mark As Sold',
-      'Are you sure you want to mark this listing as sold?',
+      actionText,
+      message,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark As Sold', onPress: () => void markAsSold() },
+        { text: actionText, onPress: () => void toggleSoldStatus() },
+      ],
+    );
+  };
+
+  const toggleReportStatus = async () => {
+    if (!listing?.id || isReportingScam) return;
+
+    setIsReportingScam(true);
+    try {
+      const response = await marketplaceService.toggleReportStatus(listing.id);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      const updated = responseJson.data as BikeListing;
+      if (updated) {
+        setListing(updated);
+      }
+
+      SnackBar.Success(updated?.isReported ? 'Listing reported as scam.' : 'Report removed from listing.');
+    } catch {
+      SnackBar.Error('Unable to update report status. Please try again.');
+    } finally {
+      setIsReportingScam(false);
+    }
+  };
+
+  const confirmToggleReportStatus = () => {
+    const actionText = listing?.isReported ? 'Unreport Scam' : 'Report Scam';
+    const message = listing?.isReported
+      ? 'Are you sure you want to remove the scam report from this listing?'
+      : 'Are you sure you want to report this listing as a scam?';
+
+    Alert.alert(
+      actionText,
+      message,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: actionText, onPress: () => void toggleReportStatus() },
       ],
     );
   };
@@ -288,7 +351,11 @@ export default function BikeDetailScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { backgroundColor: colors.background, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { backgroundColor: colors.background, paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor={colors.text} />}
+      >
         {listing ? (
           <>
             <ImageCarousel images={images} imageHeight={240} onImagePress={handleOpenGallery} />
@@ -296,9 +363,11 @@ export default function BikeDetailScreen() {
               <Text style={[styles.title, { color: colors.text }]}>{listing.make} {listing.model} {listing.cc}cc {listing.year} {listing.edition}</Text>
               <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
               {listing.isSold ? (
-                <View style={styles.soldStatusRow}>
-                  <MaterialIcons name="local-offer" size={20} color="#2E7D32" />
-                  <Text style={styles.soldStatusText}>SOLD</Text>
+                <View style={styles.soldBadge}>
+                  <View style={styles.soldBadgeContent}>
+                    <MaterialIcons name="local-offer" size={18} color="#ffffff" />
+                    <Text style={styles.soldBadgeText}>SOLD</Text>
+                  </View>
                 </View>
               ) : null}
             </View>
@@ -387,12 +456,12 @@ export default function BikeDetailScreen() {
                     styles.ownerActionButton,
                     { borderColor: listing?.isSold ? '#2E7D32' : colors.border, backgroundColor: colors.card },
                   ]}
-                  onPress={confirmMarkAsSold}
-                  disabled={Boolean(listing?.isSold) || isMarkingAsSold}
+                  onPress={confirmToggleSoldStatus}
+                  disabled={isMarkingAsSold}
                 >
                   <MaterialIcons name="sell" size={16} color={listing?.isSold ? '#2E7D32' : colors.accent} />
                   <Text style={[styles.ownerActionLabel, { color: listing?.isSold ? '#2E7D32' : colors.accent }]}>
-                    {isMarkingAsSold ? 'Marking...' : listing?.isSold ? 'Sold' : 'Mark As Sold'}
+                    {isMarkingAsSold ? (listing?.isSold ? 'Unmarking...' : 'Marking...') : (listing?.isSold ? 'Unmark Sold' : 'Mark Sold')}
                   </Text>
                 </TouchableOpacity>
 
@@ -414,6 +483,24 @@ export default function BikeDetailScreen() {
                 </TouchableOpacity>
               </View>
             ) : null}
+
+            
+              <TouchableOpacity
+                style={[
+                  styles.fullWidthReportButton,
+                  {
+                    backgroundColor: listing?.isReported ? '#B71C1C' : colors.accent,
+                    borderColor: listing?.isReported ? '#B71C1C' : colors.accent,
+                  },
+                ]}
+                onPress={confirmToggleReportStatus}
+                disabled={isReportingScam}
+              >
+                <MaterialIcons name="report-problem" size={18} color="#fff" />
+                <Text style={styles.fullWidthReportButtonText}>
+                  {isReportingScam ? (listing?.isReported ? 'Removing...' : 'Reporting...') : (listing?.isReported ? 'Unreport Scam' : 'Report Scam')}
+                </Text>
+              </TouchableOpacity>
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -508,17 +595,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  soldStatusRow: {
-    marginTop: 6,
+  soldBadge: {
+    marginTop: 8,
+    backgroundColor: '#ff0000',
+    width: 90,
+    height: 38,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  soldBadgeContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
-  soldStatusText: {
+  soldBadgeText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '800',
-    color: '#2E7D32',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   section: {
     gap: 10,
@@ -591,7 +687,7 @@ const styles = StyleSheet.create({
   },
   ownerButtonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 4,
     marginTop: 2,
   },
   ownerActionButton: {
@@ -599,7 +695,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
+    paddingHorizontal: 8,
     paddingVertical: 12,
     borderWidth: 1,
     borderRadius: 12,
@@ -610,6 +707,22 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     borderWidth: 1,
+  },
+  fullWidthReportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    marginTop: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  fullWidthReportButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   emptyState: {
     marginTop: 40,

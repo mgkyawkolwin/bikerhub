@@ -37,6 +37,7 @@ public class AppDbContext : DbContext
     public DbSet<FavoriteEntity> Favorites => Set<FavoriteEntity>();
     public DbSet<RatingEntity> Ratings => Set<RatingEntity>();
     public DbSet<LikeEntity> Likes => Set<LikeEntity>();
+    public DbSet<GarageBikeServiceHistoryEntity> GarageBikeServiceHistory => Set<GarageBikeServiceHistoryEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -139,6 +140,16 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(participant => participant.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<GarageBikeServiceHistoryEntity>(entity =>
+        {
+            entity.HasOne(history => history.GarageBike)
+                .WithMany()
+                .HasForeignKey(history => history.GarageBikeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(history => new { history.GarageBikeId, history.ServiceType, history.ServiceDate });
         });
     }
 }

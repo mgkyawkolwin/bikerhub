@@ -42,4 +42,6 @@ public class BikeListingEntity : BaseEntity<Guid>
     public int ViewCount { get; set; }
     [Required]
     public bool IsSold { get; set; }
+    [Required]
+    public bool IsReported { get; set; }
 }

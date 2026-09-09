@@ -1,4 +1,4 @@
-import type { GarageBike } from '@/models/garageBike';
+import type { GarageBike, GarageBikeServiceHistory } from '@/models/garageBike';
 import { authenticatedFetchApi } from './apiClient';
 
 export const GarageBikeServiceToken = Symbol('GarageBikeService');
@@ -11,6 +11,9 @@ export interface GarageBikeService {
   uploadGarageBikeImage(garageBikeId: string, file: { uri: string; name: string; type: string }): Promise<Response>;
   deleteGarageBike(id: string): Promise<Response>;
   deleteGarageBikeMedia(garageBikeId: string, mediaId: string): Promise<Response>;
+  getServiceHistory(garageBikeId: string): Promise<Response>;
+  createServiceHistory(garageBikeId: string, history: GarageBikeServiceHistory): Promise<Response>;
+  updateServiceHistory(garageBikeId: string, historyId: string, history: GarageBikeServiceHistory): Promise<Response>;
 }
 
 function buildGarageQuery(userId?: string): string {
@@ -66,6 +69,24 @@ export class GarageBikeServiceClient implements GarageBikeService {
   async deleteGarageBikeMedia(garageBikeId: string, mediaId: string): Promise<Response> {
     return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(garageBikeId)}/media/${encodeURIComponent(mediaId)}`, {
       method: 'DELETE',
+    });
+  }
+
+  async getServiceHistory(garageBikeId: string): Promise<Response> {
+    return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(garageBikeId)}/service-history`);
+  }
+
+  async createServiceHistory(garageBikeId: string, history: GarageBikeServiceHistory): Promise<Response> {
+    return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(garageBikeId)}/service-history`, {
+      method: 'POST',
+      body: JSON.stringify(history),
+    });
+  }
+
+  async updateServiceHistory(garageBikeId: string, historyId: string, history: GarageBikeServiceHistory): Promise<Response> {
+    return authenticatedFetchApi(`/garagebikes/${encodeURIComponent(garageBikeId)}/service-history/${encodeURIComponent(historyId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(history),
     });
   }
 }

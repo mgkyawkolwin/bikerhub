@@ -14,6 +14,7 @@ public interface IStolenBikeService
     Task<StolenBikeReportDto> CreateReportAsync(StolenBikeReportDto dto);
     Task<PaginatedResultDto<StolenBikeReportDto>> GetReportsAsync(StolenBikeReportFilterDto filter);
     Task<StolenBikeReportDto?> GetReportByIdAsync(Guid id);
+    Task<bool> DeleteReportAsync(Guid reportId);
     Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file);
 }
 
@@ -111,6 +112,44 @@ public class StolenBikeService : IStolenBikeService
             .FirstOrDefaultAsync();
 
         return report?.ResolveMediaUrls(_storageService);
+    }
+
+    public async Task<bool> DeleteReportAsync(Guid reportId)
+    {
+        var report = await _dbContext.StolenBikeReports.FirstOrDefaultAsync(x => x.Id == reportId);
+        if (report is null)
+        {
+            return false;
+        }
+
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        if (report.CreatedById != currentUserId)
+        {
+            throw new CustomException("You are not allowed to delete this report.");
+        }
+
+        var medias = await _dbContext.Medias.Where(x => x.OwnerId == reportId).ToListAsync();
+        foreach (var media in medias)
+        {
+            try
+            {
+                await _storageService.DeleteObjectAsync(media.ObjectName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete media object {ObjectName} for report {ReportId}", media.ObjectName, reportId);
+            }
+        }
+
+        if (medias.Count > 0)
+        {
+            _dbContext.Medias.RemoveRange(medias);
+        }
+
+        _dbContext.StolenBikeReports.Remove(report);
+        await _dbContext.SaveChangesAsync();
+
+        return true;
     }
 
     public async Task<StolenBikeReportDto> UploadReportMediaAsync(Guid reportId, IFormFile file)

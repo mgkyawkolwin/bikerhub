@@ -93,7 +93,7 @@ export default function SocialGarageScreen() {
       />
       <View style={styles.bikeInfo}>
         <Text style={[styles.bikeTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.make} {item.model} {item.year}
+          {item.make} {item.model} {item.edition} {item.cc}cc {item.year}
         </Text>
       </View>
     </TouchableOpacity>

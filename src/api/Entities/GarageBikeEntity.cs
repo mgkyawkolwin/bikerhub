@@ -15,6 +15,9 @@ public class GarageBikeEntity : BaseEntity<Guid>
     [MaxLength(50)]
     public string? Model { get; set; }
 
+    [MaxLength(100)]
+    public string? Edition { get; set; }
+
     public int? Year { get; set; }
     public string? Cc { get; set; }
     public string? Type { get; set; }

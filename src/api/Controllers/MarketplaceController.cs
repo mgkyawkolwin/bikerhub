@@ -152,12 +152,12 @@ public class MarketplaceController : BaseController
 
     [HttpPatch("{id:guid}/sold")]
     [Authorize]
-    public async Task<IActionResult> MarkAsSold([FromRoute] Guid id)
+    public async Task<IActionResult> ToggleSoldStatus([FromRoute] Guid id)
     {
         try
         {
-            _logger.LogDebug("CALLED: MarkAsSold({ListingId})", id);
-            var listing = await _marketplaceService.MarkAsSoldAsync(id);
+            _logger.LogDebug("CALLED: ToggleSoldStatus({ListingId})", id);
+            var listing = await _marketplaceService.ToggleSoldStatusAsync(id);
             if (listing is null)
             {
                 return NotFound(new { Success = false, Message = "Listing not found." });
@@ -174,6 +174,33 @@ public class MarketplaceController : BaseController
         {
             _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating sold status.", Details = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id:guid}/report")]
+    [Authorize]
+    public async Task<IActionResult> ToggleReportStatus([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: ToggleReportStatus({ListingId})", id);
+            var listing = await _marketplaceService.ToggleReportStatusAsync(id);
+            if (listing is null)
+            {
+                return NotFound(new { Success = false, Message = "Listing not found." });
+            }
+
+            return Ok(new { Success = true, Data = listing });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An error occurred while updating report status.", Details = ex.Message });
         }
     }
 

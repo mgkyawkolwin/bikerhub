@@ -18,7 +18,8 @@ public interface IMarketplaceService
     Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto);
     Task<BikeListingDto?> UpdateListingAsync(Guid listingId, CreateBikeListingDto dto);
     Task<bool> DeleteListingAsync(Guid listingId);
-    Task<BikeListingDto?> MarkAsSoldAsync(Guid listingId);
+    Task<BikeListingDto?> ToggleSoldStatusAsync(Guid listingId);
+    Task<BikeListingDto?> ToggleReportStatusAsync(Guid listingId);
     Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file);
     Task<BikeListingDto?> ToggleFavoriteAsync(Guid listingId);
     Task<BikeListingDto?> ToggleLikeAsync(Guid listingId);
@@ -292,7 +293,7 @@ public class MarketplaceService : IMarketplaceService
         return true;
     }
 
-    public async Task<BikeListingDto?> MarkAsSoldAsync(Guid listingId)
+    public async Task<BikeListingDto?> ToggleSoldStatusAsync(Guid listingId)
     {
         var entity = await _dbContext.BikeListings.FirstOrDefaultAsync(x => x.Id == listingId);
         if (entity is null)
@@ -303,23 +304,47 @@ public class MarketplaceService : IMarketplaceService
         var currentUserId = Guid.Parse(_currentUserService.UserId!);
         if (entity.CreatedById != currentUserId)
         {
-            throw new CustomException("You are not allowed to mark this listing as sold.");
+            throw new CustomException("You are not allowed to update this listing's sold status.");
         }
 
-        if (!entity.IsSold)
-        {
-            entity.IsSold = true;
-            entity.UpdatedAtUtc = DateTime.UtcNow;
-            entity.UpdatedById = currentUserId;
-            _dbContext.BikeListings.Update(entity);
-            await _dbContext.SaveChangesAsync();
-        }
+        entity.IsSold = !entity.IsSold;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.UpdatedById = currentUserId;
+        _dbContext.BikeListings.Update(entity);
+        await _dbContext.SaveChangesAsync();
 
         return (await _dbContext.BikeListings
             .Where(x => x.Id == entity.Id)
             .ProjectToDto(_dbContext, _currentUserService)
             .FirstOrDefaultAsync())
             ?.ResolveMediaUrls(_storageService);
+    }
+
+    public async Task<BikeListingDto?> ToggleReportStatusAsync(Guid listingId)
+    {
+        var entity = await _dbContext.BikeListings.FirstOrDefaultAsync(x => x.Id == listingId);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var currentUserId = Guid.Parse(_currentUserService.UserId!);
+        if (entity.CreatedById != currentUserId)
+        {
+            entity.IsReported = !entity.IsReported;
+            entity.UpdatedAtUtc = DateTime.UtcNow;
+            entity.UpdatedById = currentUserId;
+            _dbContext.BikeListings.Update(entity);
+            await _dbContext.SaveChangesAsync();
+
+            return (await _dbContext.BikeListings
+                .Where(x => x.Id == entity.Id)
+                .ProjectToDto(_dbContext, _currentUserService)
+                .FirstOrDefaultAsync())
+                ?.ResolveMediaUrls(_storageService);
+        }
+
+        throw new CustomException("You cannot report your own listing.");
     }
 
     public async Task<BikeListingDto> UploadListingMediaAsync(Guid listingId, IFormFile file)

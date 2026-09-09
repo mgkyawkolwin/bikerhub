@@ -46,7 +46,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/editprofile')}
           >
             <MaterialIcons name="edit" size={22} color={colors.accent} />
-            <Text style={[styles.navLabel, { color: colors.text }]}>Edit Profile</Text>
+            <Text style={[styles.navLabel, { color: colors.text }]}>Edit Personal Info</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.navItem, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}

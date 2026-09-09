@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { useThemeContext } from '@/hooks/use-theme-context';
+import { useAuthContext } from '@/hooks/use-auth-context';
 import ImageCarousel from '@/components/imageCarousel';
 import ImageGallery from '@/components/imageGallery';
 import { container } from '@/services';
@@ -19,6 +20,7 @@ export default function StolenReportDetailScreen() {
   const params = useLocalSearchParams();
   const { t } = useI18n();
   const { colors } = useThemeContext();
+  const { authUser } = useAuthContext();
   const stolenBikeService = useMemo(
     () => container.resolve<StolenBikeService>(StolenBikeServiceToken),
     [],
@@ -59,6 +61,8 @@ export default function StolenReportDetailScreen() {
   }, [id, stolenBikeService]);
 
   const images = report?.medias?.map((media) => media.url) ?? [];
+  const currentUserId = authUser?.id ?? '';
+  const isOwner = Boolean(report?.createdById && currentUserId && report.createdById === currentUserId);
 
   const handleOpenGallery = (index: number) => {
     if (!images.length) return;
@@ -71,8 +75,48 @@ export default function StolenReportDetailScreen() {
     Linking.openURL(`tel:${report.phone}`);
   };
 
+  const handleChat = () => {
+    const friendId = report?.createdById ?? report?.reportedById;
+    if (!friendId) return;
+
+    router.push({ pathname: '/chat/chat', params: { friendId } });
+  };
+
+  const deleteReport = async () => {
+    if (!report?.id) return;
+
+    try {
+      const response = await stolenBikeService.deleteReport(report.id);
+      if (!response.ok) {
+        SnackBar.Error('Request failed. Please try again.');
+        return;
+      }
+
+      const responseJson = await response.json();
+      if (!responseJson.success) {
+        SnackBar.Error(responseJson.message || 'Failed response. Please try again.');
+        return;
+      }
+
+      SnackBar.Success('Report deleted successfully.');
+      setTimeout(() => router.back(), 500);
+    } catch {
+      SnackBar.Error('Unable to delete report. Please try again.');
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Report',
+      'Are you sure you want to delete this stolen bike report?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void deleteReport() },
+      ],
+    );
+  };
+
   const stolenDateText = report?.stolenDate ? new Date(report.stolenDate).toLocaleDateString() : '-';
-  const reportedByText = report?.createdById ?? '-';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -149,8 +193,22 @@ export default function StolenReportDetailScreen() {
                   <MaterialIcons name="call" size={16} color={colors.accent} />
                   <Text style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.call}</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionButton, { borderColor: colors.border }]} onPress={handleChat}>
+                  <MaterialIcons name="chat" size={16} color={colors.accent} />
+                  <Text style={[styles.actionLabel, { color: colors.accent }]}>{t.Title.chat}</Text>
+                </TouchableOpacity>
               </View>
             </View>
+
+            {isOwner ? (
+              <TouchableOpacity
+                style={[styles.ownerActionButton, { backgroundColor: colors.accent }]}
+                onPress={confirmDelete}
+              >
+                <MaterialIcons name="delete" size={18} color="#FFFFFF" />
+                <Text style={styles.ownerActionLabel}>Delete</Text>
+              </TouchableOpacity>
+            ) : null}
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -240,6 +298,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 14,
+  },
+  ownerActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginTop: 8,
+    width: '100%',
+  },
+  ownerActionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   actionButton: {
     flex: 1,

@@ -70,6 +70,33 @@ public class StolenBikesController : BaseController
         }
     }
 
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteReport([FromRoute] Guid id)
+    {
+        try
+        {
+            _logger.LogDebug("CALLED: DeleteReport({ReportId})", id);
+            var deleted = await _stolenBikeService.DeleteReportAsync(id);
+            if (!deleted)
+            {
+                return NotFound(new { Success = false, Message = "Report not found." });
+            }
+
+            return Ok(new { Success = true });
+        }
+        catch (CustomException ex)
+        {
+            _logger.LogError("Custom exception occurred: {Message}", ex.Message);
+            return Ok(new { Success = false, Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { Success = false, Message = "An unexpected error occurred." });
+        }
+    }
+
     [HttpPost("{id:guid}/media")]
     [Authorize]
     public async Task<IActionResult> UploadReportMedia([FromRoute] Guid id, [FromForm] IFormFile file)
