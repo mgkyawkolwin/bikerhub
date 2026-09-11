@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Alert, Clipboard, FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -36,6 +36,8 @@ export default function SocialPostsScreen() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const [commentInput, setCommentInput] = useState('');
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   const [replyToCommentAuthor, setReplyToCommentAuthor] = useState<string | null>(null);
@@ -262,7 +264,9 @@ export default function SocialPostsScreen() {
   const handleSharePost = (postId?: string) => {
     if (!postId) return;
 
-    void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${postId}` } });
+    const resolvedShareUrl = posts.find((post) => post.id === postId)?.shareUrl ?? `/share/posts/${postId}`;
+    setShareUrl(resolvedShareUrl);
+    setShareSheetVisible(true);
   };
 
   const handleOpenPostMenu = (postId?: string) => {
@@ -306,11 +310,35 @@ export default function SocialPostsScreen() {
       onOpenComments={(postId) => void openComments(postId ?? '')}
       onSharePress={() => {
         if (!item.id) return;
-        void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${item.id}` } });
+        setShareUrl(item.shareUrl ?? `/share/posts/${item.id}`);
+        setShareSheetVisible(true);
       }}
       onMenuPress={item.createdByUserId === currentUserId ? () => void handleOpenPostMenu(item.id) : undefined}
     />
   );
+
+  const handleShareAsPost = () => {
+    setShareSheetVisible(false);
+    if (!shareUrl) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl } });
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareUrl) {
+      setShareSheetVisible(false);
+      return;
+    }
+
+    try {
+      Clipboard.setString(shareUrl);
+      SnackBar.Success('Link copied to clipboard.');
+    } catch {
+      SnackBar.Error('Unable to copy link.');
+    } finally {
+      setShareSheetVisible(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -453,7 +481,10 @@ export default function SocialPostsScreen() {
         items={[
           {
             label: 'Share',
-            onPress: () => handleSharePost(activeMenuPostId ?? undefined),
+            onPress: () => {
+              setActiveMenuPostId(null);
+              handleSharePost(activeMenuPostId ?? undefined);
+            },
           },
           {
             label: 'Delete',
@@ -466,6 +497,29 @@ export default function SocialPostsScreen() {
           },
         ]}
       />
+
+      <Modal visible={shareSheetVisible} animationType="slide" transparent onRequestClose={() => setShareSheetVisible(false)}>
+        <Pressable style={styles.shareSheetOverlay} onPress={() => setShareSheetVisible(false)}>
+          <View style={[styles.shareSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.shareSheetHandle} />
+            <Text style={[styles.shareSheetTitle, { color: colors.text }]}>Share</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleShareAsPost}
+              style={[styles.shareSheetOption, { borderBottomColor: colors.border }]}
+            >
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Share As A Post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleCopyShareLink}
+              style={styles.shareSheetOption}
+            >
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Copy Link</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -778,5 +832,41 @@ const styles = StyleSheet.create({
     padding: 10, 
     borderRadius: 999, 
     backgroundColor: '#007AFF' 
+  },
+  shareSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  shareSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderTopWidth: 1,
+    paddingHorizontal: 18,
+    paddingBottom: 26,
+    paddingTop: 10,
+  },
+  shareSheetHandle: {
+    width: 42,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#9AA0A6',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  shareSheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  shareSheetOption: {
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  shareSheetOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

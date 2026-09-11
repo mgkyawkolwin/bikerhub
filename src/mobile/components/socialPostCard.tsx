@@ -1,15 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import React, { useMemo } from 'react';
+import { Image, Linking, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { WebView } from 'react-native-webview';
 import { useThemeContext } from '@/hooks/use-theme-context';
 import { useAuthContext } from '@/hooks/use-auth-context';
-import { container } from '@/services';
-import { SocialServiceToken } from '@/services/socialService';
-import type { SocialServiceClient } from '@/services/socialService';
 import type Post from '@/models/post';
-import SocialPostPreviewCard from '@/components/socialPostPreviewCard';
 
 export interface SocialPostCardProps {
   post: Post;
@@ -53,56 +50,17 @@ export default function SocialPostCard({
   onToggleLove,
   onOpenComments,
   onSharePress,
-  onMenuPress,  // Added
+  onMenuPress,
 }: SocialPostCardProps) {
   const { colors } = useThemeContext();
   const { getAuthUser } = useAuthContext();
-  const socialService = useMemo(() => container.resolve<SocialServiceClient>(SocialServiceToken), []);
-  const [previewPost, setPreviewPost] = useState<Post | null>(null);
   const currentUserId = getAuthUser()?.id ?? '';
   const canDeletePost = Boolean(post.createdByUserId && post.createdByUserId === currentUserId);
-  const [previewLoading, setPreviewLoading] = useState(false);
 
-  const previewPostId = useMemo(() => {
-    const match = post.content?.match(/bikerhub:\/\/posts\/([0-9a-fA-F-]+)/);
-    return match?.[1] ?? null;
+  const previewUrl = useMemo(() => {
+    const contentLink = post.content?.match(/https?:\/\/[^\s<>'"`]+/i)?.[0]?.replace(/[),.;!?]+$/, '');
+    return contentLink ?? null;
   }, [post.content]);
-
-  useEffect(() => {
-    let isMounted = true;
-    setPreviewPost(null);
-
-    if (!previewPostId) {
-      return;
-    }
-
-    setPreviewLoading(true);
-    void socialService.getPostById(previewPostId)
-      .then(async (response) => {
-        if (!isMounted || !response.ok) {
-          return;
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          return;
-        }
-
-        setPreviewPost(result.data);
-      })
-      .catch(() => {
-        // ignore preview load failures
-      })
-      .finally(() => {
-        if (isMounted) {
-          setPreviewLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [previewPostId, socialService]);
 
   const handleMediaPress = (index: number) => {
     const mediaItems = post.medias?.length
@@ -192,8 +150,30 @@ export default function SocialPostCard({
         </View>
       ) : null}
 
-      {previewPost && !previewLoading ? (
-        <SocialPostPreviewCard post={previewPost} />
+      {previewUrl ? (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            if (previewUrl) {
+              void Linking.openURL(previewUrl);
+            }
+          }}
+        >
+          <View style={[styles.previewContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Text style={[styles.previewTitle, { color: colors.secondaryText }]}>Link preview</Text>
+            <Text style={[styles.previewUrl, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
+              {previewUrl}
+            </Text>
+            <WebView
+              source={{ uri: previewUrl }}
+              style={styles.webView}
+              startInLoadingState
+              javaScriptEnabled
+              domStorageEnabled
+              originWhitelist={['*']}
+            />
+          </View>
+        </TouchableOpacity>
       ) : null}
 
       <View style={styles.postActions}>
@@ -234,6 +214,17 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   metaText: { fontSize: 12 },
   postContent: { fontSize: 15, lineHeight: 22 },
+  previewContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    padding: 10,
+    gap: 8,
+  },
+  previewTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  previewUrl: { fontSize: 12 },
+  webView: { height: 220, borderRadius: 8, backgroundColor: '#f2f2f2' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
   postImage: { borderRadius: 4, backgroundColor: '#222222' },
   // singleImage: { width: '100%', height: 200 },

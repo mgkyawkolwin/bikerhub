@@ -28,6 +28,7 @@ public sealed record BikeListingDto
     public required bool IsReported { get; set; }
     public required bool IsFavorite { get; set; }
     public required bool IsLiked { get; set; }
+    public string ShareUrl { get; set; } = string.Empty;
     public List<MediaDto>? Medias { get; set; }
     public required DateTime CreatedAtUtc { get; set; }
     public required Guid CreatedById { get; set; }

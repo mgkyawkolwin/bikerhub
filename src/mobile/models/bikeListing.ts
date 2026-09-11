@@ -29,5 +29,6 @@ export class BikeListing {
   likeCount?: number = 0;
   viewCount?: number = 0;
   createdById?: string;
+  shareUrl?: string;
   medias?: Media[];
 }

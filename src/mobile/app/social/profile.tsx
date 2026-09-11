@@ -173,7 +173,7 @@ export default function SocialProfileScreen() {
   const handleSharePost = (postId?: string) => {
     if (!postId) return;
 
-    void router.push({ pathname: '/social/create', params: { shareUrl: `bikerhub://posts/${postId}` } });
+    void router.push({ pathname: '/social/create', params: { shareUrl: `/share/posts/${postId}` } });
   };
 
   const handleConfirmDeletePost = (postId?: string) => {

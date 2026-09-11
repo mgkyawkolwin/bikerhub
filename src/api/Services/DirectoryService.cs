@@ -30,13 +30,70 @@ public class DirectoryService : IDirectoryService
     private readonly ILogger<DirectoryService> _logger;
     private readonly IStorageService _storageService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public DirectoryService(AppDbContext dbContext, ILogger<DirectoryService> logger, IStorageService storageService, ICurrentUserService currentUserService)
+    public DirectoryService(
+        AppDbContext dbContext,
+        ILogger<DirectoryService> logger,
+        IStorageService storageService,
+        ICurrentUserService currentUserService,
+        IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
         _currentUserService = currentUserService;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private string BuildShareUrl(Guid directoryId)
+    {
+        var request = _httpContextAccessor.HttpContext?.Request;
+        var sharePath = $"/share/directories/{directoryId}";
+
+        if (request is null)
+        {
+            return $"http://localhost{sharePath}";
+        }
+
+        var forwardedHost = request.Headers["X-Forwarded-Host"].FirstOrDefault();
+        var host = !string.IsNullOrWhiteSpace(forwardedHost)
+            ? forwardedHost.Split(',')[0].Trim()
+            : request.Host.Value;
+
+        var forwardedProto = request.Headers["X-Forwarded-Proto"].FirstOrDefault();
+        var scheme = !string.IsNullOrWhiteSpace(forwardedProto)
+            ? forwardedProto.Split(',')[0].Trim()
+            : request.Scheme;
+
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return $"{scheme}://localhost{sharePath}";
+        }
+
+        var baseUrl = $"{scheme}://{host}{request.PathBase}";
+        return $"{baseUrl.TrimEnd('/')}{sharePath}";
+    }
+
+    private DirectoryDto? WithShareUrl(DirectoryDto? dto)
+    {
+        if (dto is null)
+        {
+            return null;
+        }
+
+        dto.ShareUrl = BuildShareUrl(dto.Id);
+        return dto;
+    }
+
+    private Guid? GetCurrentUserGuid()
+    {
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            return null;
+        }
+
+        return Guid.TryParse(_currentUserService.UserId, out var userId) ? userId : null;
     }
 
     public async Task<PaginatedResultDto<DirectoryDto>> GetDirectoriesAsync(GetDirectoriesFilterDto filterDto)
@@ -78,8 +135,9 @@ public class DirectoryService : IDirectoryService
         var total = await baseQuery.CountAsync();
         _logger.LogTrace("Found {Total} directories matching filters", total);
 
-        // 4. Order, Paginate, AND Project directly to DTO in a single SQL query
-        var items = await baseQuery
+        var currentUserId = GetCurrentUserGuid();
+
+        var items = (await baseQuery
             .OrderByDescending(d => d.Id)
             .Skip((filterDto.Page - 1) * filterDto.PageSize)
             .Take(filterDto.PageSize)
@@ -103,20 +161,22 @@ public class DirectoryService : IDirectoryService
                 FavoriteCount = d.FavoriteCount,
                 CreatedById = d.CreatedById,
 
-                // Populated directly into DTO without needing [NotMapped] on Entity
-                IsFavorited = _dbContext.Favorites
-                    .Any(f => f.EntityId == d.Id && f.UserId == Guid.Parse(_currentUserService.UserId!)),
+                IsFavorited = currentUserId.HasValue && _dbContext.Favorites
+                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId.Value),
 
-                MyRating = _dbContext.Ratings
-                    .Where(r => r.EntityId == d.Id && r.UserId == Guid.Parse(_currentUserService.UserId!))
+                MyRating = currentUserId.HasValue ? _dbContext.Ratings
+                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId.Value)
                     .Select(r => (int?)r.Rating)
-                    .FirstOrDefault()
+                    .FirstOrDefault() : null
             })
-            .ToListAsync();
+            .ToListAsync())
+            .Select(WithShareUrl)
+            .Where(x => x is not null)
+            .Cast<DirectoryDto>()
+            .ToList();
 
         _logger.LogTrace("Returning {Count} directories from page {Page}", items.Count, filterDto.Page);
 
-        // 5. Return result (no MapDirectory step needed!)
         return new PaginatedResultDto<DirectoryDto>(
             items,
             filterDto.Page,
@@ -130,6 +190,8 @@ public class DirectoryService : IDirectoryService
     {
         _logger.LogInformation("CALLED GetDirectoryByIdAsync()");
         _logger.LogDebug("GetDirectoryByIdAsync called with id {Id}", id);
+
+        var currentUserId = GetCurrentUserGuid();
 
         var directory = await _dbContext.Directories.AsNoTracking()
             .Where(d => d.Id == id)
@@ -153,14 +215,13 @@ public class DirectoryService : IDirectoryService
                 FavoriteCount = d.FavoriteCount,
                 CreatedById = d.CreatedById,
 
-                // Populated directly into DTO without needing [NotMapped] on Entity
-                IsFavorited = _dbContext.Favorites
-                    .Any(f => f.EntityId == d.Id && f.UserId == Guid.Parse(_currentUserService.UserId!)),
+                IsFavorited = currentUserId.HasValue && _dbContext.Favorites
+                    .Any(f => f.EntityId == d.Id && f.UserId == currentUserId.Value),
 
-                MyRating = _dbContext.Ratings
-                    .Where(r => r.EntityId == d.Id && r.UserId == Guid.Parse(_currentUserService.UserId!))
+                MyRating = currentUserId.HasValue ? _dbContext.Ratings
+                    .Where(r => r.EntityId == d.Id && r.UserId == currentUserId.Value)
                     .Select(r => (int?)r.Rating)
-                    .FirstOrDefault()
+                    .FirstOrDefault() : null
             })
             .FirstOrDefaultAsync();
         _logger.LogTrace("Found directory entry: {@Directory}", JsonSerializer.Serialize(directory));
@@ -170,7 +231,7 @@ public class DirectoryService : IDirectoryService
             return null;
         }
 
-        return directory;
+        return WithShareUrl(directory);
     }
 
     public async Task<DirectoryDto> CreateDirectoryAsync(CreateDirectoryDto dto)

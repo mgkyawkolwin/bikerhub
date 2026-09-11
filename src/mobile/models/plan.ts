@@ -15,6 +15,7 @@ export default class Plan {
   tripDateTimeUtc?: string;
   locationsJson?: string;
   staticMapUrl?: string;
+  shareUrl?: string;
   riderIds?: string[];
   riders?: PlanRider[];
   confirmedCount?: number;

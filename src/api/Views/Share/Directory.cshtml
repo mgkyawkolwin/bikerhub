@@ -1,0 +1,263 @@
+@model BikerHub.Api.Dtos.DirectoryDto
+@{
+    ViewData["Title"] = "Shared Business";
+    var locationText = new[] { Model.City, Model.State, Model.Country }.Where(v => !string.IsNullOrWhiteSpace(v)).DefaultIfEmpty("Location unavailable").First();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        :root {
+            --bg: #f4f4f4;
+            --card: #ffffff;
+            --card-border: #e5e7eb;
+            --text: #111111;
+            --muted: #666666;
+            --accent: #ef5a24;
+            --soft: #f3f4f6;
+            --shadow: rgba(17, 17, 17, 0.05);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            padding: 16px;
+            background: var(--bg);
+        }
+
+        .card {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .card-row {
+            display: flex;
+            align-items: stretch;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .image-wrap {
+            width: 96px;
+            min-width: 96px;
+            height: 96px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #dfe7f3, #c7d8ef);
+        }
+
+        .image-wrap img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .card-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.25;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--soft);
+            border-radius: 999px;
+            padding: 6px 10px;
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .content {
+            padding: 0 12px 12px;
+            color: var(--text);
+        }
+
+        .info-block {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .info-label {
+            width: 18px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 16px;
+        }
+
+        .link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <article class="card">
+            <div class="card-row">
+                <div class="image-wrap">
+                    @if (!string.IsNullOrWhiteSpace(Model.CoverImageUrl))
+                    {
+                        <img src="@Model.CoverImageUrl" alt="@Model.Name" />
+                    }
+                    else if (!string.IsNullOrWhiteSpace(Model.LogoUrl))
+                    {
+                        <img src="@Model.LogoUrl" alt="@Model.Name" />
+                    }
+                    else
+                    {
+                        <div class="placeholder">Logo</div>
+                    }
+                </div>
+
+                <div class="card-body">
+                    <h1 class="title">@Model.Name</h1>
+                    <p class="subtitle">@Model.BusinessType</p>
+                    <div class="meta-row">
+                        <span class="meta-pill">❤ @Model.FavoriteCount</span>
+                        <span class="meta-pill">★ @((Model.Rating > 0) ? Model.Rating.Value.ToString("0.0") : "0.0")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="info-block">
+                    <span class="info-label">📍</span>
+                    <span>@locationText</span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Address))
+                {
+                    <div class="info-block">
+                        <span class="info-label">🏠</span>
+                        <span>@Model.Address</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                {
+                    <div class="info-block">
+                        <span class="info-label">☎</span>
+                        <span>@Model.Phone</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.Email))
+                {
+                    <div class="info-block">
+                        <span class="info-label">✉</span>
+                        <span>@Model.Email</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.GoogleMapUrl))
+                {
+                    <div class="info-block">
+                        <span class="info-label">🗺</span>
+                        <a class="link" href="@Model.GoogleMapUrl" target="_blank" rel="noopener noreferrer">View On Map</a>
+                    </div>
+                }
+
+                <div class="stats">
+                    <div class="stat">❤️ @Model.FavoriteCount favorites</div>
+                    <div class="stat">⭐ @((Model.RatingCount ?? 0)) reviews</div>
+                </div>
+            </div>
+        </article>
+    </div>
+</body>
+</html>

@@ -1,0 +1,243 @@
+@model BikerHub.Api.Dtos.PlanDto
+@{
+    ViewData["Title"] = "Shared Plan";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        :root {
+            --bg: #f4f4f4;
+            --card: #ffffff;
+            --card-border: #e5e5e5;
+            --text: #111111;
+            --muted: #666666;
+            --accent: #ef5a24;
+            --soft: #f3f4f6;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            padding: 16px;
+            background: var(--bg);
+        }
+
+        .card {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 16px 8px;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background: #d8d8d8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .owner-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .hero {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #dfe7f3, #c7d8ef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .map-image {
+            width: 100%;
+            height: 160px;
+            display: block;
+            object-fit: cover;
+        }
+
+        .card-body {
+            padding: 8px 16px 12px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text);
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--soft);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .description {
+            margin: 12px 0 0;
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+
+        .stat {
+            background: var(--soft);
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 16px 16px;
+        }
+
+        .count-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <article class="card">
+            <div class="card-header">
+                <div class="header-row">
+                    <div class="avatar">@(string.IsNullOrWhiteSpace(Model.DisplayName) ? "R" : Model.DisplayName.Trim()[0])</div>
+                    <div class="owner-name">@(!string.IsNullOrWhiteSpace(Model.DisplayName) ? Model.DisplayName : "Rider")</div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.StaticMapUrl))
+            {
+                <img class="map-image" src="@Model.StaticMapUrl" alt="Plan route map" />
+            }
+            else
+            {
+                <div class="hero">Plan Route</div>
+            }
+
+            <div class="card-body">
+                <h1 class="title">@Model.Title</h1>
+
+                <div class="meta-row">
+                    <span>@Model.TripDateTimeUtc.ToString("ddd, MMM d")</span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <p class="description">@Model.Description</p>
+                }
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-value">@Model.Distance.ToString("0.##")</span>
+                        <span class="stat-label">Distance (km)</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">@Model.Elevation.ToString("0.##")</span>
+                        <span class="stat-label">Elevation (m)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="count-item">✔ @Model.ConfirmedCount confirmed</div>
+                <div class="count-item">? @Model.MaybeCount may be</div>
+            </div>
+        </article>
+    </div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Linking, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Alert, Clipboard, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -11,6 +11,7 @@ import { DirectoryServiceToken } from '@/services/directoryService';
 import type { DirectoryService } from '@/services/directoryService';
 import Directory from '@/models/directory';
 import { Rating } from '@/components/rating';
+import SnackBar from '@/components/snackbar';
 
 export default function DirectoryDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -25,6 +26,7 @@ export default function DirectoryDetailScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -50,7 +52,35 @@ export default function DirectoryDetailScreen() {
     };
   }, [id, directoryService]);
 
+  const shareUrl = useMemo(() => {
+    if (!item?.id) return '';
+    return item.shareUrl || `/share/directories/${item.id}`;
+  }, [item]);
+
   const isOwner = Boolean(item?.createdById && authUser?.id === item.createdById);
+
+  const handleShareAsPost = () => {
+    setShareSheetVisible(false);
+    if (!shareUrl) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl } });
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareUrl) {
+      setShareSheetVisible(false);
+      return;
+    }
+
+    try {
+      Clipboard.setString(shareUrl);
+      SnackBar.Success('Link copied to clipboard.');
+    } catch {
+      SnackBar.Error('Unable to copy link.');
+    } finally {
+      setShareSheetVisible(false);
+    }
+  };
 
   const handleEdit = () => {
     if (!item?.id) return;
@@ -169,7 +199,11 @@ export default function DirectoryDetailScreen() {
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.directory}</Text>
-        <View style={styles.headerSpacer} />
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShareSheetVisible(true)} hitSlop={14}>
+            <MaterialIcons name="share" size={22} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         {item ? (
@@ -279,6 +313,21 @@ export default function DirectoryDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={shareSheetVisible} animationType="slide" transparent onRequestClose={() => setShareSheetVisible(false)}>
+        <Pressable style={styles.shareSheetOverlay} onPress={() => setShareSheetVisible(false)}>
+          <View style={[styles.shareSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.shareSheetHandle} />
+            <Text style={[styles.shareSheetTitle, { color: colors.text }]}>Share</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleShareAsPost} style={[styles.shareSheetOption, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Share As A Post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleCopyShareLink} style={styles.shareSheetOption}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Copy Link</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -287,7 +336,14 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
   headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 22 },
   headerSpacer: { width: 22 },
+  shareSheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.25)' },
+  shareSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, paddingHorizontal: 20, paddingBottom: 28, paddingTop: 8 },
+  shareSheetHandle: { width: 48, height: 5, backgroundColor: '#D1D5DB', borderRadius: 999, alignSelf: 'center', marginBottom: 18 },
+  shareSheetTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  shareSheetOption: { paddingVertical: 16, borderBottomWidth: 1 },
+  shareSheetOptionText: { fontSize: 16, fontWeight: '600' },
   content: { paddingHorizontal: 16, gap: 16 },
   page: { flex: 1, gap: 16 },
   image: { width: '100%', height: 200, borderRadius: 4 },

@@ -6,6 +6,7 @@ export default class Post {
   createdByUserProfilePhotoUrl?: string;
   groupId?: string;
   content?: string;
+  shareUrl?: string;
   loveCount?: number;
   commentCount?: number;
   shareCount?: number;

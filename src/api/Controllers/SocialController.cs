@@ -86,11 +86,15 @@ public class SocialController : BaseController
             if (filterDto.List == Constants.PostListTypes.Feed)
             {
                 result = await _socialService.GetFeedsAsync(filterDto);
+                _logger.LogDebug("Fetched feed posts count: {@result}", result.Items.Count());
+                _logger.LogDebug("Fetched feed posts default: {@result}", result.Items.FirstOrDefault());
                 return Ok(new { Success = true, Data = result });
             }
             else
             {
                 result = await _socialService.GetPostsAsync(filterDto);
+                _logger.LogDebug("Fetched user posts count: {@result}", result.Items.Count());
+                _logger.LogDebug("Fetched user posts default: {@result}", result.Items.FirstOrDefault());
                 return Ok(new { Success = true, Data = result });
             }
         }

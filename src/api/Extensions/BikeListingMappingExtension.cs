@@ -13,7 +13,12 @@ public static class BikeListingMappingExtensions
         AppDbContext dbContext,
         ICurrentUserService currentUserService)
     {
-        var currentUserId = Guid.Parse(currentUserService.UserId!);
+        var currentUserId = Guid.Empty;
+        if (!string.IsNullOrWhiteSpace(currentUserService.UserId) && Guid.TryParse(currentUserService.UserId, out var parsedCurrentUserId))
+        {
+            currentUserId = parsedCurrentUserId;
+        }
+
         return from listing in baseQuery
             select new BikeListingDto
             {

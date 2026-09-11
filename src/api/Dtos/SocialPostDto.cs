@@ -7,6 +7,7 @@ public sealed record SocialPostDto
     public int LoveCount { get; set; }
     public int CommentCount { get; set; }
     public int ShareCount { get; set; }
+    public string ShareUrl { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
     public required Guid CreatedByUserId { get; set; }
     public required string CreatedByDisplayName { get; set; }

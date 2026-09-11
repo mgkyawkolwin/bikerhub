@@ -8,6 +8,7 @@ using BikerHub.Api.Data;
 using BikerHub.Api.Dtos;
 using BikerHub.Api.Entities;
 using BikerHub.Api.Exceptions;
+using BikerHub.Api.Extensions;
 using BikerHub.Api.Utilities;
 using System.Text.Json.Serialization;
 
@@ -54,13 +55,15 @@ public class SocialService : ISocialService
     private readonly ILogger<SocialService> _logger;
     private readonly IStorageService _storageService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService storageService, ICurrentUserService currentUserService)
+    public SocialService(AppDbContext dbContext, ILogger<SocialService> logger, IStorageService storageService, ICurrentUserService currentUserService, IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
         _logger = logger;
         _storageService = storageService;
         _currentUserService = currentUserService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetFeedsAsync(SocialPostsFilterDto filterDto)
@@ -108,7 +111,7 @@ public class SocialService : ISocialService
         WriteIndented = true
     })
     : "No posts");
-        return new PaginatedResultDto<SocialPostDto>(items.Select(item => MapPost(item.post, item.currentProfileId, item.profilePhotoUrl)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
+        return new PaginatedResultDto<SocialPostDto>(items.Select(item => item.post.ToDto(item.currentProfileId, item.profilePhotoUrl, _storageService, _httpContextAccessor.HttpContext?.Request)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
     }
 
     public async Task<PaginatedResultDto<SocialPostDto>> GetPostsAsync(SocialPostsFilterDto filterDto)
@@ -157,7 +160,7 @@ public class SocialService : ISocialService
         WriteIndented = true
     })
     : "No posts");
-        return new PaginatedResultDto<SocialPostDto>(items.Select(item => MapPost(item.post, item.currentProfileId, item.profilePhotoUrl)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
+        return new PaginatedResultDto<SocialPostDto>(items.Select(item => item.post.ToDto(item.currentProfileId, item.profilePhotoUrl, _storageService, _httpContextAccessor.HttpContext?.Request)).ToList(), filterDto.Page, filterDto.PageSize, total, Pagination.GetTotalPages(total, filterDto.PageSize));
     }
 
     public async Task<SocialPostDto?> GetPostByIdAsync(Guid postId)
@@ -165,14 +168,21 @@ public class SocialService : ISocialService
         _logger.LogInformation("CALLED GetPostByIdAsync()");
         _logger.LogDebug("GetPostByIdAsync called with postId {PostId}", postId);
 
-        Guid currentProfileId = await _dbContext.SocialProfiles
-                .Where(profile => profile.UserId == Guid.Parse(_currentUserService.UserId!))
+        Guid currentProfileId = Guid.Empty;
+        var currentUserId = _currentUserService.UserId;
+
+        if (!string.IsNullOrWhiteSpace(currentUserId) && Guid.TryParse(currentUserId, out var parsedUserId))
+        {
+            currentProfileId = await _dbContext.SocialProfiles
+                .Where(profile => profile.UserId == parsedUserId)
                 .Select(profile => profile.Id)
                 .FirstOrDefaultAsync();
+        }
 
         var post = await _dbContext.Posts
             .Include(p => p.Likes)
             .Include(p => p.User)
+            .Include(p => p.Medias)
             .Where(p => p.Id == postId)
             .Select(p => new
             {
@@ -190,7 +200,7 @@ public class SocialService : ISocialService
             return null;
         }
 
-        return MapPost(post.post, currentProfileId, post.profilePhotoUrl);
+        return post.post.ToDto(currentProfileId, post.profilePhotoUrl, _storageService, _httpContextAccessor.HttpContext?.Request);
     }
 
     public async Task<SocialPostDto> CreatePostAsync(CreatePostDto createPostDto)
@@ -213,7 +223,7 @@ public class SocialService : ISocialService
         _dbContext.Posts.Add(postEntity);
         await _dbContext.SaveChangesAsync();
 
-        return MapPost(postEntity, Guid.Empty, "");
+        return postEntity.ToDto(Guid.Empty, string.Empty, _storageService, _httpContextAccessor.HttpContext?.Request);
     }
 
     public async Task DeletePostAsync(Guid postId)
@@ -337,7 +347,7 @@ public class SocialService : ISocialService
         _dbContext.Posts.Update(post);
         await _dbContext.SaveChangesAsync();
 
-        return MapPost(post, Guid.Parse(_currentUserService.UserId!));
+        return post.ToDto(Guid.Parse(_currentUserService.UserId!), null, _storageService, _httpContextAccessor.HttpContext?.Request);
     }
 
     public async Task<SocialProfileDto?> GetProfileByIdAsync(Guid userId)
@@ -585,55 +595,6 @@ public class SocialService : ISocialService
 
         _logger.LogInformation("Deleted {Count} comments for post {PostId}", toDelete.Count, postId);
         return toDelete.Count;
-    }
-
-    private SocialPostDto MapPost(SocialPostEntity post, Guid currentProfileId, string? profilePhotoUrl = null)
-    {
-        _logger.LogInformation("CALLED MapPost()");
-        _logger.LogDebug("Mapping post with currentProfileId {CurrentProfileId} and profilePhotoUrl {ProfilePhotoUrl}", currentProfileId, profilePhotoUrl);
-        _logger.LogDebug("Mapping post: {Post}", JsonSerializer.Serialize(post, new JsonSerializerOptions
-        {
-            ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            WriteIndented = true
-        }));
-        if (post == null) throw new ArgumentNullException(nameof(post));
-        _logger.LogTrace("Post is not null.");
-        _logger.LogTrace("Processing media entries");
-
-        _logger.LogTrace("Returning mapped SocialPostDto");
-        var socialPostDto = new SocialPostDto
-        {
-            Id = post.Id,
-            Content = post.Content,
-            LoveCount = post.LoveCount,
-            CommentCount = post.CommentCount,
-            ShareCount = post.ShareCount,
-            IsLikedByCurrentUser = post.Likes?.Any(like => like.UserId == currentProfileId) == true,
-            CreatedAtUtc = post.CreatedAtUtc,
-            CreatedByUserId = post.UserId,
-            CreatedByDisplayName = post.User?.DisplayName ?? string.Empty,
-            CreatedByUserName = post.User?.UserName ?? string.Empty,
-            CreatedByUserProfilePhotoUrl = profilePhotoUrl,
-        };
-
-        // Map media entries if any
-        if (post.Medias?.Count() > 0)
-        {
-            socialPostDto.Medias = post.Medias.Select(m => new SocialPostMediaDto
-            {
-                Id = m.Id,
-                MediaGuid = m.MediaGuid,
-                ObjectName = m.ObjectName,
-                ContentType = m.ContentType,
-                Url = _storageService.BuildObjectUrl(m.ObjectName)
-            }).ToList();
-        }
-        _logger.LogTrace("Mapped SocialPostDto: {SocialPostDto}", JsonSerializer.Serialize(socialPostDto, new JsonSerializerOptions
-        {
-            ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            WriteIndented = true
-        }));
-        return socialPostDto;
     }
 
     public async Task<SocialPostMediaDto> UploadPostMediaAsync(Guid postId, IFormFile file)

@@ -15,6 +15,7 @@ public sealed record DirectoryDto
     public string? CoverImageUrl { get; set; }
     public string? GoogleMapUrl { get; set; }
     public string? BusinessType { get; set; }
+    public string ShareUrl { get; set; } = string.Empty;
     public required Guid CreatedById { get; set; }
     public bool IsFavorited { get; set; }
     public int FavoriteCount { get; set; }

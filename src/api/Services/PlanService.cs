@@ -24,13 +24,60 @@ public class PlanService : IPlanService
     private readonly ILogger<PlanService> _logger;
     private readonly ICurrentUserService _currentUserService;
     private readonly IGoogleMapsService _googleMapsService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public PlanService(AppDbContext dbContext, ILogger<PlanService> logger, ICurrentUserService currentUserService, IGoogleMapsService googleMapsService)
+    public PlanService(
+        AppDbContext dbContext,
+        ILogger<PlanService> logger,
+        ICurrentUserService currentUserService,
+        IGoogleMapsService googleMapsService,
+        IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
         _logger = logger;
         _currentUserService = currentUserService;
         _googleMapsService = googleMapsService;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private string BuildShareUrl(Guid planId)
+    {
+        var request = _httpContextAccessor.HttpContext?.Request;
+        var sharePath = $"/share/plans/{planId}";
+
+        if (request is null)
+        {
+            return $"http://localhost{sharePath}";
+        }
+
+        var forwardedHost = request.Headers["X-Forwarded-Host"].FirstOrDefault();
+        var host = !string.IsNullOrWhiteSpace(forwardedHost)
+            ? forwardedHost.Split(',')[0].Trim()
+            : request.Host.Value;
+
+        var forwardedProto = request.Headers["X-Forwarded-Proto"].FirstOrDefault();
+        var scheme = !string.IsNullOrWhiteSpace(forwardedProto)
+            ? forwardedProto.Split(',')[0].Trim()
+            : request.Scheme;
+
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return $"{scheme}://localhost{sharePath}";
+        }
+
+        var baseUrl = $"{scheme}://{host}{request.PathBase}";
+        return $"{baseUrl.TrimEnd('/')}{sharePath}";
+    }
+
+    private PlanDto? WithShareUrl(PlanDto? dto)
+    {
+        if (dto is null)
+        {
+            return null;
+        }
+
+        dto.ShareUrl = BuildShareUrl(dto.Id);
+        return dto;
     }
 
     public async Task<PaginatedResultDto<PlanDto>> GetPlansAsync(int page, int pageSize, Guid? userId = null)
@@ -42,11 +89,15 @@ public class PlanService : IPlanService
         }
         query = query.OrderByDescending(plan => plan.CreatedAtUtc);
         var total = await query.CountAsync();
-        var items = await query
+        var items = (await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ProjectToDto(_dbContext, _googleMapsService)
-            .ToListAsync();
+            .ToListAsync())
+            .Select(WithShareUrl)
+            .Where(x => x is not null)
+            .Cast<PlanDto>()
+            .ToList();
 
         return new PaginatedResultDto<PlanDto>(
             items,
@@ -59,10 +110,12 @@ public class PlanService : IPlanService
 
     public async Task<PlanDto?> GetPlanByIdAsync(Guid id)
     {
-        return await _dbContext.Plans
+        var plan = await _dbContext.Plans
             .Where(plan => plan.Id == id)
             .ProjectToDto(_dbContext, _googleMapsService)
             .FirstOrDefaultAsync();
+
+        return WithShareUrl(plan);
     }
 
     public async Task<PlanDto> CreatePlanAsync(CreatePlanDto dto)
@@ -94,10 +147,12 @@ public class PlanService : IPlanService
 
         await _dbContext.SaveChangesAsync();
 
-        return await _dbContext.Plans
+        var created = await _dbContext.Plans
             .Where(x => x.Id == plan.Id)
             .ProjectToDto(_dbContext, _googleMapsService)
             .FirstAsync();
+
+        return WithShareUrl(created)!;
     }
 
     public async Task<PlanDto?> UpdatePlanAsync(Guid id, UpdatePlanDto dto)
@@ -155,10 +210,12 @@ public class PlanService : IPlanService
 
         await _dbContext.SaveChangesAsync();
 
-        return await _dbContext.Plans
+        var updated = await _dbContext.Plans
             .Where(x => x.Id == plan.Id)
             .ProjectToDto(_dbContext, _googleMapsService)
             .FirstOrDefaultAsync();
+
+        return WithShareUrl(updated);
     }
 
     public async Task<PlanDto?> SetPlanAttendanceAsync(Guid planId, bool confirmed)

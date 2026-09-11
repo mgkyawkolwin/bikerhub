@@ -33,13 +33,51 @@ public class MarketplaceService : IMarketplaceService
     private readonly IStorageService _storageService;
     private readonly ILogger<MarketplaceService> _logger;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public MarketplaceService(AppDbContext dbContext, ILogger<MarketplaceService> logger, IStorageService storageService, ICurrentUserService currentUserService)
+    public MarketplaceService(AppDbContext dbContext, ILogger<MarketplaceService> logger, IStorageService storageService, ICurrentUserService currentUserService, IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
         _storageService = storageService;
         _logger = logger;
         _currentUserService = currentUserService;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private string BuildShareUrl(Guid listingId)
+    {
+        var request = _httpContextAccessor.HttpContext?.Request;
+        var sharePath = $"/share/marketplace/{listingId}";
+
+        if (request is null)
+        {
+            return $"http://localhost{sharePath}";
+        }
+
+        var forwardedHost = request.Headers["X-Forwarded-Host"].FirstOrDefault();
+        var host = !string.IsNullOrWhiteSpace(forwardedHost)
+            ? forwardedHost.Split(',')[0].Trim()
+            : request.Host.Value;
+
+        var forwardedProto = request.Headers["X-Forwarded-Proto"].FirstOrDefault();
+        var scheme = !string.IsNullOrWhiteSpace(forwardedProto)
+            ? forwardedProto.Split(',')[0].Trim()
+            : request.Scheme;
+
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return $"{scheme}://localhost{sharePath}";
+        }
+
+        var baseUrl = $"{scheme}://{host}{request.PathBase}";
+        return $"{baseUrl.TrimEnd('/')}{sharePath}";
+    }
+
+    private BikeListingDto? WithShareUrl(BikeListingDto? dto)
+    {
+        if (dto is null) return null;
+        dto.ShareUrl = BuildShareUrl(dto.Id);
+        return dto;
     }
 
     public async Task<PaginatedResultDto<BikeListingDto>> GetListingsAsync(BikeListingFilterDto filter)
@@ -68,7 +106,12 @@ public class MarketplaceService : IMarketplaceService
             .OrderByDescending(x => x.CreatedAtUtc)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .ToListAsync()).ResolveMediaUrls(_storageService);
+            .ToListAsync())
+            .ResolveMediaUrls(_storageService)
+            .Select(WithShareUrl)
+            .Where(x => x is not null)
+            .Cast<BikeListingDto>()
+            .ToList();
 
         return new PaginatedResultDto<BikeListingDto>(
             items,
@@ -85,7 +128,7 @@ public class MarketplaceService : IMarketplaceService
         .FirstOrDefaultAsync(x => x.Id == id);
         if (listing is null) return null;
 
-        return listing.ResolveMediaUrls(_storageService);
+        return WithShareUrl(listing.ResolveMediaUrls(_storageService));
     }
 
     public async Task<BikeListingDto> CreateListingAsync(CreateBikeListingDto dto)

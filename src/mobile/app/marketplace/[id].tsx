@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text, RefreshControl } from 'react-native';
+import { Alert, Clipboard, Modal, Pressable, ScrollView, StyleSheet, View, TouchableOpacity, Linking, Text, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -38,6 +38,12 @@ export default function BikeDetailScreen() {
   const [isMarkingAsSold, setIsMarkingAsSold] = useState(false);
   const [isReportingScam, setIsReportingScam] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
+
+  const shareUrl = useMemo(() => {
+    if (!listing?.id) return '';
+    return listing.shareUrl || `/share/marketplace/${listing.id}`;
+  }, [listing]);
 
   const loadListing = useCallback(async (showRefreshIndicator = false) => {
     if (!id) return;
@@ -318,6 +324,29 @@ export default function BikeDetailScreen() {
     );
   };
 
+  const handleShareAsPost = () => {
+    setShareSheetVisible(false);
+    if (!shareUrl) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl } });
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareUrl) {
+      setShareSheetVisible(false);
+      return;
+    }
+
+    try {
+      Clipboard.setString(shareUrl);
+      SnackBar.Success('Link copied to clipboard.');
+    } catch {
+      SnackBar.Error('Unable to copy link.');
+    } finally {
+      setShareSheetVisible(false);
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}> 
@@ -328,25 +357,8 @@ export default function BikeDetailScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t.Title.bikeDetail}</Text>
         </View>
         <View style={styles.headerActions}>
-          {/* <View style={styles.statAction}>
-            <MaterialIcons name="visibility" size={20} color={colors.text} />
-            <Text style={[styles.countText, { color: colors.text }]}>{listing?.viewCount ?? 0}</Text>
-          </View> */}
-          <TouchableOpacity style={styles.statAction} onPress={toggleFavorite} hitSlop={10}>
-            <MaterialIcons
-              name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
-              size={20}
-              color={listing?.isFavorite ? '#E85D04' : colors.text}
-            />
-            <Text style={[styles.countText, { color: listing?.isFavorite ? '#E85D04' : colors.text }]}>{listing?.favoritesCount ?? 0}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.statAction} onPress={toggleLike} hitSlop={10}>
-            <MaterialIcons
-              name={listing?.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
-              size={20}
-              color={listing?.isLiked ? '#E85D04' : colors.text}
-            />
-            <Text style={[styles.countText, { color: listing?.isLiked ? '#E85D04' : colors.text }]}>{listing?.likeCount ?? 0}</Text>
+          <TouchableOpacity hitSlop={10} onPress={() => setShareSheetVisible(true)}>
+            <MaterialIcons name="share" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -360,7 +372,27 @@ export default function BikeDetailScreen() {
           <>
             <ImageCarousel images={images} imageHeight={240} onImagePress={handleOpenGallery} />
             <View style={styles.photoText}>
-              <Text style={[styles.title, { color: colors.text }]}>{listing.make} {listing.model} {listing.cc}cc {listing.year} {listing.edition}</Text>
+              <View style={styles.priceRow}>
+                <Text style={[styles.title, { color: colors.text, flex: 1 }]}>{listing.make} {listing.model} {listing.cc}cc {listing.year} {listing.edition}</Text>
+                <View style={styles.priceActions}>
+                  <TouchableOpacity style={styles.statAction} onPress={toggleFavorite} hitSlop={10}>
+                    <MaterialIcons
+                      name={listing?.isFavorite ? 'favorite' : 'favorite-border'}
+                      size={20}
+                      color={listing?.isFavorite ? '#E85D04' : colors.text}
+                    />
+                    <Text style={[styles.countText, { color: listing?.isFavorite ? '#E85D04' : colors.text }]}>{listing?.favoritesCount ?? 0}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.statAction} onPress={toggleLike} hitSlop={10}>
+                    <MaterialIcons
+                      name={listing?.isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
+                      size={20}
+                      color={listing?.isLiked ? '#E85D04' : colors.text}
+                    />
+                    <Text style={[styles.countText, { color: listing?.isLiked ? '#E85D04' : colors.text }]}>{listing?.likeCount ?? 0}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
               <Text style={[styles.price, { color: colors.accent }]}>{listing.price ? `Ks ${listing.price.toLocaleString()}` : '-'}</Text>
               {listing.isSold ? (
                 <View style={styles.soldBadge}>
@@ -515,6 +547,21 @@ export default function BikeDetailScreen() {
         startIndex={galleryIndex}
         onClose={() => setGalleryVisible(false)}
       />
+
+      <Modal visible={shareSheetVisible} animationType="slide" transparent onRequestClose={() => setShareSheetVisible(false)}>
+        <Pressable style={styles.shareSheetOverlay} onPress={() => setShareSheetVisible(false)}>
+          <View style={[styles.shareSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.shareSheetHandle} />
+            <Text style={[styles.shareSheetTitle, { color: colors.text }]}>Share</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleShareAsPost} style={[styles.shareSheetOption, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Share As A Post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleCopyShareLink} style={styles.shareSheetOption}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Copy Link</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -590,6 +637,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  priceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
   },
   price: {
     fontSize: 16,
@@ -723,6 +782,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  shareSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  shareSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  shareSheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#9AA0A6',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  shareSheetTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  shareSheetOption: {
+    paddingVertical: 16,
+    borderTopWidth: 1,
+  },
+  shareSheetOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   emptyState: {
     marginTop: 40,

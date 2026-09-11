@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Clipboard,
   Image,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +21,7 @@ import { container } from '@/services';
 import { PlanServiceToken } from '@/services/planService';
 import type { PlanService } from '@/services/planService';
 import type Plan from '@/models/plan';
+import SnackBar from '@/components/snackbar';
 
 export default function PlanViewScreen() {
   const insets = useSafeAreaInsets();
@@ -35,6 +39,7 @@ export default function PlanViewScreen() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
 
   const loadPlan = useCallback(async () => {
     if (!planId) return;
@@ -168,6 +173,33 @@ export default function PlanViewScreen() {
   };
 
   const riderList = plan?.riders ?? [];
+  const shareUrl = useMemo(() => {
+    if (!plan?.id) return '';
+    return plan.shareUrl || `/share/plans/${plan.id}`;
+  }, [plan]);
+
+  const handleShareAsPost = () => {
+    setShareSheetVisible(false);
+    if (!shareUrl) return;
+
+    void router.push({ pathname: '/social/create', params: { shareUrl } });
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareUrl) {
+      setShareSheetVisible(false);
+      return;
+    }
+
+    try {
+      Clipboard.setString(shareUrl);
+      SnackBar.Success('Link copied to clipboard.');
+    } catch {
+      SnackBar.Error('Unable to copy link.');
+    } finally {
+      setShareSheetVisible(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}> 
@@ -176,13 +208,16 @@ export default function PlanViewScreen() {
           <MaterialIcons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Plan</Text>
-        {isOwner ? (
-          <TouchableOpacity onPress={() => plan?.id && router.push({ pathname: '/plan/edit', params: { planId: plan.id } })} hitSlop={14}>
-            <MaterialIcons name="edit" size={22} color={colors.text} />
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShareSheetVisible(true)} hitSlop={14}>
+            <MaterialIcons name="share" size={22} color={colors.text} />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+          {isOwner ? (
+            <TouchableOpacity onPress={() => plan?.id && router.push({ pathname: '/plan/edit', params: { planId: plan.id } })} hitSlop={14}>
+              <MaterialIcons name="edit" size={22} color={colors.text} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       {loading ? (
@@ -320,6 +355,21 @@ export default function PlanViewScreen() {
           )}
         </ScrollView>
       )}
+
+      <Modal visible={shareSheetVisible} animationType="slide" transparent onRequestClose={() => setShareSheetVisible(false)}>
+        <Pressable style={styles.shareSheetOverlay} onPress={() => setShareSheetVisible(false)}>
+          <View style={[styles.shareSheet, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <View style={styles.shareSheetHandle} />
+            <Text style={[styles.shareSheetTitle, { color: colors.text }]}>Share</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleShareAsPost} style={[styles.shareSheetOption, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Share As A Post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleCopyShareLink} style={styles.shareSheetOption}>
+              <Text style={[styles.shareSheetOptionText, { color: colors.text }]}>Copy Link</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -336,6 +386,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: { fontSize: 20, fontWeight: '700' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerSpacer: { width: 22 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mapImage: { width: '100%', height: 220 },
@@ -429,4 +480,38 @@ const styles = StyleSheet.create({
   },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 15, textAlign: 'center' },
+  shareSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  shareSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  shareSheetHandle: {
+    width: 42,
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: '#A7A7A7',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  shareSheetTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  shareSheetOption: {
+    paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  shareSheetOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

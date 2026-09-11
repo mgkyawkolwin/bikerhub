@@ -12,6 +12,7 @@ export default class Directory {
   coverImageUrl?: string;
   googleMapUrl?: string;
   businessType?: string;
+  shareUrl?: string;
   createdById?: string;
   isLiked?: boolean;
   likesCount?: number;

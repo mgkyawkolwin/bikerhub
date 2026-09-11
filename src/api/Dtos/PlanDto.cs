@@ -11,6 +11,7 @@ public sealed record PlanDto
     public required DateTime TripDateTimeUtc { get; set; }
     public string? LocationsJson { get; set; }
     public string? StaticMapUrl { get; set; }
+    public string ShareUrl { get; set; } = string.Empty;
     public IEnumerable<Guid>? RiderIds { get; set; }
     public IEnumerable<PlanRiderDto>? Riders { get; set; }
     public int ConfirmedCount { get; set; }

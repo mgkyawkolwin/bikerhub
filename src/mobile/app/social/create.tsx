@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { WebView } from 'react-native-webview';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeContext } from '@/hooks/use-theme-context';
@@ -19,11 +20,15 @@ export default function SocialCreateScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const shareUrl = Array.isArray(params.shareUrl) ? params.shareUrl[0] : params.shareUrl;
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(() => (shareUrl ? String(shareUrl) : ''));
   const [visibility, setVisibility] = useState<'Public' | 'Friends Only'>('Public');
   const [visibilityModalVisible, setVisibilityModalVisible] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const lastRequestedPreviewUrlRef = useRef<string | null>(null);
 
   const getFileName = (uri: string) => {
     const parts = uri.split('/');
@@ -114,13 +119,83 @@ export default function SocialCreateScreen() {
     setVisibilityModalVisible(false);
   }, []);
 
+  const extractLinkFromText = useCallback((value: string): string | null => {
+    const match = value.match(/https?:\/\/[^\s<>'"`]+/i);
+    if (!match) {
+      return null;
+    }
+
+    return match[0].replace(/[),.;!?]+$/, '');
+  }, []);
+
+  useEffect(() => {
+    const explicitHttpShareUrl = shareUrl && /^https?:\/\//i.test(shareUrl) ? shareUrl : null;
+    const nextPreviewUrl = extractLinkFromText(content) ?? explicitHttpShareUrl ?? null;
+
+    if (!nextPreviewUrl) {
+      lastRequestedPreviewUrlRef.current = null;
+      setPreviewUrl(null);
+      setPreviewError(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    const normalizedNextPreviewUrl = nextPreviewUrl.trim();
+    const previousPreviewUrl = lastRequestedPreviewUrlRef.current;
+
+    if (previousPreviewUrl && previousPreviewUrl === normalizedNextPreviewUrl) {
+      setPreviewUrl(normalizedNextPreviewUrl);
+      return;
+    }
+
+    lastRequestedPreviewUrlRef.current = normalizedNextPreviewUrl;
+    setPreviewUrl(normalizedNextPreviewUrl);
+    setPreviewError(null);
+    setPreviewLoading(true);
+
+    let isActive = true;
+
+    const loadPreview = async () => {
+      try {
+        const response = await fetch(normalizedNextPreviewUrl, {
+          method: 'GET',
+          headers: {
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+        });
+
+        if (!response.ok && isActive) {
+          setPreviewError(`Preview unavailable (${response.status}).`);
+        }
+      } catch {
+        if (isActive) {
+          setPreviewError('Unable to load preview for this link.');
+        }
+      } finally {
+        if (isActive) {
+          setPreviewLoading(false);
+        }
+      }
+    };
+
+    void loadPreview();
+
+    return () => {
+      isActive = false;
+    };
+  }, [content, extractLinkFromText, shareUrl]);
+
   const handlePost = useCallback(async () => {
     if (!content.trim() && !shareUrl && photos.length === 0) {
       SnackBar.Error('Please add text, a shared link, or images before posting.');
       return;
     }
 
-    const unifiedContent = [content.trim(), shareUrl].filter(Boolean).join('\n\n');
+    const normalizedContent = content.trim();
+    const hasShareUrlInContent = !!shareUrl && normalizedContent.includes(shareUrl);
+    const unifiedContent = hasShareUrlInContent
+      ? normalizedContent
+      : [normalizedContent, shareUrl].filter(Boolean).join('\n\n');
 
     setIsSubmitting(true);
     try {
@@ -165,7 +240,7 @@ export default function SocialCreateScreen() {
 
       SnackBar.Success('Post submitted successfully.');
       router.back();
-    } catch (error) {
+    } catch {
       SnackBar.Error('Unable to submit post. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -227,12 +302,32 @@ export default function SocialCreateScreen() {
           onChangeText={setContent}
         />
 
-        {shareUrl ? (
-          <View style={[styles.sharePreview, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Text style={[styles.sharePreviewLabel, { color: colors.secondaryText }]}>Share:</Text>
-            <Text style={[styles.sharePreviewUrl, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
-              {shareUrl}
+        {previewUrl ? (
+          <View style={[styles.webViewContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Text style={[styles.previewTitle, { color: colors.secondaryText }]}>Link preview</Text>
+            <Text style={[styles.previewUrl, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
+              {previewUrl}
             </Text>
+
+            {previewLoading ? (
+              <View style={styles.previewLoading}>
+                <Text style={[styles.previewLoadingText, { color: colors.secondaryText }]}>Loading preview...</Text>
+              </View>
+            ) : null}
+
+            {previewError ? (
+              <Text style={[styles.previewError, { color: colors.accent }]}>{previewError}</Text>
+            ) : (
+              <WebView
+                source={{ uri: previewUrl }}
+                style={styles.webView}
+                startInLoadingState
+                javaScriptEnabled
+                domStorageEnabled
+                originWhitelist={['*']}
+                onError={() => setPreviewError('Unable to load preview for this link.')}
+              />
+            )}
           </View>
         ) : null}
 
@@ -393,6 +488,42 @@ const styles = StyleSheet.create({
   },
   sharePreviewUrl: {
     fontSize: 14
+  },
+  webViewContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  previewTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  previewUrl: {
+    fontSize: 13,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  previewLoading: {
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  previewLoadingText: {
+    fontSize: 13,
+  },
+  previewError: {
+    fontSize: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  webView: {
+    width: '100%',
+    height: 220,
+    backgroundColor: '#000000',
   },
   modalOverlay: {
     flex: 1,
