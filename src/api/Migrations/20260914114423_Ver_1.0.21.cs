@@ -6,11 +6,55 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BikerHub.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class GarageBikeServiceHistory : Migration
+    public partial class Ver_1021 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "Phone",
+                table: "Users",
+                type: "varchar(32)",
+                maxLength: 32,
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<int>(
+                name: "ListingCount",
+                table: "SocialProfiles",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<int>(
+                name: "PlanCount",
+                table: "SocialProfiles",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Edition",
+                table: "GarageBikes",
+                type: "varchar(100)",
+                maxLength: 100,
+                nullable: true)
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.AddColumn<bool>(
+                name: "IsReported",
+                table: "BikeListings",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "IsSold",
+                table: "BikeListings",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.CreateTable(
                 name: "GarageBikeServiceHistory",
                 columns: table => new
@@ -18,6 +62,8 @@ namespace BikerHub.Api.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     GarageBikeId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     ServiceType = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ServiceDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Mileage = table.Column<int>(type: "int", nullable: false),
@@ -50,6 +96,30 @@ namespace BikerHub.Api.Migrations
         {
             migrationBuilder.DropTable(
                 name: "GarageBikeServiceHistory");
+
+            migrationBuilder.DropColumn(
+                name: "Phone",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "ListingCount",
+                table: "SocialProfiles");
+
+            migrationBuilder.DropColumn(
+                name: "PlanCount",
+                table: "SocialProfiles");
+
+            migrationBuilder.DropColumn(
+                name: "Edition",
+                table: "GarageBikes");
+
+            migrationBuilder.DropColumn(
+                name: "IsReported",
+                table: "BikeListings");
+
+            migrationBuilder.DropColumn(
+                name: "IsSold",
+                table: "BikeListings");
         }
     }
 }

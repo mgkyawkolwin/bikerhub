@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BikerHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260908103209_AddUserListingCount")]
-    partial class AddUserListingCount
+    [Migration("20260914114423_Ver_1.0.21")]
+    partial class Ver_1021
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -103,6 +103,12 @@ namespace BikerHub.Api.Migrations
 
                     b.Property<int>("FavoritesCount")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsReported")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsSold")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("LikeCount")
                         .HasColumnType("int");
@@ -541,6 +547,10 @@ namespace BikerHub.Api.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("Edition")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("ImagesJson")
                         .HasColumnType("longtext");
 
@@ -585,6 +595,54 @@ namespace BikerHub.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GarageBikes");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.GarageBikeServiceHistoryEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("GarageBikeId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Mileage")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("ServiceDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GarageBikeId", "ServiceType", "ServiceDate");
+
+                    b.ToTable("GarageBikeServiceHistory");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.Group", b =>
@@ -1316,6 +1374,12 @@ namespace BikerHub.Api.Migrations
                     b.Property<string>("GarageElevation")
                         .HasColumnType("longtext");
 
+                    b.Property<int>("ListingCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlanCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("ProfilePhotoUrl")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
@@ -1463,9 +1527,6 @@ namespace BikerHub.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<int>("ListingCount")
-                        .HasColumnType("int");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -1585,6 +1646,17 @@ namespace BikerHub.Api.Migrations
                     b.Navigation("FromUser");
 
                     b.Navigation("ToUser");
+                });
+
+            modelBuilder.Entity("BikerHub.Api.Entities.GarageBikeServiceHistoryEntity", b =>
+                {
+                    b.HasOne("BikerHub.Api.Entities.GarageBikeEntity", "GarageBike")
+                        .WithMany()
+                        .HasForeignKey("GarageBikeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GarageBike");
                 });
 
             modelBuilder.Entity("BikerHub.Api.Entities.MediaEntity", b =>

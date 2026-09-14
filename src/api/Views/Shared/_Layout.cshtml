@@ -2,33 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>@ViewData["Title"] - mvc</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/mvc.styles.css" asp-append-version="true" />
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background: #ffffff;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+        body {
+            /* Don't force 100vh here — let content define height so webview can size itself */
+            min-height: 100%;
+        }
+        main {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        img, video { max-width: 100%; }
+    </style>
 </head>
 <body>
-    <main role="main" class="full-viewport">
+    <main role="main">
         @RenderBody()
     </main>
 </body>
 </html>
-
-<style>
-    html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-    }
-
-    body {
-        min-height: 100vh;
-    }
-
-    .full-viewport {
-        width: 100%;
-        min-height: 100vh;
-    }
-</style>
